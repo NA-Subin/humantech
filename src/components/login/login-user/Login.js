@@ -121,7 +121,7 @@ const DomainLogin = () => {
                                         type="text"
                                         size="small"
                                         fullWidth
-                                        placeholder="yourdomain.humantech.com"
+                                        placeholder="กรุณากรอกชื่อ"
                                         value={domain}
                                         onChange={(e) => setDomain(e.target.value)}
                                         margin="normal"

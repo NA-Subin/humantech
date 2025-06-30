@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { getDatabase, ref, push, onValue } from "firebase/database";
+import { ref, get, set, child } from "firebase/database";
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -17,10 +17,9 @@ export default function InsertCompany() {
     const [open, setOpen] = React.useState(false);
     const [shortName, setShortName] = React.useState("");
     const [companyName, setCompanyName] = React.useState("");
-    const [professional, setProfessional] = React.useState("");
-    const [fullProfessional, setFullProfessional] = React.useState("");
-    const [elibrary, setELibrary] = React.useState("");
-    const [fullElibrary, setFullELibrary] = React.useState("");
+    const [address, setAddress] = React.useState("");
+    const [email, setEmail] = React.useState("");
+    const [phone, setPhone] = React.useState("")
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -33,28 +32,38 @@ export default function InsertCompany() {
     const handleAddCompany = async () => {
         if (!companyName.trim() || !firebaseDB) return;
 
-        await push(ref(firebaseDB, "companies"), {
-            shortName: shortName.trim(),
-            name: companyName,
-            professional: professional.trim(),
-            fullProfessional: fullProfessional.trim(),
-            elibrary: elibrary.trim(),
-            fullElibrary: fullElibrary.trim(),
-            createdAt: new Date().toISOString(),
-        });
+        const companiesRef = ref(firebaseDB, "workgroup/company");
 
-        setCompanyName("");
-        setShortName("");
-        setProfessional("");
-        setFullProfessional("");
-        setELibrary("");
-        setFullELibrary("");
-        setOpen(false);
+        try {
+            const snapshot = await get(companiesRef);
+            const companiesData = snapshot.exists() ? snapshot.val() : {};
+            const nextIndex = Object.keys(companiesData).length;
+
+            await set(child(companiesRef, String(nextIndex)), {
+                companyserial: shortName.trim(),
+                companyname: companyName,
+                companyaddress: address,
+                email: email,
+                companytel: phone,
+                createdAt: new Date().toISOString(),
+                companyid: nextIndex
+            });
+
+            setCompanyName("");
+            setShortName("");
+            setAddress("");
+            setEmail("");
+            setPhone("");
+            setOpen(false);
+        } catch (error) {
+            console.error("Error adding company:", error);
+        }
     };
+
 
     return (
         <React.Fragment>
-            <Button variant="contained" onClick={handleClickOpen}>
+            <Button variant="contained" onClick={handleClickOpen} size="large" sx={{ borderRadius: 2,marginTop: 1 }} >
                 เพิ่มบริษัท
             </Button>
             <Dialog
@@ -77,7 +86,7 @@ export default function InsertCompany() {
                 </DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2} marginTop={2}>
-                        <Grid size={12}>
+                        <Grid size={4}>
                             <TextField
                                 size="small"
                                 value={shortName}
@@ -94,7 +103,7 @@ export default function InsertCompany() {
                                 }}
                             />
                         </Grid>
-                        <Grid size={12}>
+                        <Grid size={8}>
                             <TextField
                                 size="small"
                                 value={companyName}
@@ -111,17 +120,20 @@ export default function InsertCompany() {
                                 }}
                             />
                         </Grid>
-                        <Grid size={6}>
+                        <Grid size={12}>
                             <TextField
                                 size="small"
-                                value={professional}
-                                onChange={(e) => setProfessional(e.target.value)}
+                                type="text"
+                                multiline
+                                rows={5}
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
                                 fullWidth
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
                                             <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>
-                                                Full Professional :
+                                                ที่อยู่ :
                                             </Typography>
                                         </InputAdornment>
                                     ),
@@ -131,14 +143,14 @@ export default function InsertCompany() {
                         <Grid size={6}>
                             <TextField
                                 size="small"
-                                value={fullProfessional}
-                                onChange={(e) => setFullProfessional(e.target.value)}
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 fullWidth
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
                                             <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>
-                                                Professional :
+                                                Email :
                                             </Typography>
                                         </InputAdornment>
                                     ),
@@ -148,31 +160,14 @@ export default function InsertCompany() {
                         <Grid size={6}>
                             <TextField
                                 size="small"
-                                value={elibrary}
-                                onChange={(e) => setELibrary(e.target.value)}
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
                                 fullWidth
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
                                             <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>
-                                                E-library :
-                                            </Typography>
-                                        </InputAdornment>
-                                    ),
-                                }}
-                            />
-                        </Grid>
-                        <Grid size={6}>
-                            <TextField
-                                size="small"
-                                value={fullElibrary}
-                                onChange={(e) => setFullELibrary(e.target.value)}
-                                fullWidth
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>
-                                                Full E-library :
+                                                เบอร์โทร :
                                             </Typography>
                                         </InputAdornment>
                                     ),

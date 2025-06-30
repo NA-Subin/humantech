@@ -6,8 +6,10 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { Box, Button, Card, CardContent, Container, Divider, Grid, InputAdornment, MenuItem, TextField, Typography } from "@mui/material";
 import Logo from '../../img/Humantech.png';
 import theme from "../../theme/theme";
+import { useFirebase } from "../../server/ProjectFirebaseContext";
 
 const AdminApproveDomainForm = () => {
+    const { firebaseDB } = useFirebase();  // ✅ ดึง firebaseDB ที่ใช้งานจริง
     const [requests, setRequests] = useState({});
     const [selectedDomain, setSelectedDomain] = useState("");
     const [domainKey, setDomainKey] = useState("");
@@ -91,30 +93,31 @@ const AdminApproveDomainForm = () => {
             const endDate = new Date(new Date(startDate).setMonth(new Date(startDate).getMonth() + 1)).toISOString();
 
             // --- POST ข้อมูล group ไปที่ backend ---
-            let backendId = null;
-            try {
-                const response = await fetch("http://upload.happysoftth.com/humantech/group", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ group: domainKey }),
-                });
+            // let backendId = null;
+            let backendId = "";
+            // try {
+            //     const response = await fetch("http://upload.happysoftth.com/humantech/group", {
+            //         method: "POST",
+            //         headers: {
+            //             "Content-Type": "application/json",
+            //         },
+            //         body: JSON.stringify({ group: domainKey }),
+            //     });
 
-                if (!response.ok) {
-                    const text = await response.text(); // อ่านข้อความ error ที่ backend ส่งกลับ
-                    console.error("Backend error response:", text);
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+            //     if (!response.ok) {
+            //         const text = await response.text(); // อ่านข้อความ error ที่ backend ส่งกลับ
+            //         console.error("Backend error response:", text);
+            //         throw new Error(`HTTP error! status: ${response.status}`);
+            //     }
 
-                const data = await response.json();
-                backendId = data.id;  // สมมติ response json มี field ชื่อ id
-            } catch (error) {
-                console.error("Error post group to backend:", error);
-                alert("เกิดข้อผิดพลาดขณะส่งข้อมูลไป backend");
-                setIsSubmitting(false);
-                return;
-            }
+            //     const data = await response.json();
+            //     backendId = data.id;  // สมมติ response json มี field ชื่อ id
+            // } catch (error) {
+            //     console.error("Error post group to backend:", error);
+            //     alert("เกิดข้อผิดพลาดขณะส่งข้อมูลไป backend");
+            //     setIsSubmitting(false);
+            //     return;
+            // }
 
             await set(domainRef, {
                 id: nextDomainId,
@@ -156,6 +159,17 @@ const AdminApproveDomainForm = () => {
             // โหลด requests ใหม่
             const snap = await get(ref(database, "requests"));
             setRequests(snap.exists() ? snap.val() : {});
+
+            // บันทึก selectedPlan ซ้ำที่ workgroup/payment/${nextDomainId}
+            const paymentRef = ref(firebaseDB, `workgroup`);
+            await set(paymentRef, {
+                payment: {
+                    ...requestData.selectedPlan,
+                    startDate,
+                    endDate,
+                },
+                workgroupname: domainKey
+            });
         } catch (error) {
             console.error("❌ Error saving config:", error);
             alert("เกิดข้อผิดพลาดขณะบันทึกข้อมูล");

@@ -33,6 +33,7 @@ import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, Bord
 import { HTTP } from "../../../server/axios";
 import InsertCompany from "./InsertCompany";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
+import { useNavigate } from "react-router-dom";
 
 function createPackages(No, Name, Numbers, FullNumbers) {
   return {
@@ -141,8 +142,9 @@ function Extension(props) {
   );
 }
 
-function Manage() {
+const Manage = ({ companyName }) => {
   const { firebaseDB, domainKey } = useFirebase();
+  const navigate = useNavigate();
   const [show, setShow] = useState(1);
   const [showMenu, setshowMenu] = useState(1);
   const [page, setPage] = React.useState(0);
@@ -201,34 +203,13 @@ function Manage() {
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>รายการบริษัทที่ดูแลอยู่</Typography>
           </Grid>
           <Grid item size={8} textAlign="right">
-            <Typography variant="h5" fontWeight="bold" gutterBottom>บริษัท เอ็นทีพี.พาวเวอร์ เนทเวิร์ค จำกัด</Typography>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>เลขประจำตัวผู้เสียภาษี: 0-4055-62004-81-6</Typography>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>เลขที่ ุ69 หมู่ 18 ตำบลหนองโก อำเภอกระนวน จังหวัดขอนแก่น 40170</Typography>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>เบอร์โทรศัพท์ : 063-482-0766</Typography>
-            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>แฟ็กซ์ :</Typography>
+            <InsertCompany />
           </Grid>
         </Grid>
       </Box>
       <Box>
         <Grid container spacing={2}>
-          <Grid item size={4}>
-            <ButtonGroup variant="contained" aria-label="Basic button group" >
-              {menu.map((row) => (
-                <Button onClick={() => { setshowMenu(row.Menu_no) }} color={showMenu === row.Menu_no ? "primary" : "secondary"}>{row.Menu_name}</Button>
-              ))}
-            </ButtonGroup>
-            <Item sx={{ p: 2 }}>
-              {
-                showMenu === 1 ? <Package />
-                  : <Extension />
-              }
-            </Item>
-          </Grid>
-          <Grid item size={8}>
-            <Box textAlign="right">
-              {/* <Button variant="contained" >เพิ่มบริษัท</Button> */}
-              <InsertCompany />
-            </Box>
+          <Grid item size={12}>
             <Grid container spacing={2} marginBottom={2}>
               {
                 companies.map((row) => (
@@ -237,7 +218,7 @@ function Manage() {
                       <Box width={280}>
                         <Typography variant="h4" fontWeight="bold" color={theme.palette.primary.dark} gutterBottom>{row.companyserial}</Typography>
                         <Typography variant="h6" fontWeight="bold" color={theme.palette.primary.main} gutterBottom>{row.companyname}</Typography>
-                        <Grid container spacing={1} marginTop={2} alignItems="center" justifyContent="center" display="flex">
+                        {/* <Grid container spacing={1} marginTop={2} alignItems="center" justifyContent="center" display="flex">
                           <Grid item size={10}>
                             <Typography textAlign="right" fontWeight="bold" variant="subtitle2" gutterBottom>Professional : </Typography>
                             <BorderLinearProgressCompany variant="determinate" value={(row.professional * 100) / row.fullProfessional} />
@@ -249,32 +230,18 @@ function Manage() {
                               <Typography sx={{ marginTop: 3, marginRight: 1 }} variant="subtitle2" fontWeight="bold" gutterBottom> {row.fullProfessional} </Typography>
                             </Box>
                           </Grid>
-                        </Grid>
-                        {
-                          showMenu === 2 ?
-                            <Grid container spacing={1} marginTop={1} alignItems="center" justifyContent="center" display="flex">
-                              <Grid item size={10}>
-                                <Typography textAlign="right" fontWeight="bold" variant="subtitle2" gutterBottom>E-library : </Typography>
-                                <BorderLinearProgressCompany variant="determinate" value={(row.elibrary * 100) / row.fullElibrary} />
-                              </Grid>
-                              <Grid item size={2}>
-                                <Box sx={{ display: 'flex' }}>
-                                  <Typography variant="h6" fontWeight="bold" gutterBottom> {row.elibrary} </Typography>
-                                  <Typography sx={{ marginTop: 2 }} variant="subtitle2" fontWeight="bold" gutterBottom> / </Typography>
-                                  <Typography sx={{ marginTop: 3, marginRight: 1 }} variant="subtitle2" fontWeight="bold" gutterBottom> {row.fullElibrary} </Typography>
-                                </Box>
-                              </Grid>
-                            </Grid>
-                            : ""
-                        }
+                        </Grid> */}
                         <Grid container spacing={3} marginTop={1}>
                           <Grid item size={6}>
-                            <Button variant="outlined" fullWidth>จัดการบริษัท</Button>
+                            <Button variant="outlined" fullWidth
+                              onClick={() => navigate(`/company/manage/${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}`)}
+                            >จัดการบริษัท</Button>
                           </Grid>
                           <Grid item size={6}>
                             <Button variant="outlined" fullWidth>เข้าสู่ระบบบริษัท</Button>
                           </Grid>
                         </Grid>
+                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginTop: 3 }} color={theme.palette.primary.main} gutterBottom>{row.companyaddress}</Typography>
                       </Box>
                     </Item>
                   </Grid>
