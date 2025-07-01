@@ -16,6 +16,7 @@ import CompanyScanner from "./components/company/setting/Scanner";
 import CompanyEmployeeProfile from "./components/company/Profile";
 import theme from "./theme/theme";
 import { Box } from "@mui/material";
+import Company from "./components/company/Company";
 
 function CompanyRoutes() {
   return (
@@ -45,7 +46,7 @@ export default function AppRouter() {
       <Route element={<ProtectedRoute />}>
         {/* Dashboard route */}
         <Route path="/dashboard" element={<Dashboard />} />
-
+        <Route path="/company" element={<Company />} />
         {/* Company routes under layout */}
         <Route
           path="/company/*"

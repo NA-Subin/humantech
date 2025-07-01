@@ -88,8 +88,22 @@ const HandsontableComponent = () => {
                             autoRowSize={true}
                             width="100%"
                             stretchH="all"
-                            contextMenu={true}
                             rowHeaders={true}
+                            contextMenu={{
+                                items: {
+                                    row_above: {},
+                                    row_below: {},
+                                    remove_row: {},
+                                    separator: Handsontable.plugins.ContextMenu.SEPARATOR,
+                                    copy: {},
+                                    cut: {},
+                                    paste: {
+                                        name: 'Paste',
+                                        disabled: () => false, // force enable
+                                    },
+                                },
+                            }}
+                            copyPaste={true}
                             columnHeaderHeight={30}
                             manualColumnMove={true}
                             columns={[
