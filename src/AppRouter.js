@@ -6,30 +6,20 @@ import Dashboard from "./components/dashboard/Dashboard";
 import ProtectedRoute from "./ProtectedRoute";
 import SideBarCompany from "./components/company/SideBarCompany";
 import CompanyDeshboard from "./components/company/Deshboard";
-import CompanyTodolist from "./components/company/organization/TodoList";
-import CompanyManage from "./components/company/organization/Manage";
-import ManageCompany from "./components/company/organization/ManageCompnay";
-import CompanyEmployeeGroup from "./components/company/setting/EmployeeGroup";
-import CompanyEmployee from "./components/company/setting/Employee";
-import CompanyDoman from "./components/company/setting/Doman";
-import CompanyScanner from "./components/company/setting/Scanner";
-import CompanyEmployeeProfile from "./components/company/Profile";
 import theme from "./theme/theme";
 import { Box } from "@mui/material";
 import Company from "./components/company/Company";
+import LevelDetail from "./components/company/Level";
+import DepartmentDetail from "./components/company/Department";
+import PositionDetail from "./components/company/Position";
 
 function CompanyRoutes() {
   return (
     <Routes>
-      <Route path="deshboard" element={<CompanyDeshboard />} />
-      <Route path="todo-list" element={<CompanyTodolist />} />
-      <Route path="manage" element={<CompanyManage />} />
-      <Route path="manage/:companyName" element={<ManageCompany />} />
-      <Route path="employee-group" element={<CompanyEmployeeGroup />} />
-      <Route path="employee" element={<CompanyEmployee />} />
-      <Route path="domain" element={<CompanyDoman />} />
-      <Route path="scanner" element={<CompanyScanner />} />
-      <Route path="employee-profile" element={<CompanyEmployeeProfile />} />
+      <Route path="" element={<CompanyDeshboard />} />
+      <Route path="level" element={<LevelDetail />} />
+      <Route path="department" element={<DepartmentDetail />} />
+      <Route path="position" element={<PositionDetail />} />
     </Routes>
   );
 }
@@ -49,7 +39,7 @@ export default function AppRouter() {
         <Route path="/company" element={<Company />} />
         {/* Company routes under layout */}
         <Route
-          path="/company/*"
+          path="/:companyName/*"
           element={
             <Box sx={{ display: 'flex', backgroundColor: theme.palette.primary.light }}>
               <SideBarCompany />

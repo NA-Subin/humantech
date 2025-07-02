@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { styled, useTheme, alpha } from '@mui/material/styles';
+import { getDatabase, ref, push, onValue } from "firebase/database";
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import MuiDrawer from '@mui/material/Drawer';
@@ -40,6 +41,7 @@ import Avatar from '@mui/material/Avatar';
 import Stack from '@mui/material/Stack';
 import GroupIcon from '@mui/icons-material/Group';
 import BusinessIcon from '@mui/icons-material/Business';
+import HailIcon from '@mui/icons-material/Hail';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
@@ -76,9 +78,10 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Slide from '@mui/material/Slide';
 import Logo from '../../img/Humantech.png';
 import LogoGreen from '../../img/HumantechGreen.png';
-import { Button,ButtonGroup, Grid } from '@mui/material';
+import { Button, ButtonGroup, Grid } from '@mui/material';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../server/firebase';
+import { useFirebase } from '../../server/ProjectFirebaseContext';
 
 
 const drawerWidth = 300;
@@ -191,84 +194,112 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 const Accordion = styled((props) => (
     <MuiAccordion disableGutters elevation={0} square {...props} />
-  ))(({ theme }) => ({
+))(({ theme }) => ({
     '&:not(:last-child)': {
-      borderBottom: 0,
+        borderBottom: 0,
     },
     '&::before': {
-      display: 'none',
+        display: 'none',
     },
-  }));
-  
-  const AccordionSummary = styled((props) => (
-    <MuiAccordionSummary
-      {...props}
-      expandIcon={<ExpandMoreIcon sx={{ fontSize: '1rem' }} />}
-    />
-  ))(({ theme }) => ({
-    '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
-      transform: 'rotate(90deg)',
-    },
-    height:50,
-  }));
+}));
 
-  const StyledBadge = styled(Badge)(({ theme }) => ({
+const AccordionSummary = styled((props) => (
+    <MuiAccordionSummary
+        {...props}
+        expandIcon={<ExpandMoreIcon sx={{ fontSize: '1rem' }} />}
+    />
+))(({ theme }) => ({
+    '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {
+        transform: 'rotate(90deg)',
+    },
+    height: 50,
+}));
+
+const StyledBadge = styled(Badge)(({ theme }) => ({
     '& .MuiBadge-badge': {
-      backgroundColor: '#44b700',
-      width: 20,
-      height: 20,
-      borderRadius: '50%',
-      color: '#44b700',
-      boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
-      '&::after': {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
+        backgroundColor: '#44b700',
+        width: 20,
+        height: 20,
         borderRadius: '50%',
-        animation: 'ripple 1.2s infinite ease-in-out',
-        border: '1px solid currentColor',
-        content: '""',
-      },
+        color: '#44b700',
+        boxShadow: `0 0 0 2px ${theme.palette.background.paper}`,
+        '&::after': {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            borderRadius: '50%',
+            animation: 'ripple 1.2s infinite ease-in-out',
+            border: '1px solid currentColor',
+            content: '""',
+        },
     },
     '@keyframes ripple': {
-      '0%': {
-        transform: 'scale(.8)',
-        opacity: 1,
-      },
-      '100%': {
-        transform: 'scale(2.4)',
-        opacity: 0,
-      },
+        '0%': {
+            transform: 'scale(.8)',
+            opacity: 1,
+        },
+        '100%': {
+            transform: 'scale(2.4)',
+            opacity: 0,
+        },
     },
-  }));
+}));
 
-  function createCompany(NO,Company,CompanyName) {
+function createCompany(NO, Company, CompanyName) {
     return {
         NO,
         Company,
         CompanyName,
     };
-  }
+}
 
-  const company = [
-    createCompany(1,'NTP1','ห้างหุ้นส่วนจำกัด สุขสันต์บริการ2008'),
-    createCompany(2,'NTP2','บริษัท ณัฐพล ทรัคส์ แอนด์ ออยล์ จำกัด'),
-    createCompany(3,'NTP3','บริษัท เอ็นทีพี.โฮลดิ้ง จำกัด'),
-    createCompany(4,'NTP4','บริษัท เอ็นทีพี.พาวเวอร์ เนทเวิร์ค จำกัด'),
-    createCompany(5,'NTP5','บริษัท แฮปปี้ ซอฟต์ (ประเทศไทย) จำกัด'),
-    createCompany(6,'NTP6','บริษัท พีซีวาย อินเตอร์เทรด แอนด์ ซัพพาย จำกัด'),
-    createCompany(7,'NTP7','บริษัท พรสง่า เอ็นเนอร์จี จำกัด'),
-  ];
+const company = [
+    createCompany(1, 'NTP1', 'ห้างหุ้นส่วนจำกัด สุขสันต์บริการ2008'),
+    createCompany(2, 'NTP2', 'บริษัท ณัฐพล ทรัคส์ แอนด์ ออยล์ จำกัด'),
+    createCompany(3, 'NTP3', 'บริษัท เอ็นทีพี.โฮลดิ้ง จำกัด'),
+    createCompany(4, 'NTP4', 'บริษัท เอ็นทีพี.พาวเวอร์ เนทเวิร์ค จำกัด'),
+    createCompany(5, 'NTP5', 'บริษัท แฮปปี้ ซอฟต์ (ประเทศไทย) จำกัด'),
+    createCompany(6, 'NTP6', 'บริษัท พีซีวาย อินเตอร์เทรด แอนด์ ซัพพาย จำกัด'),
+    createCompany(7, 'NTP7', 'บริษัท พรสง่า เอ็นเนอร์จี จำกัด'),
+];
 
-  const Transition = React.forwardRef(function Transition(props, ref) {
+const Transition = React.forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;
-  });
+});
 
 export default function SideBarCompany() {
     const navigate = useNavigate();
+    const { firebaseDB, domainKey } = useFirebase();
+    const { companyName } = useParams();
+    const [companies, setCompanies] = useState([]);
+    const [selectedCompany, setSelectedCompany] = useState(null);
+    const companyId = companyName?.split(":")[0];
 
+    useEffect(() => {
+        if (!firebaseDB) return;
+
+        const companiesRef = ref(firebaseDB, "workgroup/company");
+        const unsubscribe = onValue(companiesRef, (snapshot) => {
+            const data = snapshot.exists() ? snapshot.val() : {};
+            const list = Object.entries(data).map(([key, value]) => ({
+                id: key,
+                ...value,
+            }));
+            setCompanies(list);
+
+            // ค้นหา company ตาม companyId
+            const found = list.find((item, index) => String(index) === companyId);
+            if (found) {
+                setSelectedCompany(found);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    console.log("company : ", selectedCompany);
     const theme = useTheme();
     const [open, setOpen] = React.useState(true);
     const [openLogo, setOpenLogo] = React.useState(false);
@@ -344,38 +375,38 @@ export default function SideBarCompany() {
     const [openPhone, setOpenPhone] = React.useState(false);
 
     const handleClickOpenEmail = () => {
-      setOpenEmail(true);
+        setOpenEmail(true);
     };
-  
+
     const handleCloseEmail = () => {
-      setOpenEmail(false);
+        setOpenEmail(false);
     };
 
     const handleClickOpenPassword = () => {
-      setOpenPassword(true);
+        setOpenPassword(true);
     };
-  
+
     const handleClosePassword = () => {
-      setOpenPassword(false);
+        setOpenPassword(false);
     };
 
     const handleClickOpenPhone = () => {
-      setOpenPhone(true);
+        setOpenPhone(true);
     };
-  
+
     const handleClosePhone = () => {
-      setOpenPhone(false);
+        setOpenPhone(false);
     };
 
     const handleLogout = async () => {
-    try {
-      await signOut(auth);                      // ✅ ออกจากระบบ Firebase Auth
-      localStorage.removeItem("domainData");    // ✅ ล้าง domain config (ถ้าต้องการ)
-      navigate("/");                            // ✅ กลับไปหน้า login
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
+        try {
+            await signOut(auth);                      // ✅ ออกจากระบบ Firebase Auth
+            localStorage.removeItem("domainData");    // ✅ ล้าง domain config (ถ้าต้องการ)
+            navigate("/");                            // ✅ กลับไปหน้า login
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    };
 
     const menuId = 'primary-search-account-menu';
 
@@ -420,9 +451,9 @@ export default function SideBarCompany() {
                             color='primary'
                             disableElevation
                             onClick={handleClickSetting}
-                            endIcon={openSetting ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon/>}
+                            endIcon={openSetting ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                         >
-                            <Typography variant='subtitle1' sx={{ marginTop:1 }} gutterBottom>Website: บริษัท</Typography>
+                            <Typography variant='subtitle1' sx={{ marginTop: 1 }} gutterBottom>Website: บริษัท</Typography>
                         </Button>
                         <Menu
                             id="demo-positioned-menu"
@@ -434,8 +465,8 @@ export default function SideBarCompany() {
                                 elevation: 0,
                                 sx: {
                                     overflow: 'visible',
-                                    width : 240,
-                                    borderStyle : 'solid',
+                                    width: 240,
+                                    borderStyle: 'solid',
                                     borderWidth: 3,
                                     borderColor: theme.palette.primary.light,
                                     borderRadius: 3,
@@ -447,7 +478,7 @@ export default function SideBarCompany() {
                                         ml: -0.5,
                                         mr: 1,
                                     },
-                                      '&::before': {
+                                    '&::before': {
                                         content: '""',
                                         display: 'block',
                                         position: 'absolute',
@@ -455,7 +486,7 @@ export default function SideBarCompany() {
                                         right: 120,
                                         width: 10,
                                         height: 10,
-                                        backgroundColor : theme.palette.primary.light,
+                                        backgroundColor: theme.palette.primary.light,
                                         transform: 'translateY(-50%) rotate(50deg)',
                                         zIndex: 0,
                                     },
@@ -464,29 +495,29 @@ export default function SideBarCompany() {
                             transformOrigin={{ horizontal: 'center', vertical: 'top' }}
                             anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
                         >
-                            <MenuItem onClick={handleClickOpenEmail}><MailOutlineRoundedIcon sx={{ marginRight: 2 }}/> เปลี่ยนอีเมล</MenuItem><Divider />
-                            <MenuItem onClick={handleClickOpenPassword}><PasswordRoundedIcon sx={{ marginRight: 2 }}/> เปลี่ยนรหัสผ่าน</MenuItem><Divider />
-                            <MenuItem onClick={handleClickOpenPhone}><PhoneIphoneRoundedIcon sx={{ marginRight: 2 }}/> เปลี่ยนเบอร์โทรศัพท์</MenuItem><Divider />
-                        </Menu> 
+                            <MenuItem onClick={handleClickOpenEmail}><MailOutlineRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนอีเมล</MenuItem><Divider />
+                            <MenuItem onClick={handleClickOpenPassword}><PasswordRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนรหัสผ่าน</MenuItem><Divider />
+                            <MenuItem onClick={handleClickOpenPhone}><PhoneIphoneRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนเบอร์โทรศัพท์</MenuItem><Divider />
+                        </Menu>
                         <Button size="large" color="inherit">
                             <IconButton size="large" aria-label="เลือกภาษา" color="inherit">
                                 <FlagRoundedIcon />
                             </IconButton>
                         </Button>
                         <Button size="large" color="inherit">
-                            <IconButton size="small" aria-label="กลับสู่ระบบหลัก" color={ openLogo ? "primary" : "inherit" } onMouseEnter={()=>setOpenLogo(true)} onMouseLeave={()=>setOpenLogo(false)} sx={{ '&:hover': { backgroundColor: theme.palette.primary.light } }} component={Link} to={'/dashboard'}>
-                                { openLogo ? 
+                            <IconButton size="small" aria-label="กลับสู่ระบบหลัก" color={openLogo ? "primary" : "inherit"} onMouseEnter={() => setOpenLogo(true)} onMouseLeave={() => setOpenLogo(false)} sx={{ '&:hover': { backgroundColor: theme.palette.primary.light } }} component={Link} to={'/dashboard'}>
+                                {openLogo ?
                                     <Box >
                                         <Box display="flex" justifyContent="center" alignItems="center">
-                                            <img src={LogoGreen} width={140}/> 
-                                            <KeyboardReturnRoundedIcon/>  
+                                            <img src={LogoGreen} width={140} />
+                                            <KeyboardReturnRoundedIcon />
                                         </Box>
-                                        <Typography variant='subtitle1' fontWeight="bold" fontSize={10} sx={{ marginTop:-1 }} gutterBottom>กลับสู่ระบบหลัก</Typography>
+                                        <Typography variant='subtitle1' fontWeight="bold" fontSize={10} sx={{ marginTop: -1 }} gutterBottom>กลับสู่ระบบหลัก</Typography>
                                     </Box>
-                                    : 
+                                    :
                                     <Box display="flex" justifyContent="center" alignItems="center">
-                                        <img src={Logo} width={140}/>
-                                        <KeyboardReturnRoundedIcon/>
+                                        <img src={Logo} width={140} />
+                                        <KeyboardReturnRoundedIcon />
                                     </Box>
                                 }
                             </IconButton>
@@ -505,16 +536,16 @@ export default function SideBarCompany() {
                         <DialogContent>
                             <TextField sx={{ marginBottom: 1 }} fullWidth label="อีเมลเดิม" type="text" margin="normal" InputProps={{
                                 startAdornment: (
-                                <InputAdornment position="start">
-                                    <EmailRoundedIcon />
-                                </InputAdornment>
+                                    <InputAdornment position="start">
+                                        <EmailRoundedIcon />
+                                    </InputAdornment>
                                 ),
                             }} />
                             <TextField sx={{ marginBottom: 1 }} fullWidth label="อีเมลใหม่" type="text" margin="normal" InputProps={{
                                 startAdornment: (
-                                <InputAdornment position="start">
-                                    <MarkEmailUnreadRoundedIcon />
-                                </InputAdornment>
+                                    <InputAdornment position="start">
+                                        <MarkEmailUnreadRoundedIcon />
+                                    </InputAdornment>
                                 ),
                             }} />
                         </DialogContent>
@@ -536,24 +567,24 @@ export default function SideBarCompany() {
                         <DialogContent>
                             <TextField sx={{ marginBottom: 1 }} fullWidth label="รหัสผ่านเดิม" type="password" margin="normal" InputProps={{
                                 startAdornment: (
-                                <InputAdornment position="start">
-                                    <PasswordRoundedIcon />
-                                </InputAdornment>
+                                    <InputAdornment position="start">
+                                        <PasswordRoundedIcon />
+                                    </InputAdornment>
                                 ),
                             }} />
-                            <Divider sx={{ marginTop:1 ,marginBottom:1 }} />
+                            <Divider sx={{ marginTop: 1, marginBottom: 1 }} />
                             <TextField sx={{ marginBottom: 1 }} fullWidth label="รหัสผ่านใหม่" type="password" margin="normal" InputProps={{
                                 startAdornment: (
-                                <InputAdornment position="start">
-                                    <PasswordRoundedIcon />
-                                </InputAdornment>
+                                    <InputAdornment position="start">
+                                        <PasswordRoundedIcon />
+                                    </InputAdornment>
                                 ),
                             }} />
                             <TextField sx={{ marginBottom: 1 }} fullWidth label="ยืนยันรหัสผ่านใหม่อีกครั้ง" type="password" margin="normal" InputProps={{
                                 startAdornment: (
-                                <InputAdornment position="start">
-                                    <PasswordRoundedIcon />
-                                </InputAdornment>
+                                    <InputAdornment position="start">
+                                        <PasswordRoundedIcon />
+                                    </InputAdornment>
                                 ),
                             }} />
                         </DialogContent>
@@ -575,16 +606,16 @@ export default function SideBarCompany() {
                         <DialogContent>
                             <TextField sx={{ marginBottom: 1 }} fullWidth label="เบอร์โทรเดิม" type="text" margin="normal" InputProps={{
                                 startAdornment: (
-                                <InputAdornment position="start">
-                                    <PhoneIphoneRoundedIcon />
-                                </InputAdornment>
+                                    <InputAdornment position="start">
+                                        <PhoneIphoneRoundedIcon />
+                                    </InputAdornment>
                                 ),
                             }} />
                             <TextField sx={{ marginBottom: 1 }} fullWidth label="เบอร์โทรใหม่" type="text" margin="normal" InputProps={{
                                 startAdornment: (
-                                <InputAdornment position="start">
-                                    <InstallMobileRoundedIcon />
-                                </InputAdornment>
+                                    <InputAdornment position="start">
+                                        <InstallMobileRoundedIcon />
+                                    </InputAdornment>
                                 ),
                             }} />
                         </DialogContent>
@@ -608,9 +639,9 @@ export default function SideBarCompany() {
                 </Toolbar>
             </AppBar>
             <Drawer variant="permanent" open={open}>
-                <DrawerHeader sx={{ backgroundColor:theme.palette.primary.light,display:"flex",justifyContent:"center",alignItems:"center" }}>
-                    <IconButton color="primary" sx={{ display:"block",marginBottom:-1,marginTop:-1 }}>
-                        <img src={LogoGreen} width={200}/>
+                <DrawerHeader sx={{ backgroundColor: theme.palette.primary.light, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <IconButton color="primary" sx={{ display: "block", marginBottom: -1, marginTop: -1 }}>
+                        <img src={LogoGreen} width={200} />
                         <Typography variant="subtitle2" fontSize={12} marginTop={-2} fontWeight="bold" gutterBottom>
                             ( ระบบจัดการบริษัท )
                         </Typography>
@@ -628,21 +659,21 @@ export default function SideBarCompany() {
                                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                                 variant="dot"
                             >
-                                <Avatar src="/broken-image.jpg" sx={{ width: 100 , height: 100 }}/>
+                                <Avatar src="/broken-image.jpg" sx={{ width: 100, height: 100 }} />
                             </StyledBadge>
                             <ButtonGroup variant="text" aria-label="Basic button group">
-                                <Typography variant='subtitle2' marginLeft={1} marginRight={1} marginTop={1} fontWeight="bold" gutterBottom>นายนราวิชญ์ สุบินนาม</Typography>
-                                <IconButton 
+                                <Typography variant='subtitle2' marginLeft={1} marginRight={1} marginTop={1} fontWeight="bold" gutterBottom>{selectedCompany.companyname}</Typography>
+                                {/* <IconButton
                                     id="demo-positioned-button"
                                     aria-controls={openMenu ? 'demo-positioned-menu' : undefined}
                                     aria-haspopup="true"
                                     aria-expanded={openMenu ? 'true' : undefined}
                                     onClick={handleClickMenu}
                                 >
-                                    <MenuRoundedIcon/>
-                                </IconButton>
+                                    <MenuRoundedIcon />
+                                </IconButton> */}
                             </ButtonGroup>
-                            <Menu
+                            {/* <Menu
                                 id="demo-positioned-menu"
                                 aria-labelledby="demo-positioned-button"
                                 anchorEl={anchorElMenu}
@@ -651,51 +682,51 @@ export default function SideBarCompany() {
                                 PaperProps={{
                                     elevation: 0,
                                     sx: {
-                                      overflow: 'visible',
-                                      width : 150,
-                                      borderStyle : 'solid',
-                                      borderWidth: 3,
-                                      borderColor: theme.palette.primary.light,
-                                      borderRadius: 3,
-                                      filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-                                      '& .MuiAvatar-root': {
-                                        width: 50,
-                                        height: 32,
-                                        ml: -0.5,
-                                        mr: 1,
-                                      },
-                                      '&::before': {
-                                        content: '""',
-                                        display: 'block',
-                                        position: 'absolute',
-                                        top: 0,
-                                        right: 70,
-                                        width: 10,
-                                        height: 10,
-                                        backgroundColor : theme.palette.primary.light,
-                                        transform: 'translateY(-50%) rotate(50deg)',
-                                        zIndex: 0,
-                                      },
+                                        overflow: 'visible',
+                                        width: 150,
+                                        borderStyle: 'solid',
+                                        borderWidth: 3,
+                                        borderColor: theme.palette.primary.light,
+                                        borderRadius: 3,
+                                        filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
+                                        '& .MuiAvatar-root': {
+                                            width: 50,
+                                            height: 32,
+                                            ml: -0.5,
+                                            mr: 1,
+                                        },
+                                        '&::before': {
+                                            content: '""',
+                                            display: 'block',
+                                            position: 'absolute',
+                                            top: 0,
+                                            right: 70,
+                                            width: 10,
+                                            height: 10,
+                                            backgroundColor: theme.palette.primary.light,
+                                            transform: 'translateY(-50%) rotate(50deg)',
+                                            zIndex: 0,
+                                        },
                                     },
-                                  }}
-                                  transformOrigin={{ horizontal: 'center', vertical: 'top' }}
-                                  anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
+                                }}
+                                transformOrigin={{ horizontal: 'center', vertical: 'top' }}
+                                anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
                             >
-                                <MenuItem onClick={handleCloseMenu} component={Link} to={'/company/employee-profile'}>ข้อมูลส่วนตัว</MenuItem>
-                                <Divider sx={{ backgroundColor : theme.palette.primary.light }} />
+                                <MenuItem onClick={handleCloseMenu} component={Link} to={`/${companyName}/employee-profile`}>ข้อมูลส่วนตัว</MenuItem>
+                                <Divider sx={{ backgroundColor: theme.palette.primary.light }} />
                                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
-                            </Menu>
+                            </Menu> */}
                         </Stack>
-                    :
-                    ""
+                        :
+                        ""
                 }
                 <Divider />
                 <List>
                     {['หน้าแรก'].map((text, index) => (
-                        <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height : open ? 40 : 200 }}>
-                            <ListItemButton 
-                            component={Link}
-                            to={index === 0 ? '/company' : ""}
+                        <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: open ? 40 : 200 }}>
+                            <ListItemButton
+                                component={Link}
+                                to={index === 0 ? `/${companyName}` : ""}
                             >
                                 <ListItemIcon sx={{
                                     minWidth: 0,
@@ -704,7 +735,7 @@ export default function SideBarCompany() {
                                     marginLeft: open ? 2 : 'auto',
                                 }}
                                 >
-                                    {index === 0 ? <HomeRoundedIcon/> : <HomeRoundedIcon/>}
+                                    {index === 0 ? <HomeRoundedIcon /> : <HomeRoundedIcon />}
                                 </ListItemIcon>
                                 <ListItemText primary={text} sx={{ opacity: open ? 1 : 0 }} />
                             </ListItemButton>
@@ -713,12 +744,12 @@ export default function SideBarCompany() {
                 </List>
                 <Divider />
                 <List>
-                { open ? <Typography marginLeft={2} variant='subtitle2' gutterBottom>ข้อมูลองค์กร</Typography> : ""}
-                    {['จัดการบริษัท','Todo-Lists'].map((text, index) => (
-                        <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height : 40 }}>
-                            <ListItemButton 
-                            component={Link}
-                            to={index === 0 ? '/company/manage' : index === 1 ? '/company/todo-list' : ""}
+                    {open ? <Typography marginLeft={2} variant='subtitle2' gutterBottom>โครงสร้างบริษัท</Typography> : ""}
+                    {['ระดับตำแหน่งงาน', 'ฝ่ายงาน', 'ตำแหน่งงาน'].map((text, index) => (
+                        <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: 40 }}>
+                            <ListItemButton
+                                component={Link}
+                                to={index === 0 ? `/${companyName}/level` : index === 1 ? `/${companyName}/department` : `/${companyName}/position`}
                             >
                                 <ListItemIcon sx={{
                                     minWidth: 0,
@@ -727,7 +758,7 @@ export default function SideBarCompany() {
                                     marginLeft: open ? 2 : 'auto',
                                 }}
                                 >
-                                    {index === 0 ? <BusinessIcon/> : <BusinessIcon/>}
+                                    {index === 0 ? <HailIcon /> : <HailIcon />}
                                 </ListItemIcon>
                                 <ListItemText primary={text} sx={{ opacity: open ? 1 : 0 }} />
                             </ListItemButton>
@@ -735,14 +766,14 @@ export default function SideBarCompany() {
                     ))}
                 </List>
                 <Divider />
-                <List sx={{ marginBottom : 5 }}>
-                { open ? <Typography marginLeft={2} variant='subtitle2' gutterBottom>ตั้งค่า</Typography> : ""}
-                    {['ข้อมูลกลุ่มผู้ใช้','จัดการผู้ใช้','จัดการโดเมน','ตั้งค่าเครื่องสแกน'].map((text, index) => (
-                        <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height : 40 }}>
-                            <ListItemButton 
-                            component={Link}
-                            to={index === 0 ? '/company/employee-group' : index === 1 ? '/company/employee' : index === 2 ? '/company/doman' : index === 3 ? '/company/scanner' : ""}
-                            >
+                <List sx={{ marginBottom: 5 }}>
+                    {open ? <Typography marginLeft={2} variant='subtitle2' gutterBottom>ตั้งค่า</Typography> : ""}
+                    {/* {['ข้อมูลกลุ่มผู้ใช้', 'จัดการผู้ใช้', 'จัดการโดเมน', 'ตั้งค่าเครื่องสแกน'].map((text, index) => (
+                        <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: 40 }}>
+                            <ListItemButton
+                                component={Link}
+                                to={index === 0 ? `/${companyName}/employee-group` : index === 1 ? `/${companyName}/employee ` : index === 2 ? `/${companyName}/doman` : index === 3 ? `/${companyName}/scanner` : ""}
+                            >`
                                 <ListItemIcon sx={{
                                     minWidth: 0,
                                     mr: open ? 3 : 'auto',
@@ -750,12 +781,12 @@ export default function SideBarCompany() {
                                     marginLeft: open ? 2 : 'auto',
                                 }}
                                 >
-                                    {index === 0 ? <SettingsRoundedIcon/> : <SettingsRoundedIcon/>}
+                                    {index === 0 ? <SettingsRoundedIcon /> : <SettingsRoundedIcon />}
                                 </ListItemIcon>
                                 <ListItemText primary={text} sx={{ opacity: open ? 1 : 0 }} />
                             </ListItemButton>
                         </ListItem>
-                    ))}
+                    ))} */}
                 </List>
             </Drawer>
         </>

@@ -7,7 +7,8 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import CancelIcon from '@mui/icons-material/Cancel';
-import { Grid, InputAdornment, TextField, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import { CardActionArea, CardContent, Grid, InputAdornment, TextField, Typography } from '@mui/material';
 import theme from '../../theme/theme';
 import { IconButtonError } from '../../theme/style';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
@@ -63,9 +64,28 @@ export default function InsertCompany() {
 
     return (
         <React.Fragment>
-            <Button variant="contained" onClick={handleClickOpen} size="large" sx={{ borderRadius: 2,marginTop: 1 }} >
-                เพิ่มบริษัท
-            </Button>
+            <CardActionArea
+                sx={{
+                    height: '100%',
+                    display: 'flex',
+                    justifyContent: "center",
+                    alignItems: "center"
+                }}
+                onClick={handleClickOpen}
+            >
+                <CardContent
+                    sx={{
+                        width: "100%",
+                        height: "100%",
+                        backgroundColor: theme.palette.primary.main,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                    }}
+                >
+                    <AddIcon fontSize="inherit" sx={{ fontSize: 64 }} />
+                </CardContent>
+            </CardActionArea>
             <Dialog
                 open={open}
                 onClose={handleClose}

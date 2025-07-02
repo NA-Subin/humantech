@@ -21,18 +21,14 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
-import SendRoundedIcon from '@mui/icons-material/SendRounded';
-import PriorityHighRoundedIcon from '@mui/icons-material/PriorityHighRounded';
-import TablePagination from '@mui/material/TablePagination';
-import Slide from '@mui/material/Slide';
-import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
+import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from "react-router-dom";
 import { useFirebase } from "../../server/ProjectFirebaseContext";
 import { Item } from "../../theme/style";
 import theme from "../../theme/theme";
 import InsertCompany from "./InsertCompany";
+import { Card, CardActionArea, CardContent } from "@mui/material";
+import LogoGreen from '../../img/HumantechGreen.png';
 
 const Company = ({ companyName }) => {
     const { firebaseDB, domainKey } = useFirebase();
@@ -70,39 +66,64 @@ const Company = ({ companyName }) => {
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
             <Box sx={{ flexGrow: 1, p: 5 }}>
-                <Grid container spacing={2}>
+                <Grid container spacing={2} marginTop={-10}>
                     <Grid item size={12} textAlign="center">
-                        <Typography variant="h3" fontWeight="bold" gutterBottom>จัดการบริษัท</Typography>
-                    </Grid>
-                    <Grid item size={12} textAlign="right" sx={{ marginTop: -12 }}>
-                        <InsertCompany />
+                        <img src={LogoGreen} width={500}/>
+                        <Typography variant="h3" fontSize={30} marginTop={-2} fontWeight="bold" gutterBottom>
+                            ( ระบบจัดการบริษัท )
+                        </Typography>
                     </Grid>
                     <Grid item size={12} textAlign="center">
-                        <Divider />
+                        <Divider sx={{ border: `1px solid ${theme.palette.primary.dark}` }}/>
                     </Grid>
                     <Grid item size={12} textAlign="right">
                         <Box p={2}>
                             <Grid container spacing={2} marginBottom={2}>
+                                <Grid item size={1} />
+                                <Grid item size={2} >
+                                    <Typography variant="subtitle2" color="error" sx={{ textAlign: "center",marginBottom: -0.5, marginTop: 3 }} fontWeight="bold" gutterBottom>*เพิ่มบริษัทกดตรงนี้*</Typography>
+                                    <Card sx={{ height: '25vh', borderRadius: 5 }} elevation={6}>
+                                        <InsertCompany />
+                                    </Card>
+                                </Grid>
+                                <Grid item size={1} />
                                 {
                                     companies.map((row) => (
                                         <Grid item size={4}>
-                                            <Item sx={{ textAlign: "center", height: showMenu === 2 ? 350 : 300, alignItems: "center", justifyContent: "center", display: "flex" }}>
-                                                <Box width={280}>
-                                                    <Typography variant="h4" fontWeight="bold" color={theme.palette.primary.dark} gutterBottom>{row.companyserial}</Typography>
-                                                    <Typography variant="h6" fontWeight="bold" color={theme.palette.primary.main} gutterBottom>{row.companyname}</Typography>
-                                                    <Grid container spacing={3} marginTop={1}>
-                                                        <Grid item size={6}>
-                                                            <Button variant="outlined" fullWidth
-                                                                onClick={() => navigate(`/company/manage/${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}`)}
-                                                            >จัดการบริษัท</Button>
+                                            <Card sx={{ height: '35vh', borderRadius: 5 }} elevation={6}>
+                                                <CardActionArea
+                                                    //onClick={() => handleSelectedPlan('pro', 3900, 100)}
+                                                    sx={{
+                                                        height: '100%',
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'flex-start',
+                                                        justifyContent: 'flex-start',
+                                                        //border: selectedPlan?.name === 'pro' ? `2px solid ${theme.palette.primary.main}` : 'none',
+                                                        //backgroundColor: selectedPlan?.name === 'pro' ? theme.palette.action.hover : 'transparent',
+                                                    }}
+                                                >
+                                                    <CardContent sx={{ backgroundColor: theme.palette.primary.main, width: '100%', height: '10vh', textAlign: "center" }}>
+                                                        <Typography variant="h4" fontWeight="bold" color={"white"} gutterBottom>{row.companyserial}</Typography>
+                                                        <Typography variant="h6" fontWeight="bold" color={"white"} gutterBottom>{row.companyname}</Typography>
+                                                    </CardContent>
+                                                    <CardContent sx={{ width: "100%", p: 4, height: '20vh', marginTop: 1 }}>
+                                                        <Grid container spacing={3} marginRight={8} >
+                                                            <Grid item size={6}>
+                                                                <Button variant="outlined" fullWidth size="large"
+                                                                    onClick={() => navigate(`/${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}`)}
+                                                                >จัดการบริษัท</Button>
+                                                            </Grid>
+                                                            <Grid item size={6}>
+                                                                <Button variant="outlined" size="large" fullWidth>เข้าสู่ระบบบริษัท</Button>
+                                                            </Grid>
                                                         </Grid>
-                                                        <Grid item size={6}>
-                                                            <Button variant="outlined" fullWidth>เข้าสู่ระบบบริษัท</Button>
-                                                        </Grid>
-                                                    </Grid>
-                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginTop: 3 }} color={theme.palette.primary.main} gutterBottom>{row.companyaddress}</Typography>
-                                                </Box>
-                                            </Item>
+                                                    </CardContent>
+                                                    <CardContent sx={{ backgroundColor: theme.palette.primary.main, width: '100%', height: '1vh', textAlign: "center" }}>
+                                                        <Typography variant="subtitle2" fontWeight="bold" color={"white"} gutterBottom>{row.companyaddress}</Typography>
+                                                    </CardContent>
+                                                </CardActionArea>
+                                            </Card>
                                         </Grid>
                                     ))
                                 }
