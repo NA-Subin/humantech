@@ -272,7 +272,7 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 export default function SideBarCompany() {
     const navigate = useNavigate();
     const { firebaseDB, domainKey } = useFirebase();
-    const { companyName } = useParams();
+    const { domain, companyName } = useParams();
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const companyId = companyName?.split(":")[0];
@@ -640,11 +640,43 @@ export default function SideBarCompany() {
             </AppBar>
             <Drawer variant="permanent" open={open}>
                 <DrawerHeader sx={{ backgroundColor: theme.palette.primary.light, display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <IconButton color="primary" sx={{ display: "block", marginBottom: -1, marginTop: -1 }}>
-                        <img src={LogoGreen} width={200} />
+                    <IconButton color="primary" sx={{ display: "block", marginBottom: -1, marginTop: -1 }} onClick={() => navigate(`/${domain}/${companyName}`)}>
+                        <Box
+                            sx={{
+                                textAlign: "center",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                            }}
+                        >
+                            <Typography
+                                variant="subtitle1"
+                                fontSize="12px"
+                                sx={{ opacity: 0.7, color: theme.palette.primary.dark, marginBottom: -3, marginLeft: -1.5 }}
+                                fontWeight="bold"
+                                gutterBottom
+                            >
+                                ระบบจัดการบริษัท
+                            </Typography>
+                            <img src={LogoGreen} width={220} />
+                            <Typography
+                                variant="subtitle2"
+                                fontSize="10px"
+                                sx={{
+                                    opacity: 0.7,
+                                    color: theme.palette.primary.dark,
+                                    marginTop: -1,
+                                }}
+                                fontWeight="bold"
+                                gutterBottom
+                            >
+                                ( {selectedCompany?.companyname ?? "ชื่อบริษัท"} )
+                            </Typography>
+                        </Box>
+                        {/* <img src={LogoGreen} width={200} />
                         <Typography variant="subtitle2" fontSize={12} marginTop={-2} fontWeight="bold" gutterBottom>
-                            ( ระบบจัดการบริษัท )
-                        </Typography>
+                            ( {selectedCompany?.companyname} )
+                        </Typography> */}
                     </IconButton>
                     <IconButton color="primary" onClick={handleDrawerClose}>
                         {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
@@ -662,7 +694,7 @@ export default function SideBarCompany() {
                                 <Avatar src="/broken-image.jpg" sx={{ width: 100, height: 100 }} />
                             </StyledBadge>
                             <ButtonGroup variant="text" aria-label="Basic button group">
-                                <Typography variant='subtitle2' marginLeft={1} marginRight={1} marginTop={1} fontWeight="bold" gutterBottom>{selectedCompany.companyname}</Typography>
+                                <Typography variant='subtitle2' marginLeft={1} marginRight={1} marginTop={1} fontWeight="bold" gutterBottom>{selectedCompany?.companyname}</Typography>
                                 {/* <IconButton
                                     id="demo-positioned-button"
                                     aria-controls={openMenu ? 'demo-positioned-menu' : undefined}
@@ -712,7 +744,7 @@ export default function SideBarCompany() {
                                 transformOrigin={{ horizontal: 'center', vertical: 'top' }}
                                 anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
                             >
-                                <MenuItem onClick={handleCloseMenu} component={Link} to={`/${companyName}/employee-profile`}>ข้อมูลส่วนตัว</MenuItem>
+                                <MenuItem onClick={handleCloseMenu} component={Link} to={`/${domain}/${companyName}/employee-profile`}>ข้อมูลส่วนตัว</MenuItem>
                                 <Divider sx={{ backgroundColor: theme.palette.primary.light }} />
                                 <MenuItem onClick={handleLogout}>Logout</MenuItem>
                             </Menu> */}
@@ -726,7 +758,7 @@ export default function SideBarCompany() {
                         <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: open ? 40 : 200 }}>
                             <ListItemButton
                                 component={Link}
-                                to={index === 0 ? `/${companyName}` : ""}
+                                to={index === 0 ? `/${domain}/${companyName}` : ""}
                             >
                                 <ListItemIcon sx={{
                                     minWidth: 0,
@@ -749,7 +781,7 @@ export default function SideBarCompany() {
                         <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: 40 }}>
                             <ListItemButton
                                 component={Link}
-                                to={index === 0 ? `/${companyName}/level` : index === 1 ? `/${companyName}/department` : `/${companyName}/position`}
+                                to={index === 0 ? `/${domain}/${companyName}/level` : index === 1 ? `/${domain}/${companyName}/department` : `/${domain}/${companyName}/position`}
                             >
                                 <ListItemIcon sx={{
                                     minWidth: 0,
@@ -772,7 +804,7 @@ export default function SideBarCompany() {
                         <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: 40 }}>
                             <ListItemButton
                                 component={Link}
-                                to={index === 0 ? `/${companyName}/employee-group` : index === 1 ? `/${companyName}/employee ` : index === 2 ? `/${companyName}/doman` : index === 3 ? `/${companyName}/scanner` : ""}
+                                to={index === 0 ? `/${domain}/${companyName}/employee-group` : index === 1 ? `/${domain}/${companyName}/employee ` : index === 2 ? `/${domain}/${companyName}/doman` : index === 3 ? `/${domain}/${companyName}/scanner` : ""}
                             >`
                                 <ListItemIcon sx={{
                                     minWidth: 0,

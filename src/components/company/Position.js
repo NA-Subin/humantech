@@ -1,5 +1,6 @@
 import React, { useState, useEffect, use } from "react";
 import { getDatabase, ref, push, onValue } from "firebase/database";
+import '../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -16,6 +17,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { styled } from '@mui/material/styles';
@@ -123,81 +125,80 @@ const PositionDetail = () => {
 
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
-            <Box sx={{ flexGrow: 1, p: 5 }}>
+            <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
                         <Typography variant="h5" fontWeight="bold" gutterBottom>ตำแหน่งงาน (Position)</Typography>
-                        <Divider />
-                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลตำแหน่งงาน</Typography>
                     </Grid>
                 </Grid>
             </Box>
-            <Paper sx={{ p: 5, width: "1200px" }}>
-                <Box sx={{ marginTop: 2 }}>
+            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
+                <Box>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลตำแหน่งงาน</Typography>
                     <Grid container spacing={2}>
-                        <Grid item size={10}>
-                            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>ตำแหน่งงาน (Position)</Typography>
+                        <Grid item size={11}>
+                            {
+                                editPosition ?
+                                    <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
+                                        <HotTable
+                                            data={position}
+                                            afterChange={handleChange(setPosition)}
+                                            licenseKey="non-commercial-and-evaluation"
+                                            preventOverflow="horizontal"
+                                            colHeaders={['ชื่อตำแหน่ง', 'ฝ่ายงาน', 'ระดับ']}
+                                            rowHeaders={true}
+                                            width="100%"
+                                            height="auto"
+                                            stretchH="all"
+                                            manualColumnResize={true}
+                                            manualRowResize={true}
+                                            rowHeights={28}               // ความสูงของ td
+                                            columnHeaderHeight={45}       // ความสูงของ th (หัวตาราง)
+                                            contextMenu={true}
+                                            copyPaste={true}
+                                            className="mui-hot-table"
+                                            columns={[
+                                                { data: 'PositionName', className: 'htCenter htMiddle' },
+                                                { data: 'Department', className: 'htCenter htMiddle' },
+                                                { data: 'Lavel', className: 'htCenter htMiddle' },
+                                            ]}
+                                        />
+                                    </Paper>
+                                    :
+                                    <TableContainer component={Paper} textAlign="center">
+                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                                            <TableHead>
+                                                <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                    <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
+                                                    <TablecellHeader>ชื่อตำแหน่ง</TablecellHeader>
+                                                    <TablecellHeader>ฝ่ายงาน</TablecellHeader>
+                                                    <TablecellHeader>ระดับ</TablecellHeader>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {
+                                                    position.length === 0 ?
+                                                        <TableRow>
+                                                            <TablecellNoData colSpan={4}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                        </TableRow>
+                                                        :
+                                                        position.map((row, index) => (
+                                                            <TableRow>
+                                                                <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.PositionName}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.DepartmentName}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.Lavel}</TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                            }
                         </Grid>
-                        <Grid item size={2} textAlign="right">
-                            {!editPosition && <Button variant="contained" size="small" color="warning" onClick={() => setEditPosition(true)} >แก้ไข</Button>}
-                        </Grid>
-                    </Grid>
-                    {
-                        editPosition ?
-                            <Paper sx={{ flexGrow: 1, width: '100%' }}>
-                                <HotTable
-                                    data={position}
-                                    afterChange={handleChange(setPosition)}
-                                    licenseKey="non-commercial-and-evaluation"
-                                    preventOverflow="horizontal"
-                                    colHeaders={['ชื่อตำแหน่ง', 'ฝ่ายงาน', 'ระดับ']}
-                                    autoWrapRow={true}
-                                    autoWrapCol={true}
-                                    wordWrap={true}
-                                    autoRowSize={true}
-                                    width="100%"
-                                    stretchH="all"
-                                    style={{ width: "100%" }}
-                                    rowHeaders={true}
-                                    columnHeaderHeight={30}
-                                    manualColumnMove={true}
-                                    manualRowResize={true}
-                                    manualColumnResize={true}
-                                    copyPaste={true}
-                                    contextMenu={true}
-                                    allowInsertRow={true}
-                                    allowInsertColumn={true}
-                                    columns={[
-                                        { data: 'PositionName', className: 'htCenter htMiddle' },
-                                        { data: 'Department', className: 'htCenter htMiddle' },
-                                        { data: 'Lavel', className: 'htCenter htMiddle' },
-                                    ]}
-                                    afterGetRowHeader={(row, TH) => {
-                                        TH.style.background = theme.palette.primary.main;
-                                        TH.style.color = theme.palette.primary.contrastText;
-                                        TH.style.fontWeight = 'bold';
-                                    }}
-                                    afterGetColHeader={(row, TH) => {
-                                        TH.style.background = theme.palette.primary.main;
-                                        TH.style.color = theme.palette.primary.contrastText;
-                                        TH.style.fontWeight = 'bold';
-                                    }}
-                                    cells={(row, col) => {
-                                        return { className: 'htCenter htMiddle' };
-                                    }}
-                                />
-
-                                <Grid container spacing={2}>
-                                    <Grid item size={12}>
-                                        {
-                                            editPosition &&
-                                            <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
-                                                <Button variant="contained" size="small" color="error" onClick={() => setEditPosition(false)} sx={{ marginRight: 1 }}>ยกเลิก</Button>
-                                                <Button variant="contained" size="small" color="success" onClick={() => setEditPosition(false)} >บันทึก</Button>
-                                            </Box>
-                                        }
-                                    </Grid>
-                                    <Grid item size={12} marginTop={-6}>
+                        <Grid item size={1} textAlign="right">
+                            <Box display="flex" justifyContent="center" alignItems="center">
+                                {
+                                    editPosition ?
                                         <Box textAlign="right">
                                             <IconButton variant="contained" color="info" onClick={() => handleAddRow("position")}>
                                                 <AddCircleOutlineIcon />
@@ -206,38 +207,34 @@ const PositionDetail = () => {
                                                 <RemoveCircleOutlineIcon />
                                             </IconButton>
                                         </Box>
-                                    </Grid>
-                                </Grid>
-                            </Paper>
-                            :
-                            <TableContainer component={Paper} textAlign="center">
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
-                                            <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader>ฝ่ายงาน</TablecellHeader>
-                                            <TablecellHeader>ระดับ</TablecellHeader>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {
-                                            position.length === 0 ?
-                                                <TableRow>
-                                                    <TablecellNoData colSpan={4}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                </TableRow>
-                                                :
-                                                position.map((row, index) => (
-                                                    <TableRow>
-                                                        <TablecellBody sx={{ textAlign: "center" }}>{index + 1}</TablecellBody>
-                                                        <TablecellBody sx={{ textAlign: "center" }}>{row.PositionName}</TablecellBody>
-                                                        <TablecellBody sx={{ textAlign: "center" }}>{row.DepartmentName}</TablecellBody>
-                                                        <TablecellBody sx={{ textAlign: "center" }}>{row.Lavel}</TablecellBody>
-                                                    </TableRow>
-                                                ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                        :
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            color="warning"
+                                            fullWidth
+                                            sx={{
+                                                height: "60px",
+                                                flexDirection: "column",
+                                                justifyContent: "center",
+                                                alignItems: "center",
+                                                textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                            }}
+                                            onClick={() => setEditPosition(true)}
+                                        >
+                                            <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
+                                            แก้ไข
+                                        </Button>
+                                }
+                            </Box>
+                        </Grid>
+                    </Grid>
+                    {
+                        editPosition &&
+                        <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                            <Button variant="contained" size="small" color="error" onClick={() => setEditPosition(false)} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                            <Button variant="contained" size="small" color="success" onClick={() => setEditPosition(false)} >บันทึก</Button>
+                        </Box>
                     }
                 </Box>
             </Paper>

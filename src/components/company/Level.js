@@ -1,5 +1,6 @@
 import React, { useState, useEffect, use } from "react";
 import { getDatabase, ref, push, onValue } from "firebase/database";
+import '../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -22,6 +23,7 @@ import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import theme from "../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../theme/style"
@@ -30,8 +32,8 @@ import { useFirebase } from "../../server/ProjectFirebaseContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
-import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
+import MuiExcelLikeTable from "./test";
 
 const LevelDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
@@ -45,6 +47,16 @@ const LevelDetail = () => {
     const [department, setDepartment] = useState([{ DepartmentName: '', Section: '' }]);
     const [position, setPosition] = useState([{ PositionName: '', DepartmentName: '', Lavel: '' }]);
 
+    const [userData, setUserData] = useState([
+        ["สมชาย", "ระดับ 1"],
+        ["สมหญิง", "ระดับ 2"],
+    ]);
+
+    console.log("userData : ", lavel);
+
+    const columns = ["ชื่อ", "ระดับ", "ระดับ", "ระดับ"];
+
+    const data = [['', ''], ['', ''], ['', '']];
 
     console.log("Lavel : ", lavel.length);
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
@@ -123,80 +135,77 @@ const LevelDetail = () => {
 
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
-            <Box sx={{ flexGrow: 1, p: 5 }}>
+            <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
                         <Typography variant="h5" fontWeight="bold" gutterBottom>ระดับตำแหน่งงาน (Level)</Typography>
-                        <Divider />
-                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลระดับตำแหน่งงาน</Typography>
                     </Grid>
                 </Grid>
             </Box>
-            <Paper sx={{ p: 5, width: "1200px" }}>
-                <Box sx={{ marginTop: 2 }}>
+            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
+                <Box>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลระดับตำแหน่งงาน</Typography>
                     <Grid container spacing={2}>
-                        <Grid item size={10}>
-                            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>ระดับตำแหน่งงาน (Lavel)</Typography>
+                        <Grid item size={11}>
+                            {
+                                editLavel ?
+                                    <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
+                                        <HotTable
+                                            data={lavel}
+                                            afterChange={handleChange(setLavel)}
+                                            licenseKey="non-commercial-and-evaluation"
+                                            preventOverflow="horizontal"
+                                            colHeaders={['ชื่อ', 'ระดับ']}
+                                            rowHeaders={true}
+                                            width="100%"
+                                            height="auto"
+                                            stretchH="all"
+                                            manualColumnResize={true}
+                                            manualRowResize={true}
+                                            rowHeights={28}               // ความสูงของ td
+                                            columnHeaderHeight={45}       // ความสูงของ th (หัวตาราง)
+                                            contextMenu={true}
+                                            copyPaste={true}
+                                            className="mui-hot-table"
+                                            columns={[
+                                                { data: 'Name', className: 'htCenter htMiddle' },
+                                                { data: 'Lavel', className: 'htCenter htMiddle' },
+                                            ]}
+                                        />
+                                    </Paper>
+                                    :
+                                    <TableContainer component={Paper} textAlign="center">
+                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                                            <TableHead>
+                                                <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                    <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
+                                                    <TablecellHeader>ชื่อ</TablecellHeader>
+                                                    <TablecellHeader>ระดับ</TablecellHeader>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {
+                                                    lavel.length === 0 ?
+                                                        <TableRow>
+                                                            <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                        </TableRow>
+                                                        :
+                                                        lavel.map((row, index) => (
+                                                            <TableRow>
+                                                                <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.Name}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.Lavel}</TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                            }
                         </Grid>
-                        <Grid item size={2} textAlign="right">
-                            {!editLavel && <Button variant="contained" size="small" color="warning" onClick={() => setEditLavel(true)} >แก้ไข</Button>}
-                        </Grid>
-                    </Grid>
-                    {
-                        editLavel ?
-                            <Paper sx={{ flexGrow: 1, width: '100%' }}>
-                                <HotTable
-                                    data={lavel}
-                                    afterChange={handleChange(setLavel)}
-                                    licenseKey="non-commercial-and-evaluation"
-                                    preventOverflow="horizontal"
-                                    colHeaders={['ชื่อ', 'ระดับ']}
-                                    autoWrapRow={true}
-                                    autoWrapCol={true}
-                                    wordWrap={true}
-                                    autoRowSize={true}
-                                    width="100%"
-                                    stretchH="all"
-                                    style={{ width: "100%" }}
-                                    rowHeaders={true}
-                                    columnHeaderHeight={30}
-                                    manualColumnMove={true}
-                                    manualRowResize={true}
-                                    manualColumnResize={true}
-                                    copyPaste={true}
-                                    contextMenu={true}
-                                    allowInsertRow={true}
-                                    allowInsertColumn={true}
-                                    columns={[
-                                        { data: 'Name', className: 'htCenter htMiddle' },
-                                        { data: 'Lavel', className: 'htCenter htMiddle' },
-                                    ]}
-                                    afterGetRowHeader={(row, TH) => {
-                                        TH.style.background = theme.palette.primary.main;
-                                        TH.style.color = theme.palette.primary.contrastText;
-                                        TH.style.fontWeight = 'bold';
-                                    }}
-                                    afterGetColHeader={(row, TH) => {
-                                        TH.style.background = theme.palette.primary.main;
-                                        TH.style.color = theme.palette.primary.contrastText;
-                                        TH.style.fontWeight = 'bold';
-                                    }}
-                                    cells={(row, col) => {
-                                        return { className: 'htCenter htMiddle' };
-                                    }}
-                                />
-
-                                <Grid container spacing={2}>
-                                    <Grid item size={12}>
-                                        {
-                                            editLavel &&
-                                            <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
-                                                <Button variant="contained" size="small" color="error" onClick={() => setEditLavel(false)} sx={{ marginRight: 1 }}>ยกเลิก</Button>
-                                                <Button variant="contained" size="small" color="success" onClick={() => setEditLavel(false)} >บันทึก</Button>
-                                            </Box>
-                                        }
-                                    </Grid>
-                                    <Grid item size={12} marginTop={-6}>
+                        <Grid item size={1} textAlign="right">
+                            <Box display="flex" justifyContent="center" alignItems="center">
+                                {
+                                    editLavel ?
                                         <Box textAlign="right">
                                             <IconButton variant="contained" color="info" onClick={() => handleAddRow("lavel")}>
                                                 <AddCircleOutlineIcon />
@@ -205,41 +214,56 @@ const LevelDetail = () => {
                                                 <RemoveCircleOutlineIcon />
                                             </IconButton>
                                         </Box>
-                                    </Grid>
-                                </Grid>
-
-
-                            </Paper>
-                            :
-                            <TableContainer component={Paper} textAlign="center">
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
-                                            <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อ</TablecellHeader>
-                                            <TablecellHeader>ระดับ</TablecellHeader>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {
-                                            lavel.length === 0 ?
-                                                <TableRow>
-                                                    <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                </TableRow>
-                                                :
-                                                lavel.map((row, index) => (
-                                                    <TableRow>
-                                                        <TablecellBody sx={{ textAlign: "center" }}>{index + 1}</TablecellBody>
-                                                        <TablecellBody sx={{ textAlign: "center" }}>{row.Name}</TablecellBody>
-                                                        <TablecellBody sx={{ textAlign: "center" }}>{row.Lavel}</TablecellBody>
-                                                    </TableRow>
-                                                ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                        :
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            color="warning"
+                                            fullWidth
+                                            sx={{
+                                                height: "60px",
+                                                flexDirection: "column",
+                                                justifyContent: "center",
+                                                alignItems: "center",
+                                                textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                            }}
+                                            onClick={() => setEditLavel(true)}
+                                        >
+                                            <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
+                                            แก้ไข
+                                        </Button>
+                                }
+                            </Box>
+                        </Grid>
+                    </Grid>
+                    {
+                        editLavel &&
+                        <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                            <Button variant="contained" size="small" color="error" onClick={() => setEditLavel(false)} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                            <Button variant="contained" size="small" color="success" onClick={() => setEditLavel(false)} >บันทึก</Button>
+                        </Box>
                     }
                 </Box>
             </Paper>
+
+            <HotTable
+                data={data}
+                rowHeaders={true}
+                colHeaders={true}
+                contextMenu={true}
+                copyPaste={true}
+                width="600"
+                height="auto"
+                licenseKey="non-commercial-and-evaluation"
+            />
+            <MuiExcelLikeTable
+                columns={[
+                    { label: "ชื่อ", key: "Name" },
+                    { label: "ระดับ", key: "Lavel" }
+                ]}
+                initialData={lavel}
+                onDataChange={setLavel}
+            />
         </Container>
     )
 }

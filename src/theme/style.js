@@ -45,6 +45,7 @@ const Item = styled(Paper)(({ theme }) => ({
 
 const TablecellHeader = styled(TableCell)(({ theme }) => ({
     textAlign: "center",
+    height: "45px",
     color: theme.palette.primary.contrastText,
     borderRight : "1px solid "+theme.palette.primary.contrastText+"",
   }));

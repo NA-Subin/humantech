@@ -32,7 +32,57 @@
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ครอบคลุมทุก cell */
+.mui-hot-table .htCore th,
+.mui-hot-table .htCore td {
+  font-family: 'Noto Sans Thai', sans-serif !important;
+  font-size: 14px !important;
+  padding: 2px 4px !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  height: 25px !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+}
+
+/* ✅ ความสูงเฉพาะ header */
+.mui-hot-table .htCore thead th,
+.mui-hot-table .ht_clone_top th {
+  height: 45px !important; /* ปรับเฉพาะหัวตารางให้สูงกว่า */
+  padding: 4px !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  background-color: var(--mui-primary-dark) !important;
+  color: var(--mui-primary-contrastText) !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+}
+
+/* ✅ ความสูงของ body และ row header */
+.mui-hot-table .htCore tbody th,
+.mui-hot-table .htCore td {
+  height: 28px !important;
+  padding: 2px 4px !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+  font-family: 'Noto Sans Thai', sans-serif !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+}
+
+/* เฉพาะ row header (ตัวเลขด้านซ้าย) */
+.mui-hot-table .htCore tbody th {
+  background-color: var(--mui-primary-dark) !important;
+  color: var(--mui-primary-contrastText) !important;
 }

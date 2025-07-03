@@ -1,4 +1,5 @@
 import React, { useState, useEffect, use } from "react";
+import '../../App.css'
 import { getDatabase, ref, push, onValue } from "firebase/database";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -24,6 +25,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import theme from "../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../theme/style"
 import { HTTP } from "../../server/axios";
 import { useFirebase } from "../../server/ProjectFirebaseContext";
@@ -123,80 +125,78 @@ const DepartmentDetail = () => {
 
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
-            <Box sx={{ flexGrow: 1, p: 5 }}>
+            <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
                         <Typography variant="h5" fontWeight="bold" gutterBottom>ฝ่ายงาน (Department)</Typography>
-                        <Divider />
-                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลฝ่ายงาน</Typography>
                     </Grid>
                 </Grid>
             </Box>
-            <Paper sx={{ p: 5, width: "1200px" }}>
-                <Box sx={{ marginTop: 2 }}>
+            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
+                <Box>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลฝ่ายงาน</Typography>
                     <Grid container spacing={2}>
-                        <Grid item size={10}>
-                            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>ฝ่ายงาน (Department)</Typography>
-                        </Grid>
-                        <Grid item size={2} textAlign="right">
-                            {!editDepartment && <Button variant="contained" size="small" color="warning" onClick={() => setEditDepartment(true)} >แก้ไข</Button>}
-                        </Grid>
-                    </Grid>
-                    {
-                        editDepartment ?
-                            <Paper sx={{ flexGrow: 1, width: '100%' }}>
-                                <HotTable
-                                    data={department}
-                                    afterChange={handleChange(setDepartment)}
-                                    licenseKey="non-commercial-and-evaluation"
-                                    preventOverflow="horizontal"
-                                    colHeaders={['ชื่อแผนก', 'ส่วนงาน']}
-                                    autoWrapRow={true}
-                                    autoWrapCol={true}
-                                    wordWrap={true}
-                                    autoRowSize={true}
-                                    width="100%"
-                                    stretchH="all"
-                                    style={{ width: "100%" }}
-                                    rowHeaders={true}
-                                    columnHeaderHeight={30}
-                                    manualColumnMove={true}
-                                    manualRowResize={true}
-                                    manualColumnResize={true}
-                                    copyPaste={true}
-                                    contextMenu={true}
-                                    allowInsertRow={true}
-                                    allowInsertColumn={true}
-                                    columns={[
-                                        { data: 'DepartmentName', className: 'htCenter htMiddle' },
-                                        { data: 'Section', className: 'htCenter htMiddle' },
-                                    ]}
-                                    afterGetRowHeader={(row, TH) => {
-                                        TH.style.background = theme.palette.primary.main;
-                                        TH.style.color = theme.palette.primary.contrastText;
-                                        TH.style.fontWeight = 'bold';
-                                    }}
-                                    afterGetColHeader={(row, TH) => {
-                                        TH.style.background = theme.palette.primary.main;
-                                        TH.style.color = theme.palette.primary.contrastText;
-                                        TH.style.fontWeight = 'bold';
-                                    }}
-                                    cells={(row, col) => {
-                                        return { className: 'htCenter htMiddle' };
-                                    }}
-                                />
+                        <Grid item size={11}>
+                            {
+                                editDepartment ?
+                                    <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
+                                        <HotTable
+                                            data={department}
+                                            afterChange={handleChange(setDepartment)}
+                                            licenseKey="non-commercial-and-evaluation"
+                                            colHeaders={['ชื่อแผนก', 'ส่วนงาน']}
+                                            rowHeaders={true}
+                                            width="100%"
+                                            height="auto"
+                                            stretchH="all"
+                                            manualColumnResize={true}
+                                            manualRowResize={true}
+                                            rowHeights={28}               // ความสูงของ td
+                                            columnHeaderHeight={45}       // ความสูงของ th (หัวตาราง)
+                                            contextMenu={true}
+                                            copyPaste={true}
+                                            className="mui-hot-table"
+                                            columns={[
+                                                { data: 'DepartmentName', className: 'htCenter htMiddle' },
+                                                { data: 'Section', className: 'htCenter htMiddle' },
+                                            ]}
+                                        />
 
-                                <Grid container spacing={2}>
-                                    <Grid item size={12}>
-                                        {
-                                            editDepartment &&
-                                            <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
-                                                <Button variant="contained" size="small" color="error" onClick={() => setEditDepartment(false)} sx={{ marginRight: 1 }}>ยกเลิก</Button>
-                                                <Button variant="contained" size="small" color="success" onClick={() => setEditDepartment(false)} >บันทึก</Button>
-                                            </Box>
-                                        }
-                                    </Grid>
-                                    <Grid item size={12} marginTop={-6}>
+                                    </Paper>
+
+                                    :
+                                    <TableContainer component={Paper} textAlign="center">
+                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                                            <TableHead>
+                                                <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                    <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
+                                                    <TablecellHeader>ชื่อแผนก</TablecellHeader>
+                                                    <TablecellHeader>ส่วนงาน</TablecellHeader>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {
+                                                    department.length === 0 ?
+                                                        <TableRow>
+                                                            <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                        </TableRow>
+                                                        :
+                                                        department.map((row, index) => (
+                                                            <TableRow>
+                                                                <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.DepartmentName}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.Section}</TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                            }
+                        </Grid>
+                        <Grid item size={1} textAlign="right">
+                            <Box display="flex" justifyContent="center" alignItems="center">
+                                {
+                                    editDepartment ?
                                         <Box textAlign="right">
                                             <IconButton variant="contained" color="info" onClick={() => handleAddRow("department")}>
                                                 <AddCircleOutlineIcon />
@@ -205,36 +205,34 @@ const DepartmentDetail = () => {
                                                 <RemoveCircleOutlineIcon />
                                             </IconButton>
                                         </Box>
-                                    </Grid>
-                                </Grid>
-                            </Paper>
-                            :
-                            <TableContainer component={Paper} textAlign="center">
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.main }}>
-                                            <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อแผนก</TablecellHeader>
-                                            <TablecellHeader>ส่วนงาน</TablecellHeader>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {
-                                            department.length === 0 ?
-                                                <TableRow>
-                                                    <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                </TableRow>
-                                                :
-                                                department.map((row, index) => (
-                                                    <TableRow>
-                                                        <TablecellBody sx={{ textAlign: "center" }}>{index + 1}</TablecellBody>
-                                                        <TablecellBody sx={{ textAlign: "center" }}>{row.DepartmentName}</TablecellBody>
-                                                        <TablecellBody sx={{ textAlign: "center" }}>{row.Section}</TablecellBody>
-                                                    </TableRow>
-                                                ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                        :
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            color="warning"
+                                            fullWidth
+                                            sx={{
+                                                height: "60px",
+                                                flexDirection: "column",
+                                                justifyContent: "center",
+                                                alignItems: "center",
+                                                textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                            }}
+                                            onClick={() => setEditDepartment(true)}
+                                        >
+                                            <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
+                                            แก้ไข
+                                        </Button>
+                                }
+                            </Box>
+                        </Grid>
+                    </Grid>
+                    {
+                        editDepartment &&
+                        <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                            <Button variant="contained" size="small" color="error" onClick={() => setEditDepartment(false)} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                            <Button variant="contained" size="small" color="success" onClick={() => setEditDepartment(false)} >บันทึก</Button>
+                        </Box>
                     }
                 </Box>
             </Paper>

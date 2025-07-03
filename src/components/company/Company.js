@@ -22,7 +22,7 @@ import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
 import AddIcon from '@mui/icons-material/Add';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useFirebase } from "../../server/ProjectFirebaseContext";
 import { Item } from "../../theme/style";
 import theme from "../../theme/theme";
@@ -30,8 +30,9 @@ import InsertCompany from "./InsertCompany";
 import { Card, CardActionArea, CardContent } from "@mui/material";
 import LogoGreen from '../../img/HumantechGreen.png';
 
-const Company = ({ companyName }) => {
+const Company = () => {
     const { firebaseDB, domainKey } = useFirebase();
+    const { domain } = useParams();
     const navigate = useNavigate();
     const [show, setShow] = useState(1);
     const [showMenu, setshowMenu] = useState(1);
@@ -111,7 +112,7 @@ const Company = ({ companyName }) => {
                                                         <Grid container spacing={3} marginRight={8} >
                                                             <Grid item size={6}>
                                                                 <Button variant="outlined" fullWidth size="large"
-                                                                    onClick={() => navigate(`/${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}`)}
+                                                                    onClick={() => navigate(`/${domain}/${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}`)}
                                                                 >จัดการบริษัท</Button>
                                                             </Grid>
                                                             <Grid item size={6}>

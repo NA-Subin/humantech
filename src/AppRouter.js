@@ -35,11 +35,12 @@ export default function AppRouter() {
       {/* Protected routes */}
       <Route element={<ProtectedRoute />}>
         {/* Dashboard route */}
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/company" element={<Company />} />
+        <Route path="/:domain" element={<Dashboard />} />
+        <Route path="/:domain/dashboard" element={<Company />} />
+        {/* <Route path="/company" element={<Company />} /> */}
         {/* Company routes under layout */}
         <Route
-          path="/:companyName/*"
+          path="/:domain/:companyName/*"
           element={
             <Box sx={{ display: 'flex', backgroundColor: theme.palette.primary.light }}>
               <SideBarCompany />

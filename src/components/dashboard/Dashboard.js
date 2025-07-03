@@ -5,10 +5,11 @@ import { Box, Button, Card, CardContent, Container, Grid, InputAdornment, MenuIt
 import { useFirebase } from "../../server/ProjectFirebaseContext";
 import theme from "../../theme/theme";
 import Logo from '../../img/Humantech.png';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const Dashboard = () => {
     const { firebaseDB, domainKey } = useFirebase();
+    const { domain } = useParams();
     const [companyName, setCompanyName] = useState("");
     const [open, setOpen] = useState(false);
     const [userName, setUserName] = useState("");
@@ -215,7 +216,7 @@ const Dashboard = () => {
                                 เข้าสู่ระบบ
                             </Button>
                             <Button variant="contained" color="error"
-                                onClick={() => navigate("/company")}
+                                onClick={() => navigate(`/${domain}/dashboard`)}
                                 fullWidth sx={{
                                     marginTop: 2,
                                     borderRadius: 15,

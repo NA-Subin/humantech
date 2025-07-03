@@ -4,14 +4,32 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import theme from './theme/theme';
-import { ThemeProvider } from '@emotion/react';
+import { ThemeProvider, useTheme } from '@emotion/react';
 // import { DataProvider } from './server/data';
+
+function RootWithThemeVars() {
+  const theme = useTheme();
+
+  // สร้าง CSS variables จาก theme.palette.primary
+  const rootStyle = {
+    '--mui-primary-main': theme.palette.primary.main,
+    '--mui-primary-light': theme.palette.primary.light,
+    '--mui-primary-dark': theme.palette.primary.dark,
+    '--mui-primary-contrastText': theme.palette.primary.contrastText,
+  };
+
+  return (
+    <div style={rootStyle}>
+      <App />
+    </div>
+  );
+}
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
-      <App />
+      <RootWithThemeVars />
     </ThemeProvider>
   </React.StrictMode>
 );
