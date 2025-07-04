@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use } from "react";
-import { getDatabase, ref, push, onValue } from "firebase/database";
+import { getDatabase, ref, push, onValue, set } from "firebase/database";
 import '../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -34,6 +34,8 @@ import { InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
+import TableExcel from "../../theme/TableExcel";
+import { ShowError, ShowSuccess, ShowWarning } from "../../sweetalert/sweetalert";
 
 const PositionDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
@@ -43,12 +45,10 @@ const PositionDetail = () => {
     const [editPosition, setEditPosition] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [lavel, setLavel] = useState([{ Name: '', Lavel: '' }]);
-    const [department, setDepartment] = useState([{ DepartmentName: '', Section: '' }]);
-    const [position, setPosition] = useState([{ PositionName: '', DepartmentName: '', Lavel: '' }]);
+    const [position, setPosition] = useState([{ positionid: 0, positionname: '', dept: '', level: '' }]);
+    const [level, setlevel] = useState([]);
+    const [department, setDepartment] = useState([]);
 
-
-    console.log("Lavel : ", lavel.length);
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
 
@@ -74,54 +74,110 @@ const PositionDetail = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-    const handleChange = (setFn) => (changes, source) => {
-        if (source === 'loadData' || !changes) return;
+    useEffect(() => {
+        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/level`);
 
-        setFn((prev) => {
-            const newData = [...prev];
-            let hasChange = false;
+        onValue(optionRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // แปลง object เป็น array ของ { value, label }
+                const opts = Object.values(data).map((item) => ({
+                    value: `${item.ID}:${item.name}`, // ค่าเวลาบันทึก
+                    label: item.name,                 // แสดงผล
+                }));
+                setlevel(opts); // <-- ใช้ใน columns
+            }
+        });
+    }, [companyId]);
 
-            changes.forEach(([row, prop, oldVal, newVal]) => {
-                if (oldVal !== newVal) {
-                    newData[row][prop] = newVal;
-                    hasChange = true;
+    useEffect(() => {
+        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
+
+        onValue(optionRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // แปลง object เป็น array ของ { value, label }
+                const opts = Object.values(data).map((item) => ({
+                    value: `${item.deptid}:${item.deptname}`, // ค่าเวลาบันทึก
+                    label: item.deptname,                 // แสดงผล
+                }));
+                setDepartment(opts); // <-- ใช้ใน columns
+            }
+        });
+    }, [companyId]);
+
+
+    console.log("position : ", position);
+
+    const columns = [
+        { label: "ชื่อตำแหน่ง", key: "positionname", type: "text" },
+        {
+            label: "ฝ่ายงาน",
+            key: "dept",
+            type: "select",
+            options: department,
+        },
+        {
+            label: "ระดับ",
+            key: "level",
+            type: "select",
+            options: level,
+        },
+    ];
+
+    const handleSave = () => {
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+
+        const invalidMessages = [];
+
+        position.forEach((row, rowIndex) => {
+            columns.forEach((col) => {
+                const value = row[col.key];
+
+                if (value === "") {
+                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
+                    return;
+                }
+
+                if (col.type === "number" && isNaN(Number(value))) {
+                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
+                    return;
+                }
+
+                if (col.type === "select" && !col.options.includes(value)) {
+                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
+                    return;
                 }
             });
-
-            return hasChange ? newData : prev;
         });
-    };
 
-
-    const handleAddRow = (type) => {
-        if (type === 'lavel') {
-            const newRow = { Name: '', Lavel: '' };
-            setLavel((prev) => [...prev, newRow]);
-        } else if (type === 'department') {
-            const newRow = { DepartmentName: '', Section: '' };
-            setDepartment((prev) => [...prev, newRow]);
-        } else if (type === 'position') {
-            const newRow = { PositionName: '', DepartmentName: '', Lavel: '' };
-            setPosition((prev) => [...prev, newRow]);
+        if (invalidMessages.length > 0) {
+            // รวมข้อความเป็นบรรทัด ๆ
+            ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
+            return;
         }
+
+        // ✅ บันทึกเมื่อผ่านเงื่อนไข
+        set(companiesRef, position)
+            .then(() => {
+                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                console.log("บันทึกสำเร็จ");
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+            });
     };
 
-    const handleRemoveRow = (type) => {
-        if (type === 'lavel') {
-            setLavel((prev) => prev.slice(0, -1));
-        } else if (type === 'department') {
-            setDepartment((prev) => prev.slice(0, -1));
-        } else if (type === 'position') {
-            setPosition((prev) => prev.slice(0, -1));
-        }
+    const handleCancel = () => {
+        const positionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+
+        onValue(positionRef, (snapshot) => {
+            const positionData = snapshot.val() || [{ positionid: 0, positionname: '', dept: '', level: '' }];
+            setPosition(positionData);
+            setEditPosition(false);
+        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
-
-
-
-    console.log("company : ", selectedCompany?.companyname);
-    console.log("Lavel Data : ", lavel);
-    console.log("Department Data : ", department);
-    console.log("Position Data : ", position);
 
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
@@ -135,12 +191,13 @@ const PositionDetail = () => {
             <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
                 <Box>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลตำแหน่งงาน</Typography>
+                    <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
-                        <Grid item size={11}>
+                        <Grid item size={editPosition ? 12 : 11}>
                             {
                                 editPosition ?
                                     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                                        <HotTable
+                                        {/* <HotTable
                                             data={position}
                                             afterChange={handleChange(setPosition)}
                                             licenseKey="non-commercial-and-evaluation"
@@ -162,6 +219,11 @@ const PositionDetail = () => {
                                                 { data: 'Department', className: 'htCenter htMiddle' },
                                                 { data: 'Lavel', className: 'htCenter htMiddle' },
                                             ]}
+                                        /> */}
+                                        <TableExcel
+                                            columns={columns}
+                                            initialData={position}
+                                            onDataChange={setPosition}
                                         />
                                     </Paper>
                                     :
@@ -185,9 +247,9 @@ const PositionDetail = () => {
                                                         position.map((row, index) => (
                                                             <TableRow>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.PositionName}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.DepartmentName}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.Lavel}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.positionname}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.dept}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.level}</TableCell>
                                                             </TableRow>
                                                         ))}
                                             </TableBody>
@@ -195,9 +257,28 @@ const PositionDetail = () => {
                                     </TableContainer>
                             }
                         </Grid>
-                        <Grid item size={1} textAlign="right">
-                            <Box display="flex" justifyContent="center" alignItems="center">
-                                {
+                        {
+                            !editPosition &&
+                            <Grid item size={1} textAlign="right">
+                                <Box display="flex" justifyContent="center" alignItems="center">
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        color="warning"
+                                        fullWidth
+                                        sx={{
+                                            height: "60px",
+                                            flexDirection: "column",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                        }}
+                                        onClick={() => setEditPosition(true)}
+                                    >
+                                        <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
+                                        แก้ไข
+                                    </Button>
+                                    {/* {
                                     editPosition ?
                                         <Box textAlign="right">
                                             <IconButton variant="contained" color="info" onClick={() => handleAddRow("position")}>
@@ -225,15 +306,16 @@ const PositionDetail = () => {
                                             <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                             แก้ไข
                                         </Button>
-                                }
-                            </Box>
-                        </Grid>
+                                } */}
+                                </Box>
+                            </Grid>
+                        }
                     </Grid>
                     {
                         editPosition &&
                         <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
-                            <Button variant="contained" size="small" color="error" onClick={() => setEditPosition(false)} sx={{ marginRight: 1 }}>ยกเลิก</Button>
-                            <Button variant="contained" size="small" color="success" onClick={() => setEditPosition(false)} >บันทึก</Button>
+                            <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                            <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                         </Box>
                     }
                 </Box>

@@ -24,13 +24,23 @@ export function ShowWarning(title, text) {
     });
 }
 
-export function ShowSuccess(title, item) {
+export function ShowSuccess(title, text) {
     MySwal.fire({
         icon: "success",
         title: title,
-        showConfirmButton: false,
-        timer: 1500
-    }).then(() => {
-        item
+        html: <div style={{ marginBottom: 2 }}>{text}</div>,
+        confirmButtonColor: '#ffc400',
+        confirmButtonText: "ตกลง"
     });
 }
+
+// export function ShowSuccess(title, item) {
+//     MySwal.fire({
+//         icon: "success",
+//         title: title,
+//         showConfirmButton: false,
+//         timer: 1500
+//     }).then(() => {
+//         item
+//     });
+// }

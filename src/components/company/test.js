@@ -35,6 +35,18 @@ export default function MuiExcelLikeTable({
         setSelectedCells([[row, col]]);
     };
 
+    const getCellBackgroundColor = (val, col) => {
+        if (col?.type === "number") {
+            if (val === "") return "#fff3cd"; // เหลือง
+            if (isNaN(Number(val))) return "#f8d7da"; // แดง
+        }
+        if (col?.type === "select") {
+            if (val === "") return "#fff3cd"; // ยังไม่เลือก
+            if (!col.options?.includes(val)) return "#f8d7da"; // ค่าผิด
+        }
+        return undefined;
+    };
+
     // ลากเลือกเซลล์
     const handleMouseOver = (row, col) => {
         if (!isSelecting.current) return;
@@ -59,19 +71,27 @@ export default function MuiExcelLikeTable({
         isSelecting.current = false;
     };
 
+    const getSelectWarningText = (val, col) => {
+        if (col?.type === "select" && val === "") {
+            return `กรุณาเลือก${col.label}`;
+        }
+        return "";
+    };
+
     // เช็คเซลล์ที่เลือก
     const isCellSelected = (r, c) =>
         selectedCells.some(([row, col]) => row === r && col === c);
 
     // เปลี่ยนค่าใน cell
     const handleCellChange = (val, rowIdx, colKey) => {
-        const newData = [...data];
-        if (!newData[rowIdx]) newData[rowIdx] = {};
-        newData[rowIdx] = { ...newData[rowIdx], [colKey]: val };
-        setData(newData);
-        onDataChange(newData);
+        setData((prevData) => {
+            const newData = [...prevData];
+            if (!newData[rowIdx]) newData[rowIdx] = {};
+            newData[rowIdx] = { ...newData[rowIdx], [colKey]: val };
+            onDataChange(newData);
+            return newData;
+        });
     };
-
     // คัดลอกข้อมูลเซลล์ที่เลือกเป็น text แบบ tab-delimited
     const handleCopy = async () => {
         const rows = [...new Set(selectedCells.map(([r]) => r))].sort();
@@ -87,20 +107,42 @@ export default function MuiExcelLikeTable({
     // วางข้อมูลจาก clipboard ลงในตาราง
     const handlePaste = async () => {
         const clipboard = await navigator.clipboard.readText();
-        const rowsFromClipboard = clipboard.split(/\r?\n/).map((line) => line.split("\t"));
+
+        const rowsFromClipboard = clipboard
+            .split(/\r?\n/) // รองรับ \n และ \r\n
+            .filter(line => line.trim() !== "") // ตัดแถวว่าง
+            .map((line) => line.split("\t"));
 
         const newData = [...data];
         const [startRow, startCol] = selectedCells[0] || [0, 0];
 
         rowsFromClipboard.forEach((row, i) => {
             const targetRow = startRow + i;
+
             if (!newData[targetRow]) {
                 newData[targetRow] = columns.reduce((acc, col) => ({ ...acc, [col.key]: "" }), {});
             }
+
             row.forEach((val, j) => {
                 const targetCol = startCol + j;
-                if (targetCol < columns.length) {
-                    newData[targetRow] = { ...newData[targetRow], [columns[targetCol].key]: val };
+                const colDef = columns[targetCol];
+                if (colDef) {
+                    let parsedVal = val.trim();
+
+                    // 🟡 กรองค่าสำหรับ type select
+                    if (colDef.type === "select") {
+                        if (parsedVal === "") {
+                            parsedVal = ""; // ค่าว่าง = ยังไม่เลือก
+                        } else if (!colDef.options.includes(parsedVal)) {
+                            // ถ้าไม่อยู่ใน options → ขึ้นสีแดงภายหลัง
+                            parsedVal = parsedVal;
+                        }
+                    }
+
+                    newData[targetRow] = {
+                        ...newData[targetRow],
+                        [colDef.key]: parsedVal,
+                    };
                 }
             });
         });
@@ -108,6 +150,7 @@ export default function MuiExcelLikeTable({
         setData(newData);
         onDataChange(newData);
     };
+
 
     // เพิ่มแถวใหม่ (object ว่างตาม columns)
     const addRow = () => {
@@ -190,26 +233,73 @@ export default function MuiExcelLikeTable({
                                         onMouseOver={() => handleMouseOver(rowIdx, colIdx)}
                                         onContextMenu={(e) => openContextMenu(e, rowIdx, colIdx)}
                                         style={{
-                                            backgroundColor: isCellSelected(rowIdx, colIdx)
-                                                ? theme.palette.primary.light
-                                                : undefined,
+                                            backgroundColor:
+                                                isCellSelected(rowIdx, colIdx)
+                                                    ? theme.palette.primary.light
+                                                    : getCellBackgroundColor(data[rowIdx]?.[col.key], col),
+                                            textAlign: "center"
                                         }}
                                     >
-                                        <div
-                                            contentEditable
-                                            suppressContentEditableWarning
-                                            onInput={(e) =>
-                                                handleCellChange(e.currentTarget.textContent, rowIdx, col.key)
-                                            }
-                                            style={{
-                                                outline: isCellSelected(rowIdx, colIdx) ? `1px solid ${theme.palette.primary.dark}`  : "none",
-                                                direction: "ltr",           // ตั้งทิศทางซ้ายไปขวา
-                                                unicodeBidi: "plaintext",   // ทำให้แสดงผลข้อความตามลำดับที่พิมพ์
-                                            }}
-                                        >
-                                            {row[col.key] ?? ""}
-                                        </div>
+                                        {col.type === "select" ? (
+                                            <>
+                                                <select
+                                                    value={row[col.key] ?? ""}
+                                                    onChange={(e) => handleCellChange(e.target.value, rowIdx, col.key)}
+                                                    style={{
+                                                        width: "100%",
+                                                        backgroundColor: getCellBackgroundColor(row[col.key], col),
+                                                        outline: isCellSelected(rowIdx, colIdx)
+                                                            ? `1px solid ${theme.palette.primary.dark}`
+                                                            : "none",
+                                                        border: "none",
+                                                        height: "100%",
+                                                        padding: 4,
+                                                    }}
+                                                >
+                                                    <option value="">-- กรุณาเลือก{col.label} --</option>
+                                                    {col.options?.map((opt, i) => (
+                                                        <option key={i} value={opt}>
+                                                            {opt}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {/* {getSelectWarningText(row[col.key], col) && (
+                                                    <div style={{ color: "orange", fontSize: "0.75rem" }}>
+                                                        {getSelectWarningText(row[col.key], col)}
+                                                    </div>
+                                                )} */}
+                                            </>
+                                        ) : (
+                                            <div
+                                                contentEditable
+                                                suppressContentEditableWarning
+                                                dir="ltr"
+                                                onInput={(e) => {
+                                                    let newValue = e.currentTarget.innerText;
+                                                    if (col?.type === "number") {
+                                                        const filtered = newValue.replace(/[^\d.-]/g, "");
+                                                        if (filtered !== newValue) {
+                                                            e.currentTarget.innerText = filtered;
+                                                            newValue = filtered;
+                                                        }
+                                                    }
+                                                    handleCellChange(newValue, rowIdx, col.key);
+                                                }}
+                                                style={{
+                                                    outline: isCellSelected(rowIdx, colIdx)
+                                                        ? `1px solid ${theme.palette.primary.dark}`
+                                                        : "none",
+                                                    backgroundColor: getCellBackgroundColor(row[col.key], col),
+                                                    direction: "ltr",
+                                                    unicodeBidi: "normal",
+                                                    whiteSpace: "pre-wrap",
+                                                }}
+                                            >
+                                                {row[col.key] ?? ""}
+                                            </div>
+                                        )}
                                     </TableCell>
+
                                 ))}
                             </TableRow>
                         ))}

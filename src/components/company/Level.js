@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use } from "react";
-import { getDatabase, ref, push, onValue } from "firebase/database";
+import { getDatabase, ref, push, onValue, set } from "firebase/database";
 import '../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -34,31 +34,36 @@ import { InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import 'handsontable/dist/handsontable.full.min.css';
 import MuiExcelLikeTable from "./test";
+import TableExcel from "../../theme/TableExcel";
+import { ShowError, ShowSuccess, ShowWarning } from "../../sweetalert/sweetalert";
 
 const LevelDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
     const { companyName } = useParams();
-    const [editLavel, setEditLavel] = useState(false);
+    const [editLevel, setEditLevel] = useState(false);
     const [editDepartment, setEditDepartment] = useState(false);
     const [editPosition, setEditPosition] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [lavel, setLavel] = useState([{ Name: '', Lavel: '' }]);
+    const [level, setlevel] = useState([{ ID: 0, name: '', levelnumber: '' }]);
     const [department, setDepartment] = useState([{ DepartmentName: '', Section: '' }]);
-    const [position, setPosition] = useState([{ PositionName: '', DepartmentName: '', Lavel: '' }]);
+    const [position, setPosition] = useState([{ PositionName: '', DepartmentName: '', Level: '' }]);
+    const levelOptions = Array.from({ length: 10 }, (_, i) => ({
+        value: `${i + 1}`,
+        label: `${i + 1}`,
+    }));
+    const columns = [
+        { label: "ชื่อ", key: "name", type: "text", width: "80%" },
+        {
+            label: "ระดับ",
+            key: "levelnumber",
+            type: "select",
+            options: levelOptions,
+        },
+    ];
 
-    const [userData, setUserData] = useState([
-        ["สมชาย", "ระดับ 1"],
-        ["สมหญิง", "ระดับ 2"],
-    ]);
+    console.log("Level : ", level);
 
-    console.log("userData : ", lavel);
-
-    const columns = ["ชื่อ", "ระดับ", "ระดับ", "ระดับ"];
-
-    const data = [['', ''], ['', ''], ['', '']];
-
-    console.log("Lavel : ", lavel.length);
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
 
@@ -84,54 +89,126 @@ const LevelDetail = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-    const handleChange = (setFn) => (changes, source) => {
-        if (source === 'loadData' || !changes) return;
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
 
-        setFn((prev) => {
-            const newData = [...prev];
-            let hasChange = false;
+        const levelRef = ref(firebaseDB, `workgroup/company/${companyId}/level`);
 
-            changes.forEach(([row, prop, oldVal, newVal]) => {
-                if (oldVal !== newVal) {
-                    newData[row][prop] = newVal;
-                    hasChange = true;
+        const unsubscribe = onValue(levelRef, (snapshot) => {
+            const levelData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!levelData) {
+                setlevel([{ ID: 0, name: '', levelnumber: '' }]);
+            } else {
+                setlevel(levelData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+
+
+    // const handleChange = (setFn) => (changes, source) => {
+    //     if (source === 'loadData' || !changes) return;
+
+    //     setFn((prev) => {
+    //         const newData = [...prev];
+    //         let hasChange = false;
+
+    //         changes.forEach(([row, prop, oldVal, newVal]) => {
+    //             if (oldVal !== newVal) {
+    //                 newData[row][prop] = newVal;
+    //                 hasChange = true;
+    //             }
+    //         });
+
+    //         return hasChange ? newData : prev;
+    //     });
+    // };
+
+
+    // const handleAddRow = (type) => {
+    //     if (type === 'Level') {
+    //         const newRow = { Name: '', Level: '' };
+    //         setlevel((prev) => [...prev, newRow]);
+    //     } else if (type === 'department') {
+    //         const newRow = { DepartmentName: '', Section: '' };
+    //         setDepartment((prev) => [...prev, newRow]);
+    //     } else if (type === 'position') {
+    //         const newRow = { PositionName: '', DepartmentName: '', Level: '' };
+    //         setPosition((prev) => [...prev, newRow]);
+    //     }
+    // };
+
+    // const handleRemoveRow = (type) => {
+    //     if (type === 'Level') {
+    //         setlevel((prev) => prev.slice(0, -1));
+    //     } else if (type === 'department') {
+    //         setDepartment((prev) => prev.slice(0, -1));
+    //     } else if (type === 'position') {
+    //         setPosition((prev) => prev.slice(0, -1));
+    //     }
+    // };
+
+    const handleSave = () => {
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/level`);
+
+        const invalidMessages = [];
+
+        level.forEach((row, rowIndex) => {
+            columns.forEach((col) => {
+                const value = row[col.key];
+
+                if (value === "") {
+                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
+                    return;
+                }
+
+                if (col.type === "number" && isNaN(Number(value))) {
+                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
+                    return;
+                }
+
+                if (
+                    col.type === "select" &&
+                    !col.options?.some(opt => opt.value === value)
+                ) {
+                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
+                    return;
                 }
             });
-
-            return hasChange ? newData : prev;
         });
-    };
 
-
-    const handleAddRow = (type) => {
-        if (type === 'lavel') {
-            const newRow = { Name: '', Lavel: '' };
-            setLavel((prev) => [...prev, newRow]);
-        } else if (type === 'department') {
-            const newRow = { DepartmentName: '', Section: '' };
-            setDepartment((prev) => [...prev, newRow]);
-        } else if (type === 'position') {
-            const newRow = { PositionName: '', DepartmentName: '', Lavel: '' };
-            setPosition((prev) => [...prev, newRow]);
+        if (invalidMessages.length > 0) {
+            // รวมข้อความเป็นบรรทัด ๆ
+            ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
+            return;
         }
+
+        // ✅ บันทึกเมื่อผ่านเงื่อนไข
+        set(companiesRef, level)
+            .then(() => {
+                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                console.log("บันทึกสำเร็จ");
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+            });
     };
 
-    const handleRemoveRow = (type) => {
-        if (type === 'lavel') {
-            setLavel((prev) => prev.slice(0, -1));
-        } else if (type === 'department') {
-            setDepartment((prev) => prev.slice(0, -1));
-        } else if (type === 'position') {
-            setPosition((prev) => prev.slice(0, -1));
-        }
+    const handleCancel = () => {
+        const levelRef = ref(firebaseDB, `workgroup/company/${companyId}/level`);
+
+        onValue(levelRef, (snapshot) => {
+            const levelData = snapshot.val() || [{ ID: 0, name: '', levelnumber: '' }];
+            setlevel(levelData);
+            setEditLevel(false);
+        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
-
-
-    console.log("company : ", selectedCompany?.companyname);
-    console.log("Lavel Data : ", lavel);
-    console.log("Department Data : ", department);
-    console.log("Position Data : ", position);
 
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
@@ -145,14 +222,15 @@ const LevelDetail = () => {
             <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
                 <Box>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลระดับตำแหน่งงาน</Typography>
+                    <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
-                        <Grid item size={11}>
+                        <Grid item size={editLevel ? 12 : 11}>
                             {
-                                editLavel ?
+                                editLevel ?
                                     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                                        <HotTable
-                                            data={lavel}
-                                            afterChange={handleChange(setLavel)}
+                                        {/* <HotTable
+                                            data={Level}
+                                            afterChange={handleChange(setlevel)}
                                             licenseKey="non-commercial-and-evaluation"
                                             preventOverflow="horizontal"
                                             colHeaders={['ชื่อ', 'ระดับ']}
@@ -169,8 +247,13 @@ const LevelDetail = () => {
                                             className="mui-hot-table"
                                             columns={[
                                                 { data: 'Name', className: 'htCenter htMiddle' },
-                                                { data: 'Lavel', className: 'htCenter htMiddle' },
+                                                { data: 'Level', className: 'htCenter htMiddle' },
                                             ]}
+                                        /> */}
+                                        <TableExcel
+                                            columns={columns}
+                                            initialData={level}
+                                            onDataChange={setlevel}
                                         />
                                     </Paper>
                                     :
@@ -179,22 +262,22 @@ const LevelDetail = () => {
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                    <TablecellHeader>ชื่อ</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "80%" }}>ชื่อ</TablecellHeader>
                                                     <TablecellHeader>ระดับ</TablecellHeader>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
                                                 {
-                                                    lavel.length === 0 ?
+                                                    level.length === 0 ?
                                                         <TableRow>
                                                             <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                         </TableRow>
                                                         :
-                                                        lavel.map((row, index) => (
+                                                        level.map((row, index) => (
                                                             <TableRow>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.Name}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.Lavel}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.levelnumber}</TableCell>
                                                             </TableRow>
                                                         ))}
                                             </TableBody>
@@ -202,15 +285,34 @@ const LevelDetail = () => {
                                     </TableContainer>
                             }
                         </Grid>
-                        <Grid item size={1} textAlign="right">
-                            <Box display="flex" justifyContent="center" alignItems="center">
-                                {
-                                    editLavel ?
+                        {
+                            !editLevel &&
+                            <Grid item size={1} textAlign="right">
+                                <Box display="flex" justifyContent="center" alignItems="center">
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        color="warning"
+                                        fullWidth
+                                        sx={{
+                                            height: "60px",
+                                            flexDirection: "column",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                        }}
+                                        onClick={() => setEditLevel(true)}
+                                    >
+                                        <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
+                                        แก้ไข
+                                    </Button>
+                                    {/* {
+                                    editLevel ?
                                         <Box textAlign="right">
-                                            <IconButton variant="contained" color="info" onClick={() => handleAddRow("lavel")}>
+                                            <IconButton variant="contained" color="info" onClick={() => handleAddRow("Level")}>
                                                 <AddCircleOutlineIcon />
                                             </IconButton>
-                                            <IconButton variant="contained" color="error" onClick={() => handleRemoveRow("lavel")}>
+                                            <IconButton variant="contained" color="error" onClick={() => handleRemoveRow("Level")}>
                                                 <RemoveCircleOutlineIcon />
                                             </IconButton>
                                         </Box>
@@ -227,43 +329,25 @@ const LevelDetail = () => {
                                                 alignItems: "center",
                                                 textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
                                             }}
-                                            onClick={() => setEditLavel(true)}
+                                            onClick={() => setEditLevel(true)}
                                         >
                                             <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                             แก้ไข
                                         </Button>
-                                }
-                            </Box>
-                        </Grid>
+                                } */}
+                                </Box>
+                            </Grid>
+                        }
                     </Grid>
                     {
-                        editLavel &&
+                        editLevel &&
                         <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
-                            <Button variant="contained" size="small" color="error" onClick={() => setEditLavel(false)} sx={{ marginRight: 1 }}>ยกเลิก</Button>
-                            <Button variant="contained" size="small" color="success" onClick={() => setEditLavel(false)} >บันทึก</Button>
+                            <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                            <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                         </Box>
                     }
                 </Box>
             </Paper>
-
-            <HotTable
-                data={data}
-                rowHeaders={true}
-                colHeaders={true}
-                contextMenu={true}
-                copyPaste={true}
-                width="600"
-                height="auto"
-                licenseKey="non-commercial-and-evaluation"
-            />
-            <MuiExcelLikeTable
-                columns={[
-                    { label: "ชื่อ", key: "Name" },
-                    { label: "ระดับ", key: "Lavel" }
-                ]}
-                initialData={lavel}
-                onDataChange={setLavel}
-            />
         </Container>
     )
 }
