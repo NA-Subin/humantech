@@ -281,7 +281,9 @@ export default function TableExcel({
                                                             border: "none",
                                                             height: "100%",
                                                             padding: 4,
-                                                            textAlign: "center"
+                                                            textAlign: "center",
+                                                            /** ✅ เพิ่มฟอนต์ที่ใช้ใน theme */
+                                                            fontFamily: theme.typography.fontFamily
                                                         }}
                                                     >
                                                         <option value="">-- กรุณาเลือก{col.label} --</option>
@@ -297,35 +299,57 @@ export default function TableExcel({
                                                     </div>
                                                 )} */}
                                                 </>
-                                            ) : (
-                                                <div
-                                                    contentEditable
-                                                    suppressContentEditableWarning
-                                                    dir="ltr"
-                                                    onInput={(e) => {
-                                                        let newValue = e.currentTarget.innerText;
-                                                        if (col?.type === "number") {
-                                                            const filtered = newValue.replace(/[^\d.-]/g, "");
-                                                            if (filtered !== newValue) {
-                                                                e.currentTarget.innerText = filtered;
-                                                                newValue = filtered;
-                                                            }
-                                                        }
-                                                        handleCellChange(newValue, rowIdx, col.key);
-                                                    }}
-                                                    style={{
-                                                        outline: isCellSelected(rowIdx, colIdx)
-                                                            ? `1px solid ${theme.palette.primary.dark}`
-                                                            : "none",
-                                                        backgroundColor: getCellBackgroundColor(row[col.key], col),
-                                                        direction: "ltr",
-                                                        unicodeBidi: "normal",
-                                                        whiteSpace: "pre-wrap",
-                                                    }}
-                                                >
-                                                    {row[col.key] ?? ""}
-                                                </div>
-                                            )}
+                                            )
+                                                : col.type === "time" ? (
+                                                    <input
+                                                        type="time"
+                                                        value={row[col.key] || ""}
+                                                        onChange={(e) => handleCellChange(e.target.value, rowIdx, col.key)}
+                                                        style={{
+                                                            width: "100%",
+                                                            height: "100%",
+                                                            padding: "4px",
+                                                            border: "none",
+                                                            outline: isCellSelected(rowIdx, colIdx)
+                                                                ? `1px solid ${theme.palette.primary.dark}`
+                                                                : "none",
+                                                            backgroundColor: getCellBackgroundColor(row[col.key], col),
+                                                            textAlign: "center",
+                                                            fontFamily: theme.typography.fontFamily,
+                                                        }}
+                                                    />
+                                                )
+                                                    : (
+                                                        <div
+                                                            contentEditable
+                                                            suppressContentEditableWarning
+                                                            dir="ltr"
+                                                            onBlur={(e) => {
+                                                                let newValue = e.currentTarget.innerText;
+                                                                if (col?.type === "number") {
+                                                                    const filtered = newValue.replace(/[^\d.-]/g, "");
+                                                                    if (filtered !== newValue) {
+                                                                        e.currentTarget.innerText = filtered;
+                                                                        newValue = filtered;
+                                                                    }
+                                                                }
+                                                                handleCellChange(newValue, rowIdx, col.key);
+                                                            }}
+                                                            style={{
+                                                                outline: isCellSelected(rowIdx, colIdx)
+                                                                    ? `1px solid ${theme.palette.primary.dark}`
+                                                                    : "none",
+                                                                backgroundColor: getCellBackgroundColor(row[col.key], col),
+                                                                direction: "ltr",
+                                                                unicodeBidi: "normal",
+                                                                whiteSpace: "pre-wrap",
+                                                                fontFamily: theme.typography.fontFamily
+                                                            }}
+                                                        >
+                                                            {row[col.key] ?? ""}
+                                                        </div>
+
+                                                    )}
                                         </TableCell>
 
                                     ))}

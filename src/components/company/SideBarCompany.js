@@ -70,6 +70,7 @@ import PhoneIphoneRoundedIcon from '@mui/icons-material/PhoneIphoneRounded';
 import InstallMobileRoundedIcon from '@mui/icons-material/InstallMobileRounded';
 import MarkEmailUnreadRoundedIcon from '@mui/icons-material/MarkEmailUnreadRounded';
 import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
+import AccessTimeFilledIcon from '@mui/icons-material/AccessTimeFilled';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -777,11 +778,11 @@ export default function SideBarCompany() {
                 <Divider />
                 <List>
                     {open ? <Typography marginLeft={2} variant='subtitle2' gutterBottom>โครงสร้างบริษัท</Typography> : ""}
-                    {['ระดับตำแหน่งงาน', 'ฝ่ายงาน', 'ตำแหน่งงาน'].map((text, index) => (
+                    {['ระดับตำแหน่งงาน', 'แผนก/ฝ่ายงาน', 'ส่วนงาน', 'ตำแหน่งงาน'].map((text, index) => (
                         <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: 40 }}>
                             <ListItemButton
                                 component={Link}
-                                to={index === 0 ? `/${domain}/${companyName}/level` : index === 1 ? `/${domain}/${companyName}/department` : `/${domain}/${companyName}/position`}
+                                to={index === 0 ? `/${domain}/${companyName}/level` : index === 1 ? `/${domain}/${companyName}/department` : index === 2 ? `/${domain}/${companyName}/section` : `/${domain}/${companyName}/position`}
                             >
                                 <ListItemIcon sx={{
                                     minWidth: 0,
@@ -799,13 +800,13 @@ export default function SideBarCompany() {
                 </List>
                 <Divider />
                 <List sx={{ marginBottom: 5 }}>
-                    {open ? <Typography marginLeft={2} variant='subtitle2' gutterBottom>ตั้งค่า</Typography> : ""}
-                    {/* {['ข้อมูลกลุ่มผู้ใช้', 'จัดการผู้ใช้', 'จัดการโดเมน', 'ตั้งค่าเครื่องสแกน'].map((text, index) => (
+                    {open ? <Typography marginLeft={2} variant='subtitle2' gutterBottom>โครงสร้างเวลา</Typography> : ""}
+                    {['ประเภทการลา', 'กะการทำงาน', 'ประกันสังคม'].map((text, index) => (
                         <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: 40 }}>
                             <ListItemButton
                                 component={Link}
-                                to={index === 0 ? `/${domain}/${companyName}/employee-group` : index === 1 ? `/${domain}/${companyName}/employee ` : index === 2 ? `/${domain}/${companyName}/doman` : index === 3 ? `/${domain}/${companyName}/scanner` : ""}
-                            >`
+                                to={index === 0 ? `/${domain}/${companyName}/leave` : index === 1 ? `/${domain}/${companyName}/workshift ` : `/${domain}/${companyName}/social-security`}
+                            >
                                 <ListItemIcon sx={{
                                     minWidth: 0,
                                     mr: open ? 3 : 'auto',
@@ -813,12 +814,12 @@ export default function SideBarCompany() {
                                     marginLeft: open ? 2 : 'auto',
                                 }}
                                 >
-                                    {index === 0 ? <SettingsRoundedIcon /> : <SettingsRoundedIcon />}
+                                    {index === 0 ? <AccessTimeFilledIcon /> : <AccessTimeFilledIcon />}
                                 </ListItemIcon>
                                 <ListItemText primary={text} sx={{ opacity: open ? 1 : 0 }} />
                             </ListItemButton>
                         </ListItem>
-                    ))} */}
+                    ))}
                 </List>
             </Drawer>
         </>

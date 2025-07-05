@@ -9,9 +9,13 @@ import CompanyDeshboard from "./components/company/Deshboard";
 import theme from "./theme/theme";
 import { Box } from "@mui/material";
 import Company from "./components/company/Company";
-import LevelDetail from "./components/company/Level";
-import DepartmentDetail from "./components/company/Department";
-import PositionDetail from "./components/company/Position";
+import LevelDetail from "./components/company/structure/Level";
+import DepartmentDetail from "./components/company/structure/Department";
+import SectionDetail from "./components/company/structure/Section";
+import PositionDetail from "./components/company/structure/Position";
+import LeaveDetail from "./components/company/time/Leave";
+import WorkShiftDetail from "./components/company/time/Workshift";
+import SSODetail from "./components/company/time/SSO";
 
 function CompanyRoutes() {
   return (
@@ -19,7 +23,11 @@ function CompanyRoutes() {
       <Route path="" element={<CompanyDeshboard />} />
       <Route path="level" element={<LevelDetail />} />
       <Route path="department" element={<DepartmentDetail />} />
+      <Route path="section" element={<SectionDetail />} />
       <Route path="position" element={<PositionDetail />} />
+      <Route path="leave" element={<LeaveDetail />} />
+      <Route path="workshift" element={<WorkShiftDetail />} />
+      <Route path="social-security" element={<SSODetail />} />
     </Routes>
   );
 }

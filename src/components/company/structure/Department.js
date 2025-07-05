@@ -1,6 +1,6 @@
 import React, { useState, useEffect, use } from "react";
+import '../../../App.css'
 import { getDatabase, ref, push, onValue, set } from "firebase/database";
-import '../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -23,46 +23,42 @@ import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
-import theme from "../../theme/theme";
+import theme from "../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
-import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../theme/style"
-import { HTTP } from "../../server/axios";
-import { useFirebase } from "../../server/ProjectFirebaseContext";
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
+
 import { useNavigate, useParams } from "react-router-dom";
 import { InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
+import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
-import MuiExcelLikeTable from "./test";
-import TableExcel from "../../theme/TableExcel";
-import { ShowError, ShowSuccess, ShowWarning } from "../../sweetalert/sweetalert";
+import TableExcel from "../../../theme/TableExcel";
+import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
+import { useFirebase } from "../../../server/ProjectFirebaseContext";
 
-const LevelDetail = () => {
+const DepartmentDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
     const { companyName } = useParams();
-    const [editLevel, setEditLevel] = useState(false);
+    const [editLavel, setEditLavel] = useState(false);
     const [editDepartment, setEditDepartment] = useState(false);
     const [editPosition, setEditPosition] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [level, setlevel] = useState([{ ID: 0, name: '', levelnumber: '' }]);
-    const [department, setDepartment] = useState([{ DepartmentName: '', Section: '' }]);
-    const [position, setPosition] = useState([{ PositionName: '', DepartmentName: '', Level: '' }]);
+    const [department, setDepartment] = useState([{ ID: 0, deptname: '', keyposition: '' }]);
     const levelOptions = Array.from({ length: 10 }, (_, i) => ({
         value: `${i + 1}`,
         label: `${i + 1}`,
     }));
     const columns = [
-        { label: "ชื่อ", key: "name", type: "text", width: "80%" },
+        { label: "ชื่อแผนก", key: "deptname", type: "text", width: "60%" },
         {
             label: "ระดับ",
-            key: "levelnumber",
+            key: "keyposition",
             type: "select",
             options: levelOptions,
         },
     ];
-
-    console.log("Level : ", level);
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
@@ -92,72 +88,28 @@ const LevelDetail = () => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const levelRef = ref(firebaseDB, `workgroup/company/${companyId}/level`);
+        const departmentRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
 
-        const unsubscribe = onValue(levelRef, (snapshot) => {
-            const levelData = snapshot.val();
+        const unsubscribe = onValue(departmentRef, (snapshot) => {
+            const departmentData = snapshot.val();
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!levelData) {
-                setlevel([{ ID: 0, name: '', levelnumber: '' }]);
+            if (!departmentData) {
+                setDepartment([{ ID: 0, deptname: '', keyposition: '' }]);
             } else {
-                setlevel(levelData);
+                setDepartment(departmentData);
             }
         });
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-
-
-    // const handleChange = (setFn) => (changes, source) => {
-    //     if (source === 'loadData' || !changes) return;
-
-    //     setFn((prev) => {
-    //         const newData = [...prev];
-    //         let hasChange = false;
-
-    //         changes.forEach(([row, prop, oldVal, newVal]) => {
-    //             if (oldVal !== newVal) {
-    //                 newData[row][prop] = newVal;
-    //                 hasChange = true;
-    //             }
-    //         });
-
-    //         return hasChange ? newData : prev;
-    //     });
-    // };
-
-
-    // const handleAddRow = (type) => {
-    //     if (type === 'Level') {
-    //         const newRow = { Name: '', Level: '' };
-    //         setlevel((prev) => [...prev, newRow]);
-    //     } else if (type === 'department') {
-    //         const newRow = { DepartmentName: '', Section: '' };
-    //         setDepartment((prev) => [...prev, newRow]);
-    //     } else if (type === 'position') {
-    //         const newRow = { PositionName: '', DepartmentName: '', Level: '' };
-    //         setPosition((prev) => [...prev, newRow]);
-    //     }
-    // };
-
-    // const handleRemoveRow = (type) => {
-    //     if (type === 'Level') {
-    //         setlevel((prev) => prev.slice(0, -1));
-    //     } else if (type === 'department') {
-    //         setDepartment((prev) => prev.slice(0, -1));
-    //     } else if (type === 'position') {
-    //         setPosition((prev) => prev.slice(0, -1));
-    //     }
-    // };
-
     const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/level`);
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
 
         const invalidMessages = [];
 
-        level.forEach((row, rowIndex) => {
+        department.forEach((row, rowIndex) => {
             columns.forEach((col) => {
                 const value = row[col.key];
 
@@ -181,14 +133,21 @@ const LevelDetail = () => {
             });
         });
 
+        // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
+        const names = department.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
+        if (duplicates.length > 0) {
+            invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
+        }
+
+        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
         if (invalidMessages.length > 0) {
-            // รวมข้อความเป็นบรรทัด ๆ
             ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
             return;
         }
 
         // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, level)
+        set(companiesRef, department)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
@@ -200,40 +159,38 @@ const LevelDetail = () => {
     };
 
     const handleCancel = () => {
-        const levelRef = ref(firebaseDB, `workgroup/company/${companyId}/level`);
+        const DepartmentRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
 
-        onValue(levelRef, (snapshot) => {
-            const levelData = snapshot.val() || [{ ID: 0, name: '', levelnumber: '' }];
-            setlevel(levelData);
-            setEditLevel(false);
+        onValue(DepartmentRef, (snapshot) => {
+            const DepartmentData = snapshot.val() || [{ ID: 0, deptname: '', keyposition: '' }];
+            setDepartment(DepartmentData);
+            setEditDepartment(false);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
-
 
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
-                        <Typography variant="h5" fontWeight="bold" gutterBottom>ระดับตำแหน่งงาน (Level)</Typography>
+                        <Typography variant="h5" fontWeight="bold" gutterBottom>แผนก/ฝ่ายงาน (Department)</Typography>
                     </Grid>
                 </Grid>
             </Box>
             <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
                 <Box>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลระดับตำแหน่งงาน</Typography>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลฝ่ายงาน</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
-                        <Grid item size={editLevel ? 12 : 11}>
+                        <Grid item size={editDepartment ? 12 : 11}>
                             {
-                                editLevel ?
+                                editDepartment ?
                                     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                         {/* <HotTable
-                                            data={Level}
-                                            afterChange={handleChange(setlevel)}
+                                            data={department}
+                                            afterChange={handleChange(setDepartment)}
                                             licenseKey="non-commercial-and-evaluation"
-                                            preventOverflow="horizontal"
-                                            colHeaders={['ชื่อ', 'ระดับ']}
+                                            colHeaders={['ชื่อแผนก', 'ส่วนงาน']}
                                             rowHeaders={true}
                                             width="100%"
                                             height="auto"
@@ -246,38 +203,39 @@ const LevelDetail = () => {
                                             copyPaste={true}
                                             className="mui-hot-table"
                                             columns={[
-                                                { data: 'Name', className: 'htCenter htMiddle' },
-                                                { data: 'Level', className: 'htCenter htMiddle' },
+                                                { data: 'deptname', className: 'htCenter htMiddle' },
+                                                { data: 'section', className: 'htCenter htMiddle' },
                                             ]}
                                         /> */}
                                         <TableExcel
                                             columns={columns}
-                                            initialData={level}
-                                            onDataChange={setlevel}
+                                            initialData={department}
+                                            onDataChange={setDepartment}
                                         />
                                     </Paper>
+
                                     :
                                     <TableContainer component={Paper} textAlign="center">
                                         <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "80%" }}>ชื่อ</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "60%" }}>ชื่อแผนก/ฝ่ายงาน</TablecellHeader>
                                                     <TablecellHeader>ระดับ</TablecellHeader>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
                                                 {
-                                                    level.length === 0 ?
+                                                    department.length === 0 ?
                                                         <TableRow>
                                                             <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                         </TableRow>
                                                         :
-                                                        level.map((row, index) => (
+                                                        department.map((row, index) => (
                                                             <TableRow>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.levelnumber}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.deptname}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.keyposition}</TableCell>
                                                             </TableRow>
                                                         ))}
                                             </TableBody>
@@ -286,7 +244,7 @@ const LevelDetail = () => {
                             }
                         </Grid>
                         {
-                            !editLevel &&
+                            !editDepartment &&
                             <Grid item size={1} textAlign="right">
                                 <Box display="flex" justifyContent="center" alignItems="center">
                                     <Button
@@ -301,18 +259,18 @@ const LevelDetail = () => {
                                             alignItems: "center",
                                             textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
                                         }}
-                                        onClick={() => setEditLevel(true)}
+                                        onClick={() => setEditDepartment(true)}
                                     >
                                         <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                         แก้ไข
                                     </Button>
                                     {/* {
-                                    editLevel ?
+                                    editDepartment ?
                                         <Box textAlign="right">
-                                            <IconButton variant="contained" color="info" onClick={() => handleAddRow("Level")}>
+                                            <IconButton variant="contained" color="info" onClick={() => handleAddRow("department")}>
                                                 <AddCircleOutlineIcon />
                                             </IconButton>
-                                            <IconButton variant="contained" color="error" onClick={() => handleRemoveRow("Level")}>
+                                            <IconButton variant="contained" color="error" onClick={() => handleRemoveRow("department")}>
                                                 <RemoveCircleOutlineIcon />
                                             </IconButton>
                                         </Box>
@@ -329,7 +287,7 @@ const LevelDetail = () => {
                                                 alignItems: "center",
                                                 textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
                                             }}
-                                            onClick={() => setEditLevel(true)}
+                                            onClick={() => setEditDepartment(true)}
                                         >
                                             <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                             แก้ไข
@@ -340,7 +298,7 @@ const LevelDetail = () => {
                         }
                     </Grid>
                     {
-                        editLevel &&
+                        editDepartment &&
                         <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                             <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                             <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
@@ -352,4 +310,4 @@ const LevelDetail = () => {
     )
 }
 
-export default LevelDetail
+export default DepartmentDetail
