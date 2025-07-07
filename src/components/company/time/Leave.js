@@ -139,6 +139,7 @@ const LeaveDetail = () => {
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
+                setEditLeave(false);
             })
             .catch((error) => {
                 ShowError("เกิดข้อผิดพลาดในการบันทึก");

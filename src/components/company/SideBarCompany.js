@@ -500,13 +500,13 @@ export default function SideBarCompany() {
                             <MenuItem onClick={handleClickOpenPassword}><PasswordRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนรหัสผ่าน</MenuItem><Divider />
                             <MenuItem onClick={handleClickOpenPhone}><PhoneIphoneRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนเบอร์โทรศัพท์</MenuItem><Divider />
                         </Menu>
-                        <Button size="large" color="inherit">
+                        {/* <Button size="large" color="inherit">
                             <IconButton size="large" aria-label="เลือกภาษา" color="inherit">
                                 <FlagRoundedIcon />
                             </IconButton>
-                        </Button>
+                        </Button> */}
                         <Button size="large" color="inherit">
-                            <IconButton size="small" aria-label="กลับสู่ระบบหลัก" color={openLogo ? "primary" : "inherit"} onMouseEnter={() => setOpenLogo(true)} onMouseLeave={() => setOpenLogo(false)} sx={{ '&:hover': { backgroundColor: theme.palette.primary.light } }} component={Link} to={'/dashboard'}>
+                            <IconButton size="small" aria-label="กลับสู่ระบบหลัก" color={openLogo ? "primary" : "inherit"} onMouseEnter={() => setOpenLogo(true)} onMouseLeave={() => setOpenLogo(false)} sx={{ '&:hover': { backgroundColor: theme.palette.primary.light } }} component={Link} to={`/${domain}/dashboard`}>
                                 {openLogo ?
                                     <Box >
                                         <Box display="flex" justifyContent="center" alignItems="center">

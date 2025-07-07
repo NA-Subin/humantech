@@ -151,6 +151,7 @@ const DepartmentDetail = () => {
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
+                setEditDepartment(false);
             })
             .catch((error) => {
                 ShowError("เกิดข้อผิดพลาดในการบันทึก");

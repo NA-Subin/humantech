@@ -36,6 +36,8 @@ import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
+import dayjs from "dayjs";
+import "dayjs/locale/th";
 
 const PositionDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
@@ -49,6 +51,9 @@ const PositionDetail = () => {
     const [level, setlevel] = useState([]);
     const [department, setDepartment] = useState([]);
     const [section, setSection] = useState([]);
+    const [selectedDateReceive, setSelectedDateReceive] = useState(dayjs(new Date));
+
+    console.log(selectedDateReceive);
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
@@ -256,6 +261,7 @@ const PositionDetail = () => {
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
+                setEditPosition(false);
             })
             .catch((error) => {
                 ShowError("เกิดข้อผิดพลาดในการบันทึก");

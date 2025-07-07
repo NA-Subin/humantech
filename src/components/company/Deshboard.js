@@ -23,6 +23,8 @@ import { Item, ItemReport } from '../../theme/style';
 import { useParams } from 'react-router-dom';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
 import { useState } from 'react';
+import { Button } from '@mui/material';
+import InsertNews from './InsertNews';
 
 export default function CompanyDeshboard() {
     const { firebaseDB, domainKey } = useFirebase();
@@ -117,77 +119,19 @@ export default function CompanyDeshboard() {
             </Grid>
             <Grid container spacing={2} marginTop={1} marginBottom={1}>
                 <Grid item size={12}>
-                    <Item sx={{ height: 400 }}>
-                        <Typography variant='h6' gutterBottom>ประกาศ</Typography>
+                    <Item sx={{ height: 500 }}>
+                        <Grid container spacing={2}>
+                            <Grid item size={6}>
+                                <Typography variant='h6' fontWeight="bold" gutterBottom>ข่าวสาร</Typography>
+                            </Grid>
+                            <Grid item size={6} textAlign="right" marginTop={-0.5}>
+                                <InsertNews />
+                            </Grid>
+                        </Grid>
+                         <Divider />
                     </Item>
                 </Grid>
             </Grid>
-            <Box sx={{ marginTop: 2, flexGrow: 1 }}>
-                <Grid container spacing={2}>
-                    <Grid item size={6}>
-                        <Item>
-                            <Typography variant="subtitle1" gutterBottom>บทความ</Typography>
-                            <Divider />
-                            <Grid container spacing={2} marginTop={2} marginBottom={2}>
-                                <Grid item size={3}>
-                                    <ItemReport>
-
-                                    </ItemReport>
-                                </Grid>
-                                <Grid item size={3}>
-                                    <ItemReport>
-
-                                    </ItemReport>
-                                </Grid>
-                                <Grid item size={3}>
-                                    <ItemReport>
-
-                                    </ItemReport>
-                                </Grid>
-                                <Grid item size={3}>
-                                    <ItemReport>
-
-                                    </ItemReport>
-                                </Grid>
-                            </Grid>
-                            <Stack spacing={2} alignItems="center">
-                                <Pagination count={10} variant="outlined" shape="rounded" />
-                            </Stack>
-                        </Item>
-                    </Grid>
-                    <Grid item size={6}>
-                        <Item>
-                            <Typography variant="subtitle1" gutterBottom>ข่าวสาร</Typography>
-                            <Divider />
-                            <Grid container spacing={2} marginTop={2} marginBottom={2}>
-                                <Grid item size={3}>
-                                    <ItemReport>
-
-                                    </ItemReport>
-                                </Grid>
-                                <Grid item size={3}>
-                                    <ItemReport>
-
-                                    </ItemReport>
-                                </Grid>
-                                <Grid item size={3}>
-                                    <ItemReport>
-
-                                    </ItemReport>
-                                </Grid>
-                                <Grid item size={3}>
-                                    <ItemReport>
-
-                                    </ItemReport>
-                                </Grid>
-                            </Grid>
-                            <Stack spacing={2} alignItems="center">
-                                <Pagination count={10} variant="outlined" shape="rounded" />
-                            </Stack>
-                        </Item>
-                    </Grid>
-                </Grid>
-            </Box>
         </Container>
     );
 }

@@ -83,25 +83,16 @@ const SSODetail = () => {
         const unsubscribe = onValue(ssoRef, (snapshot) => {
             const ssoData = snapshot.val();
 
-            console.log("sso Data : ", ssoData.percent);
-            console.log("sso Max : ", ssoData.ssomax);
-
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
             if (!ssoData) {
-                setSSO([{ ID: 0, name: '' }]); // หรือค่าดีฟอลต์ที่คุณต้องการ
+                setSSO([{ ID: 0, name: '' }]);
             } else {
-                // แปลงเป็น array ถ้าจำเป็น
-                const ssoArray = [{
-                    ID: 0,
-                    percent: ssoData.percent,
-                    ssomax: ssoData.ssomax
-                }]
-                setSSO(ssoArray);
+                setSSO(ssoData);
             }
         });
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
-
 
     const handleSave = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/sso`);
@@ -150,6 +141,7 @@ const SSODetail = () => {
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
+                setEditSSO(false);
             })
             .catch((error) => {
                 ShowError("เกิดข้อผิดพลาดในการบันทึก");
@@ -158,26 +150,13 @@ const SSODetail = () => {
     };
 
     const handleCancel = () => {
-        if (!firebaseDB || !companyId) return;
-
         const ssoRef = ref(firebaseDB, `workgroup/company/${companyId}/sso`);
 
         onValue(ssoRef, (snapshot) => {
-            const ssoData = snapshot.val();
-
-            if (!ssoData) {
-                setSSO([{ ID: 0, percent: '', ssomax: '' }]); // ค่า default เมื่อไม่มีข้อมูล
-            } else {
-                const ssoArray = [{
-                    ID: 0,
-                    percent: ssoData.percent,
-                    ssomax: ssoData.ssomax
-                }];
-                setSSO(ssoArray);
-            }
-
+            const ssoData = snapshot.val() || [{ ID: 0, name: '' }];
+            setSSO(ssoData);
             setEditSSO(false);
-        }, { onlyOnce: true });
+        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
 
