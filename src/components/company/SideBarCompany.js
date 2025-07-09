@@ -778,11 +778,17 @@ export default function SideBarCompany() {
                 <Divider />
                 <List>
                     {open ? <Typography marginLeft={2} variant='subtitle2' gutterBottom>โครงสร้างบริษัท</Typography> : ""}
-                    {['ระดับตำแหน่งงาน', 'แผนก/ฝ่ายงาน', 'ส่วนงาน', 'ตำแหน่งงาน'].map((text, index) => (
+                    {['ระดับตำแหน่งงาน', 'แผนก/ฝ่ายงาน', 'ส่วนงาน', 'ตำแหน่งงาน','ประกันสังคม'].map((text, index) => (
                         <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: 40 }}>
                             <ListItemButton
                                 component={Link}
-                                to={index === 0 ? `/${domain}/${companyName}/level` : index === 1 ? `/${domain}/${companyName}/department` : index === 2 ? `/${domain}/${companyName}/section` : `/${domain}/${companyName}/position`}
+                                to={
+                                    index === 0 ? `/${domain}/${companyName}/level` 
+                                    : index === 1 ? `/${domain}/${companyName}/department` 
+                                    : index === 2 ? `/${domain}/${companyName}/section` 
+                                    : index === 3 ? `/${domain}/${companyName}/position`
+                                : `/${domain}/${companyName}/social-security`
+                                }
                             >
                                 <ListItemIcon sx={{
                                     minWidth: 0,
@@ -801,11 +807,14 @@ export default function SideBarCompany() {
                 <Divider />
                 <List sx={{ marginBottom: 5 }}>
                     {open ? <Typography marginLeft={2} variant='subtitle2' gutterBottom>โครงสร้างเวลา</Typography> : ""}
-                    {['ประเภทการลา', 'กะการทำงาน', 'ประกันสังคม'].map((text, index) => (
+                    {['ประเภทการลา', 'กะการทำงาน', 'วันหยุดบริษัท'].map((text, index) => (
                         <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: 40 }}>
                             <ListItemButton
                                 component={Link}
-                                to={index === 0 ? `/${domain}/${companyName}/leave` : index === 1 ? `/${domain}/${companyName}/workshift ` : `/${domain}/${companyName}/social-security`}
+                                to={
+                                    index === 0 ? `/${domain}/${companyName}/leave` 
+                                    : index === 1 ? `/${domain}/${companyName}/workshift ` 
+                                    : `/${domain}/${companyName}/dayoff`}
                             >
                                 <ListItemIcon sx={{
                                     minWidth: 0,

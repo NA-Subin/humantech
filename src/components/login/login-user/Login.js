@@ -180,7 +180,7 @@ const DomainLogin = () => {
                                                 type="password"
                                                 size="small"
                                                 fullWidth
-                                                placeholder="yourdomain.humantech.com"
+                                                placeholder="กรุณากรอกรหัส Domain"
                                                 value={password}
                                                 onChange={(e) => setPassword(e.target.value)}
                                                 margin="normal"

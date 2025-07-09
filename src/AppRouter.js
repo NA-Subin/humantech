@@ -16,6 +16,7 @@ import PositionDetail from "./components/company/structure/Position";
 import LeaveDetail from "./components/company/time/Leave";
 import WorkShiftDetail from "./components/company/time/Workshift";
 import SSODetail from "./components/company/time/SSO";
+import DayOffDetail from "./components/company/time/DayOff";
 
 function CompanyRoutes() {
   return (
@@ -25,9 +26,11 @@ function CompanyRoutes() {
       <Route path="department" element={<DepartmentDetail />} />
       <Route path="section" element={<SectionDetail />} />
       <Route path="position" element={<PositionDetail />} />
+      <Route path="social-security" element={<SSODetail />} />
+
       <Route path="leave" element={<LeaveDetail />} />
       <Route path="workshift" element={<WorkShiftDetail />} />
-      <Route path="social-security" element={<SSODetail />} />
+      <Route path="dayoff" element={<DayOffDetail />} />
     </Routes>
   );
 }
