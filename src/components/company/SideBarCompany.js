@@ -16,43 +16,19 @@ import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import TableViewRoundedIcon from '@mui/icons-material/TableViewRounded';
-import KeyRoundedIcon from '@mui/icons-material/KeyRounded';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import MailIcon from '@mui/icons-material/Mail';
 import SearchIcon from '@mui/icons-material/Search';
 import InputBase from '@mui/material/InputBase';
 import Badge from '@mui/material/Badge';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import DraftsRoundedIcon from '@mui/icons-material/DraftsRounded';
-import StarRateRoundedIcon from '@mui/icons-material/StarRateRounded';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import OutputIcon from '@mui/icons-material/Output';
-import AccountCircle from '@mui/icons-material/AccountCircle';
-import Avatar from '@mui/material/Avatar';
-import Stack from '@mui/material/Stack';
-import GroupIcon from '@mui/icons-material/Group';
-import BusinessIcon from '@mui/icons-material/Business';
 import HailIcon from '@mui/icons-material/Hail';
-import ListAltIcon from '@mui/icons-material/ListAlt';
-import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
-import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
-import LocalAtmRoundedIcon from '@mui/icons-material/LocalAtmRounded';
-import ContactMailRoundedIcon from '@mui/icons-material/ContactMailRounded';
-import HomeRepairServiceRoundedIcon from '@mui/icons-material/HomeRepairServiceRounded';
-import SummarizeRoundedIcon from '@mui/icons-material/SummarizeRounded';
-import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
-import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
-import DevicesOtherRoundedIcon from '@mui/icons-material/DevicesOtherRounded';
-import ListRoundedIcon from '@mui/icons-material/ListRounded';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardReturnRoundedIcon from '@mui/icons-material/KeyboardReturnRounded';
@@ -60,10 +36,6 @@ import MuiAccordion from '@mui/material/Accordion';
 import MuiAccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import AccessAlarmRoundedIcon from '@mui/icons-material/AccessAlarmRounded';
-import ExitToAppRoundedIcon from '@mui/icons-material/ExitToAppRounded';
-import InfoRoundedIcon from '@mui/icons-material/InfoRounded';
-import FlagRoundedIcon from '@mui/icons-material/FlagRounded';
 import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded';
 import PasswordRoundedIcon from '@mui/icons-material/PasswordRounded';
 import PhoneIphoneRoundedIcon from '@mui/icons-material/PhoneIphoneRounded';
@@ -71,10 +43,10 @@ import InstallMobileRoundedIcon from '@mui/icons-material/InstallMobileRounded';
 import MarkEmailUnreadRoundedIcon from '@mui/icons-material/MarkEmailUnreadRounded';
 import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
 import AccessTimeFilledIcon from '@mui/icons-material/AccessTimeFilled';
+import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Slide from '@mui/material/Slide';
 import Logo from '../../img/Humantech.png';
@@ -312,6 +284,7 @@ export default function SideBarCompany() {
     const openMenu = Boolean(anchorElMenu);
     const [anchorElSetting, setAnchorElSetting] = React.useState(null);
     const openSetting = Boolean(anchorElSetting);
+    const [selectedMenu, setSelectedMenu] = useState('');
 
     const handleClickMenu = (event) => {
         setAnchorElMenu(event.currentTarget);
@@ -454,7 +427,7 @@ export default function SideBarCompany() {
                             onClick={handleClickSetting}
                             endIcon={openSetting ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                         >
-                            <Typography variant='subtitle1' sx={{ marginTop: 1 }} gutterBottom>Website: บริษัท</Typography>
+                            <Typography variant='subtitle1' sx={{ marginTop: 1 }} gutterBottom>{selectedCompany?.companyname}</Typography>
                         </Button>
                         <Menu
                             id="demo-positioned-menu"
@@ -506,18 +479,48 @@ export default function SideBarCompany() {
                             </IconButton>
                         </Button> */}
                         <Button size="large" color="inherit">
-                            <IconButton size="small" aria-label="กลับสู่ระบบหลัก" color={openLogo ? "primary" : "inherit"} onMouseEnter={() => setOpenLogo(true)} onMouseLeave={() => setOpenLogo(false)} sx={{ '&:hover': { backgroundColor: theme.palette.primary.light } }} component={Link} to={`/${domain}/dashboard`}>
+                            <IconButton
+                                size="small"
+                                aria-label="กลับสู่ระบบหลัก"
+                                color={openLogo ? "primary" : "inherit"}
+                                onMouseEnter={() => setOpenLogo(true)}
+                                onMouseLeave={() => setOpenLogo(false)}
+                                sx={{ '&:hover': { backgroundColor: theme.palette.primary.light }, marginTop: openLogo ? -1 : 0, marginBottom: openLogo ? -1 : 0 }}
+                                component={Link}
+                                to={`/${domain}/dashboard`}>
                                 {openLogo ?
-                                    <Box >
+                                    <Box>
                                         <Box display="flex" justifyContent="center" alignItems="center">
-                                            <img src={LogoGreen} width={140} />
+                                            <Box sx={{ marginBottom: -1.5 }}>
+                                                <Typography
+                                                    variant="subtitle1"
+                                                    sx={{ opacity: 0.7, color: theme.palette.primary.main, marginBottom: -2, marginLeft: -1.5 }}
+                                                    fontWeight="bold"
+                                                    fontSize={10}
+                                                    gutterBottom
+                                                >
+                                                    ระบบจัดการบริษัท
+                                                </Typography>
+                                                <img src={LogoGreen} width={140} />
+                                            </Box>
                                             <KeyboardReturnRoundedIcon />
                                         </Box>
-                                        <Typography variant='subtitle1' fontWeight="bold" fontSize={10} sx={{ marginTop: -1 }} gutterBottom>กลับสู่ระบบหลัก</Typography>
+                                        <Typography variant='subtitle1' fontWeight="bold" fontSize={12} sx={{ marginTop: -1 }} gutterBottom>กลับสู่หน้าเลือกบริษัท</Typography>
                                     </Box>
                                     :
                                     <Box display="flex" justifyContent="center" alignItems="center">
-                                        <img src={Logo} width={140} />
+                                        <Box sx={{ marginBottom: -1.5 }}>
+                                            <Typography
+                                                variant="subtitle1"
+                                                sx={{ opacity: 0.7, color: "white", marginBottom: -2, marginLeft: -1.5 }}
+                                                fontWeight="bold"
+                                                fontSize={10}
+                                                gutterBottom
+                                            >
+                                                ระบบจัดการบริษัท
+                                            </Typography>
+                                            <img src={Logo} width={140} />
+                                        </Box>
                                         <KeyboardReturnRoundedIcon />
                                     </Box>
                                 }
@@ -684,151 +687,294 @@ export default function SideBarCompany() {
                     </IconButton>
                 </DrawerHeader>
                 <Divider />
-                {
+                {/* {
                     open ?
-                        <Stack direction="column" spacing={2} height={200} justifyContent="center" alignItems="center" textAlign="center" p={3}>
+                        <Stack direction="column" spacing={2} height={150} justifyContent="center" alignItems="center" textAlign="center" p={3}>
                             <StyledBadge
                                 overlap="circular"
                                 anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                                 variant="dot"
                             >
-                                <Avatar src="/broken-image.jpg" sx={{ width: 100, height: 100 }} />
+                                <Avatar src="/broken-image.jpg" sx={{ width: 80, height: 80 }} />
                             </StyledBadge>
                             <ButtonGroup variant="text" aria-label="Basic button group">
                                 <Typography variant='subtitle2' marginLeft={1} marginRight={1} marginTop={1} fontWeight="bold" gutterBottom>{selectedCompany?.companyname}</Typography>
-                                {/* <IconButton
-                                    id="demo-positioned-button"
-                                    aria-controls={openMenu ? 'demo-positioned-menu' : undefined}
-                                    aria-haspopup="true"
-                                    aria-expanded={openMenu ? 'true' : undefined}
-                                    onClick={handleClickMenu}
-                                >
-                                    <MenuRoundedIcon />
-                                </IconButton> */}
                             </ButtonGroup>
-                            {/* <Menu
-                                id="demo-positioned-menu"
-                                aria-labelledby="demo-positioned-button"
-                                anchorEl={anchorElMenu}
-                                open={openMenu}
-                                onClose={handleCloseMenu}
-                                PaperProps={{
-                                    elevation: 0,
-                                    sx: {
-                                        overflow: 'visible',
-                                        width: 150,
-                                        borderStyle: 'solid',
-                                        borderWidth: 3,
-                                        borderColor: theme.palette.primary.light,
-                                        borderRadius: 3,
-                                        filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.32))',
-                                        '& .MuiAvatar-root': {
-                                            width: 50,
-                                            height: 32,
-                                            ml: -0.5,
-                                            mr: 1,
-                                        },
-                                        '&::before': {
-                                            content: '""',
-                                            display: 'block',
-                                            position: 'absolute',
-                                            top: 0,
-                                            right: 70,
-                                            width: 10,
-                                            height: 10,
-                                            backgroundColor: theme.palette.primary.light,
-                                            transform: 'translateY(-50%) rotate(50deg)',
-                                            zIndex: 0,
-                                        },
-                                    },
-                                }}
-                                transformOrigin={{ horizontal: 'center', vertical: 'top' }}
-                                anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
-                            >
-                                <MenuItem onClick={handleCloseMenu} component={Link} to={`/${domain}/${companyName}/employee-profile`}>ข้อมูลส่วนตัว</MenuItem>
-                                <Divider sx={{ backgroundColor: theme.palette.primary.light }} />
-                                <MenuItem onClick={handleLogout}>Logout</MenuItem>
-                            </Menu> */}
                         </Stack>
                         :
                         ""
-                }
+                } */}
                 <Divider />
-                <List>
-                    {['หน้าแรก'].map((text, index) => (
-                        <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: open ? 40 : 200 }}>
-                            <ListItemButton
-                                component={Link}
-                                to={index === 0 ? `/${domain}/${companyName}` : ""}
-                            >
-                                <ListItemIcon sx={{
-                                    minWidth: 0,
-                                    mr: open ? 3 : 'auto',
-                                    justifyContent: 'center',
-                                    marginLeft: open ? 2 : 'auto',
+                <List sx={{ marginBottom: 1, py: 0 }}>
+                    {['หน้าแรก'].map((text, index) => {
+                        const isSelected = selectedMenu === text;
+
+                        return (
+                            <ListItem
+                                key={text}
+                                disablePadding
+                                sx={{
+                                    display: open ? 'block' : 'flex',
+                                    height: 36,
+                                    py: 0.3,
                                 }}
+                            >
+                                <ListItemButton
+                                    component={Link}
+                                    to={`/${domain}/${companyName}`}
+                                    onClick={() => setSelectedMenu(text)}
+                                    sx={{
+                                        minHeight: 32,
+                                        px: open ? 2 : 1,
+                                        py: 0.5,
+                                        paddingLeft: isSelected ? 4 : 2,
+                                        backgroundColor: isSelected ? 'primary.main' : 'transparent',
+                                        color: isSelected ? 'white' : 'inherit',
+                                        '&:hover': {
+                                            backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
+                                        },
+                                    }}
                                 >
-                                    {index === 0 ? <HomeRoundedIcon /> : <HomeRoundedIcon />}
-                                </ListItemIcon>
-                                <ListItemText primary={text} sx={{ opacity: open ? 1 : 0 }} />
-                            </ListItemButton>
-                        </ListItem>
-                    ))}
+                                    <ListItemIcon
+                                        sx={{
+                                            minWidth: 28,
+                                            mr: open ? 2 : 'auto',
+                                            ml: open ? 1 : 'auto',
+                                            justifyContent: 'center',
+                                            color: isSelected ? 'white' : '#616161',
+                                        }}
+                                    >
+                                        <HomeRoundedIcon sx={{ fontSize: 20 }} />
+                                    </ListItemIcon>
+
+                                    <ListItemText
+                                        primary={text}
+                                        sx={{
+                                            opacity: open ? 1 : 0,
+                                            '& .MuiTypography-root': {
+                                                fontSize: '15px',
+                                            },
+                                        }}
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        )
+                    })}
                 </List>
                 <Divider />
-                <List>
-                    {open ? <Typography marginLeft={2} variant='subtitle2' gutterBottom>โครงสร้างบริษัท</Typography> : ""}
-                    {['ระดับตำแหน่งงาน', 'แผนก/ฝ่ายงาน', 'ส่วนงาน', 'ตำแหน่งงาน','ประกันสังคม'].map((text, index) => (
-                        <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: 40 }}>
-                            <ListItemButton
-                                component={Link}
-                                to={
-                                    index === 0 ? `/${domain}/${companyName}/level` 
-                                    : index === 1 ? `/${domain}/${companyName}/department` 
-                                    : index === 2 ? `/${domain}/${companyName}/section` 
-                                    : index === 3 ? `/${domain}/${companyName}/position`
-                                : `/${domain}/${companyName}/social-security`
-                                }
-                            >
-                                <ListItemIcon sx={{
-                                    minWidth: 0,
-                                    mr: open ? 3 : 'auto',
-                                    justifyContent: 'center',
-                                    marginLeft: open ? 2 : 'auto',
+                <List sx={{ mb: 2, py: 0 }}>
+                    {open && (
+                        <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1 }}>
+                            โครงสร้างบริษัท
+                        </Typography>
+                    )}
+
+                    {[
+                        'ระดับตำแหน่งงาน',
+                        'แผนก/ฝ่ายงาน',
+                        'ส่วนงาน',
+                        'ตำแหน่งงาน'
+                    ].map((text, index) => {
+                        const isSelected = selectedMenu === text;
+
+                        return (
+                            <ListItem
+                                key={text}
+                                disablePadding
+                                sx={{
+                                    display: open ? 'block' : 'flex',
+                                    height: 36,
+                                    py: 0.3,
                                 }}
+                            >
+                                <ListItemButton
+                                    component={Link}
+                                    onClick={() => setSelectedMenu(text)}
+                                    to={
+                                        index === 0
+                                            ? `/${domain}/${companyName}/level`
+                                            : index === 1
+                                                ? `/${domain}/${companyName}/department`
+                                                : index === 2
+                                                    ? `/${domain}/${companyName}/section`
+                                                    : `/${domain}/${companyName}/position`
+                                                            
+                                    }
+                                    sx={{
+                                        minHeight: 32,
+                                        px: open ? 2 : 1,
+                                        py: 0.5,
+                                        paddingLeft: isSelected ? 4 : 2,
+                                        backgroundColor: isSelected ? 'primary.main' : 'transparent',
+                                        color: isSelected ? 'white' : 'inherit',
+                                        '&:hover': {
+                                            backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
+                                        },
+                                    }}
                                 >
-                                    {index === 0 ? <HailIcon /> : <HailIcon />}
-                                </ListItemIcon>
-                                <ListItemText primary={text} sx={{ opacity: open ? 1 : 0 }} />
-                            </ListItemButton>
-                        </ListItem>
-                    ))}
+                                    <ListItemIcon
+                                        sx={{
+                                            minWidth: 28,
+                                            mr: open ? 2 : 'auto',
+                                            ml: open ? 1 : 'auto',
+                                            justifyContent: 'center',
+                                            color: isSelected ? 'white' : '#616161',
+                                        }}
+                                    >
+                                        <HailIcon sx={{ fontSize: 18 }} />
+                                    </ListItemIcon>
+
+                                    <ListItemText
+                                        primary={text}
+                                        sx={{
+                                            opacity: open ? 1 : 0,
+                                            '& .MuiTypography-root': {
+                                                fontSize: '15px',
+                                            },
+                                        }}
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        )
+                    })}
                 </List>
                 <Divider />
-                <List sx={{ marginBottom: 5 }}>
-                    {open ? <Typography marginLeft={2} variant='subtitle2' gutterBottom>โครงสร้างเวลา</Typography> : ""}
-                    {['ประเภทการลา', 'กะการทำงาน', 'วันหยุดบริษัท'].map((text, index) => (
-                        <ListItem key={text} disablePadding sx={{ display: open ? 'block' : 'flex', height: 40 }}>
-                            <ListItemButton
-                                component={Link}
-                                to={
-                                    index === 0 ? `/${domain}/${companyName}/leave` 
-                                    : index === 1 ? `/${domain}/${companyName}/workshift ` 
-                                    : `/${domain}/${companyName}/dayoff`}
-                            >
-                                <ListItemIcon sx={{
-                                    minWidth: 0,
-                                    mr: open ? 3 : 'auto',
-                                    justifyContent: 'center',
-                                    marginLeft: open ? 2 : 'auto',
+                <List sx={{ marginBottom: 2, paddingY: 0 }}>
+                    {open ? (
+                        <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1 }}>
+                            โครงสร้างภาษี
+                        </Typography>
+                    ) : null}
+
+                    {['ประกันสังคม', 'ภาษี', 'ค่าลดหย่อนภาษี'].map((text, index) => {
+                        const isSelected = selectedMenu === text;
+
+                        return (
+                            <ListItem
+                                key={text}
+                                disablePadding
+                                sx={{
+                                    display: open ? 'block' : 'flex',
+                                    height: 36, // ลดความสูง
+                                    paddingY: 0.3,
                                 }}
+                            >
+                                <ListItemButton
+                                    component={Link}
+                                    to={
+                                        index === 0
+                                            ? `/${domain}/${companyName}/social-security`
+                                            : index === 1
+                                                ? `/${domain}/${companyName}/tax`
+                                                            : `/${domain}/${companyName}/deduction`
+                                    }
+                                    onClick={() => setSelectedMenu(text)}
+                                    sx={{
+                                        minHeight: 32,
+                                        paddingY: 0.5,
+                                        paddingX: open ? 2 : 1,
+                                        paddingLeft: isSelected ? 4 : 2,
+                                        backgroundColor: isSelected ? 'primary.main' : 'transparent',
+                                        color: isSelected ? 'white' : 'inherit',
+                                        '&:hover': {
+                                            backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
+                                        },
+                                    }}
                                 >
-                                    {index === 0 ? <AccessTimeFilledIcon /> : <AccessTimeFilledIcon />}
-                                </ListItemIcon>
-                                <ListItemText primary={text} sx={{ opacity: open ? 1 : 0 }} />
-                            </ListItemButton>
-                        </ListItem>
-                    ))}
+                                    <ListItemIcon
+                                        sx={{
+                                            minWidth: 28,
+                                            mr: open ? 2 : 'auto',
+                                            justifyContent: 'center',
+                                            marginLeft: open ? 1 : 'auto',
+                                            color: isSelected ? 'white' : '#616161',
+                                        }}
+                                    >
+                                        <AttachMoneyIcon sx={{ fontSize: 18 }} />
+                                    </ListItemIcon>
+
+                                    <ListItemText
+                                        primary={text}
+                                        sx={{
+                                            opacity: open ? 1 : 0,
+                                            '& .MuiTypography-root': {
+                                                fontSize: '15px', // ลดขนาดตัวอักษร
+                                            },
+                                        }}
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        )
+                    })}
+                </List>
+                <Divider />
+                <List sx={{ marginBottom: 2, paddingY: 0 }}>
+                    {open ? (
+                        <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1 }}>
+                            โครงสร้างเวลา
+                        </Typography>
+                    ) : null}
+
+                    {['ประเภทการลา', 'กะการทำงาน', 'วันหยุดบริษัท'].map((text, index) => {
+                        const isSelected = selectedMenu === text;
+
+                        return (
+                            <ListItem
+                                key={text}
+                                disablePadding
+                                sx={{
+                                    display: open ? 'block' : 'flex',
+                                    height: 36, // ลดความสูง
+                                    paddingY: 0.3,
+                                }}
+                            >
+                                <ListItemButton
+                                    component={Link}
+                                    to={
+                                        index === 0
+                                            ? `/${domain}/${companyName}/leave`
+                                            : index === 1
+                                                ? `/${domain}/${companyName}/workshift`
+                                                : `/${domain}/${companyName}/dayoff`
+                                    }
+                                    onClick={() => setSelectedMenu(text)}
+                                    sx={{
+                                        minHeight: 32,
+                                        paddingY: 0.5,
+                                        paddingX: open ? 2 : 1,
+                                        paddingLeft: isSelected ? 4 : 2,
+                                        backgroundColor: isSelected ? 'primary.main' : 'transparent',
+                                        color: isSelected ? 'white' : 'inherit',
+                                        '&:hover': {
+                                            backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
+                                        },
+                                    }}
+                                >
+                                    <ListItemIcon
+                                        sx={{
+                                            minWidth: 28,
+                                            mr: open ? 2 : 'auto',
+                                            justifyContent: 'center',
+                                            marginLeft: open ? 1 : 'auto',
+                                            color: isSelected ? 'white' : '#616161',
+                                        }}
+                                    >
+                                        <AccessTimeFilledIcon sx={{ fontSize: 18 }} />
+                                    </ListItemIcon>
+
+                                    <ListItemText
+                                        primary={text}
+                                        sx={{
+                                            opacity: open ? 1 : 0,
+                                            '& .MuiTypography-root': {
+                                                fontSize: '15px', // ลดขนาดตัวอักษร
+                                            },
+                                        }}
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        )
+                    })}
                 </List>
             </Drawer>
         </>

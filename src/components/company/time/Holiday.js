@@ -1,6 +1,6 @@
 import React, { useState, useEffect, use } from "react";
 import '../../../App.css'
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, get } from "firebase/database";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -48,15 +48,16 @@ const CustomBackdrop = styled(Backdrop)(({ theme }) => ({
     backgroundColor: "rgba(0, 0, 0, 0.09)", // ✅ โปร่งแสงชัดเจน
 }));
 
-const DayOffDetail = () => {
+const HolidayDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
     const { companyName } = useParams();
     const [editLeave, setEditLeave] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [holidayList, setHolidayList] = useState([{ ID: 0, date: '', holiday: '' }]);
+    const [holiday, setHoliday] = useState([{ ID: 0, date: '', holiday: '' }]);
     const columns = [
-        { label: "วันที่", key: "date", type: "text", width: "50%" },
+        { label: "วันที่", key: "date", type: "date", width: "50%" },
         { label: "ชื่อวันหยุด", key: "holiday", type: "text", width: "50%" }
     ];
 
@@ -82,6 +83,8 @@ const DayOffDetail = () => {
         const match = holidayList.find(h => dayjs(h.date, "DD/MM/YYYY").format("YYYY-MM-DD") === dateStr);
         return match ? match.holiday : "";
     };
+
+    console.log("holiday : ", holidayList);
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
@@ -119,68 +122,53 @@ const DayOffDetail = () => {
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
             if (!dayOffData) {
                 setHolidayList([{ ID: 0, date: '', holiday: '' }]);
+                setHoliday([{ ID: 0, date: '', holiday: '' }]);
             } else {
                 setHolidayList(dayOffData);
+                setHoliday(dayOffData);
             }
         });
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
+    const handleSave = (monthHolidays, allHolidayList) => {
+        console.log("monthHolidays : ",monthHolidays);
+        let maxId = allHolidayList.reduce((max, item) => Math.max(max, item.ID), 0);
+        const updatedHolidayList = [...allHolidayList];
 
-    const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/dayoff`);
+        const assignedHolidays = monthHolidays.map(h => {
+            // ✅ ใช้ date เทียบแทน ID
+            const found = allHolidayList.find(item => item.date === h.date);
+            if (found) {
+                return { ...found, ...h, ID: found.ID }; // ใช้ ID เดิม
+            } else {
+                maxId += 1;
+                return { ...h, ID: maxId }; // เพิ่มใหม่พร้อม ID ใหม่
+            }
+        });
 
-        // const invalidMessages = [];
+        console.log("assignedHolidays : ",assignedHolidays);
 
-        // leave.forEach((row, rowIndex) => {
-        //     columns.forEach((col) => {
-        //         const value = row[col.key];
+        // ✅ รวมข้อมูลใหม่เข้า updatedHolidayList
+        assignedHolidays.forEach(h => {
+            const index = updatedHolidayList.findIndex(item => item.date === h.date);
+            if (index !== -1) {
+                updatedHolidayList[index] = h; // อัปเดต
+            } else {
+                updatedHolidayList.push(h); // เพิ่มใหม่
+            }
+        });
 
-        //         if (value === "") {
-        //             invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
-        //             return;
-        //         }
+        console.log("📌 Final updatedHolidayList:", updatedHolidayList);
 
-        //         if (col.type === "number" && isNaN(Number(value))) {
-        //             invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
-        //             return;
-        //         }
-
-        //         if (
-        //             col.type === "select" &&
-        //             !col.options?.some(opt => opt.value === value)
-        //         ) {
-        //             invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-        //             return;
-        //         }
-        //     });
-        // });
-
-        // // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        // const names = leave.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
-        // const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
-        // if (duplicates.length > 0) {
-        //     invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
-        // }
-
-        // // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
-        // if (invalidMessages.length > 0) {
-        //     ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
-        //     return;
-        // }
-
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, holidayList)
-            .then(() => {
-                ShowSuccess("บันทึกข้อมูลสำเร็จ");
-                console.log("บันทึกสำเร็จ");
-            })
-            .catch((error) => {
-                ShowError("เกิดข้อผิดพลาดในการบันทึก");
-                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
-            });
+        // 🔄 บันทึกลง Firebase (uncomment เมื่อใช้งานจริง)
+        // const holidayRef = ref(firebaseDB, "holiday");
+        // set(holidayRef, updatedHolidayList)
+        //     .then(() => console.log("✅ บันทึกวันหยุดสำเร็จ"))
+        //     .catch((err) => console.error("❌ เกิดข้อผิดพลาด:", err));
     };
+
 
     const handleCancel = () => {
         const dayoffRef = ref(firebaseDB, `workgroup/company/${companyId}/dayoff`);
@@ -404,8 +392,15 @@ const DayOffDetail = () => {
                 </DialogContent>
                 <DialogActions sx={{ borderTop: `2px solid ${theme.palette.primary.dark}`, display: "flex", justifyContent: "center", alignItems: "center" }}>
                     <Button variant="contained" color="error" onClick={handleClose}>ยกเลิก</Button>
-                    <Button variant="contained" color="success" >
-                        บันทึก
+                    <Button variant="contained" color="success"
+                        onClick={() => {
+                            const currentMonthHolidays = holidayList.filter(h =>
+                                formatThaiMonth(dayjs(h.date, "DD/MM/YYYY")) === newMonth
+                            );
+                            handleSave(currentMonthHolidays, holiday); // 👈 ส่ง holidayList ด้วย
+                        }}
+                    >
+                        บันทึกวันหยุดเดือนนี้
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -413,4 +408,4 @@ const DayOffDetail = () => {
     )
 }
 
-export default DayOffDetail
+export default HolidayDetail
