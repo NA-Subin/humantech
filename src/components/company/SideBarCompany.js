@@ -57,7 +57,7 @@ import { auth } from '../../server/firebase';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
 
 
-const drawerWidth = 300;
+const drawerWidth = 250;
 
 const openedMixin = (theme) => ({
     width: drawerWidth,
@@ -644,7 +644,7 @@ export default function SideBarCompany() {
             </AppBar>
             <Drawer variant="permanent" open={open}>
                 <DrawerHeader sx={{ backgroundColor: theme.palette.primary.light, display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <IconButton color="primary" sx={{ display: "block", marginBottom: -1, marginTop: -1 }} onClick={() => navigate(`/${domain}/${companyName}`)}>
+                    <IconButton color="primary" sx={{ display: "block", marginBottom: -1, marginTop: -1, marginRight: -2.5 }} onClick={() => navigate(`/${domain}/${companyName}`)}>
                         <Box
                             sx={{
                                 textAlign: "center",
@@ -683,7 +683,7 @@ export default function SideBarCompany() {
                         </Typography> */}
                     </IconButton>
                     <IconButton color="primary" onClick={handleDrawerClose}>
-                        {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+                        {theme.direction === 'rtl' ? <ChevronRightIcon fontSize="large" /> : <ChevronLeftIcon fontSize="large" />}
                     </IconButton>
                 </DrawerHeader>
                 <Divider />
@@ -798,7 +798,77 @@ export default function SideBarCompany() {
                                                 : index === 2
                                                     ? `/${domain}/${companyName}/section`
                                                     : `/${domain}/${companyName}/position`
-                                                            
+
+                                    }
+                                    sx={{
+                                        minHeight: 32,
+                                        px: open ? 2 : 1,
+                                        py: 0.5,
+                                        paddingLeft: isSelected ? 4 : 2,
+                                        backgroundColor: isSelected ? 'primary.main' : 'transparent',
+                                        color: isSelected ? 'white' : 'inherit',
+                                        '&:hover': {
+                                            backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
+                                        },
+                                    }}
+                                >
+                                    <ListItemIcon
+                                        sx={{
+                                            minWidth: 28,
+                                            mr: open ? 2 : 'auto',
+                                            ml: open ? 1 : 'auto',
+                                            justifyContent: 'center',
+                                            color: isSelected ? 'white' : '#616161',
+                                        }}
+                                    >
+                                        <HailIcon sx={{ fontSize: 18 }} />
+                                    </ListItemIcon>
+
+                                    <ListItemText
+                                        primary={text}
+                                        sx={{
+                                            opacity: open ? 1 : 0,
+                                            '& .MuiTypography-root': {
+                                                fontSize: '15px',
+                                            },
+                                        }}
+                                    />
+                                </ListItemButton>
+                            </ListItem>
+                        )
+                    })}
+                </List>
+                <Divider />
+                <List sx={{ mb: 2, py: 0 }}>
+                    {open && (
+                        <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1 }}>
+                            โครงสร้างพนักงาน
+                        </Typography>
+                    )}
+
+                    {[
+                        'พนักงาน'
+                    ].map((text, index) => {
+                        const isSelected = selectedMenu === text;
+
+                        return (
+                            <ListItem
+                                key={text}
+                                disablePadding
+                                sx={{
+                                    display: open ? 'block' : 'flex',
+                                    height: 36,
+                                    py: 0.3,
+                                }}
+                            >
+                                <ListItemButton
+                                    component={Link}
+                                    onClick={() => setSelectedMenu(text)}
+                                    to={
+                                        index === 0
+                                            ? `/${domain}/${companyName}/employee`
+                                            : `/${domain}/${companyName}/employee`
+
                                     }
                                     sx={{
                                         minHeight: 32,
@@ -866,7 +936,7 @@ export default function SideBarCompany() {
                                             ? `/${domain}/${companyName}/social-security`
                                             : index === 1
                                                 ? `/${domain}/${companyName}/tax`
-                                                            : `/${domain}/${companyName}/deduction`
+                                                : `/${domain}/${companyName}/deduction`
                                     }
                                     onClick={() => setSelectedMenu(text)}
                                     sx={{

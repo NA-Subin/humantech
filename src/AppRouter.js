@@ -19,6 +19,7 @@ import SSODetail from "./components/company/structure/SSO";
 import HolidayDetail from "./components/company/time/Holiday";
 import TaxDetail from "./components/company/structure/Tax";
 import TaxDeductionDetail from "./components/company/structure/TaxDeduction";
+import EmployeeDetail from "./components/company/employee/Employee";
 
 function CompanyRoutes() {
   return (
@@ -28,7 +29,10 @@ function CompanyRoutes() {
       <Route path="department" element={<DepartmentDetail />} />
       <Route path="section" element={<SectionDetail />} />
       <Route path="position" element={<PositionDetail />} />
+
       <Route path="social-security" element={<SSODetail />} />
+      <Route path="employee" element={<EmployeeDetail />} />
+
       <Route path="tax" element={<TaxDetail />} />
       <Route path="deduction" element={<TaxDeductionDetail />} />
       <Route path="leave" element={<LeaveDetail />} />

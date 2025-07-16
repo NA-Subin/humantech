@@ -3,9 +3,9 @@ import '@fontsource/noto-sans-thai';
 
 const theme = createTheme({
     typography: {
-        fontFamily: 'Noto Sans Thai, sans-serif',
-        fontWeight: 'Semi Bold',
-        fontStyle: 'normal',
+        fontFamily: '"Sarabun", sans-serif',
+        fontWeight: 900,
+        fontStyle: "normal",
     },
     palette: {
         primary: {

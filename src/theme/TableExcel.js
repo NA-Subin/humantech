@@ -263,7 +263,7 @@ export default function TableExcel({
                                                 textAlign: "center"
                                             }}
                                         >
-                                            {col.type === "select" ? (
+                                            {(col.type === "select" || col.type === "dependent-select") ? (
                                                 <>
                                                     <select
                                                         value={
@@ -288,11 +288,35 @@ export default function TableExcel({
                                                         }}
                                                     >
                                                         <option value="">-- กรุณาเลือก{col.label} --</option>
-                                                        {col.options?.map((opt, i) => (
-                                                            <option key={i} value={opt.value}>
-                                                                {opt.label}
-                                                            </option>
-                                                        ))}
+                                                        {(() => {
+                                                            // ✅ ตรวจว่าเป็น dependent-select หรือไม่
+                                                            if (col.type === "dependent-select") {
+                                                                const parentKey = col.dependsOn; // เช่น "department"
+                                                                const parentValue = row[parentKey]; // เช่น "2"
+                                                                const filteredOptions = col.options.filter(opt =>
+                                                                    Array.isArray(opt.parent)
+                                                                        ? opt.parent.includes(parentValue)
+                                                                        : opt.parent === parentValue
+                                                                );
+
+                                                                return (
+                                                                    filteredOptions.length > 0
+                                                                        ? filteredOptions.map((opt, i) => (
+                                                                            <option key={i} value={opt.value}>
+                                                                                {opt.label}
+                                                                            </option>
+                                                                        ))
+                                                                        : <option value="">ไม่มี</option> // 👈 กรณีไม่พบ option ที่สัมพันธ์
+                                                                );
+                                                            }
+
+                                                            // ถ้าเป็น select ปกติ
+                                                            return col.options.map((opt, i) => (
+                                                                <option key={i} value={opt.value}>
+                                                                    {opt.label}
+                                                                </option>
+                                                            ));
+                                                        })()}
                                                     </select>
                                                     {/* {getSelectWarningText(row[col.key], col) && (
                                                     <div style={{ color: "orange", fontSize: "0.75rem" }}>

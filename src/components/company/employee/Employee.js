@@ -17,13 +17,13 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import theme from "../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
@@ -32,28 +32,37 @@ import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
-import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
+import MuiExcelLikeTable from "../test";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
-import dayjs from "dayjs";
-import "dayjs/locale/th";
 
-const PositionDetail = () => {
+const EmployeeDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
     const { companyName } = useParams();
-    const [editLavel, setEditLavel] = useState(false);
+    const [editEmployee, setEditEmployee] = useState(false);
     const [editDepartment, setEditDepartment] = useState(false);
     const [editPosition, setEditPosition] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [position, setPosition] = useState([{ ID: 0, positionname: '', levelid: ':', deptid: ':', sectionid: ':' }]);
-    const [level, setlevel] = useState([]);
-    const [department, setDepartment] = useState([]);
-    const [section, setSection] = useState([]);
-    const [selectedDateReceive, setSelectedDateReceive] = useState(dayjs(new Date));
+    const [employee, setEmployee] = useState([{ ID: 0, name: '', employeenumber: '' }]);
+    const [department, setDepartment] = useState([{ DepartmentName: '', Section: '' }]);
+    const [position, setPosition] = useState([{ PositionName: '', DepartmentName: '', employee: '' }]);
+    const employeeOptions = Array.from({ length: 10 }, (_, i) => ({
+        value: `${i + 1}`,
+        label: `${i + 1}`,
+    }));
+    const columns = [
+        { label: "ชื่อ", key: "name", type: "text", width: "60%" },
+        {
+            label: "ระดับ",
+            key: "employeenumber",
+            type: "select",
+            options: employeeOptions,
+        },
+    ];
 
-    console.log(selectedDateReceive);
+    console.log("employee : ", employee);
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
@@ -81,183 +90,74 @@ const PositionDetail = () => {
     }, [firebaseDB, companyId]);
 
     useEffect(() => {
-        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/level`);
-
-        onValue(optionRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                // แปลง object เป็น array ของ { value, label }
-                const opts = Object.values(data).map((item) => ({
-                    value: `${item.ID}:${item.name}`, // ค่าเวลาบันทึก
-                    label: item.name,                 // แสดงผล
-                }));
-                setlevel(opts); // <-- ใช้ใน columns
-            }
-        });
-    }, [companyId]);
-
-    useEffect(() => {
-        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
-
-        onValue(optionRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                // แปลง object เป็น array ของ { value, label }
-                const opts = Object.values(data).map((item) => ({
-                    value: `${item.ID}:${item.deptname}`, // ค่าเวลาบันทึก
-                    label: item.deptname,                 // แสดงผล
-                }));
-                setDepartment(opts); // <-- ใช้ใน columns
-            }
-        });
-    }, [companyId]);
-
-    useEffect(() => {
-        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/section`);
-
-        onValue(optionRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                const opts = Object.values(data).map((item) => ({
-                    value: `${item.ID}:${item.sectionname}`,
-                    label: item.sectionname,
-                    keyposition: item.keyposition
-                }));
-
-                // เพิ่มตัวเลือก "ไม่มี" เข้าไปที่ด้านบน
-                opts.unshift({ value: '0:ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" });
-
-                setSection(opts);
-            } else {
-                // ถ้าไม่มีข้อมูล section เลย ให้มีตัวเลือก "ไม่มี" อย่างน้อย
-                setSection([{ value: '0:ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" }]);
-            }
-        });
-    }, [companyId]);
-
-    useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const positionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
-        const unsubscribe = onValue(positionRef, (snapshot) => {
-            const positionData = snapshot.val();
+        const unsubscribe = onValue(employeeRef, (snapshot) => {
+            const employeeData = snapshot.val();
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!positionData) {
-                setPosition([{ ID: 0, positionname: '', levelid: ':', deptid: ':', sectionid: ':' }]);
+            if (!employeeData) {
+                setEmployee([{ ID: 0, name: '', employeenumber: '' }]);
             } else {
-                setPosition(positionData);
+                setEmployee(employeeData);
             }
         });
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-    const [allSection, setAllSection] = useState([]);        // Section ทั้งหมดจาก Firebase
-    const [filteredSection, setFilteredSection] = useState([]); // Section ที่กรองแล้ว
-    const [keyPosition, setKeyPosition] = useState("");       // เช่น "3:ผู้จัดการฝ่ายการตลาด"
-
-    const subDepartmentOptions = section.map((item) => {
-        const [id, name] = item.value.split(":");
-
-        // สร้าง mapping ระหว่างชื่อ → ฝ่าย
-        let parent = "";
-        if (name.includes("บัญชี")) parent = "1";            // ฝ่ายบัญชี
-        else if (name.includes("การตลาด")) parent = "2";      // ฝ่ายการตลาด
-        else if (name.includes("ไอที")) parent = "3";         // ฝ่ายไอที
-        else parent = "0"; // default อื่น ๆ
-
-        return {
-            value: item.value,
-            label: item.label,
-            parent: [parent], // ต้องเป็น array เพื่อรองรับหลายฝ่าย
-        };
-    });
 
 
-    console.log("position : ", position);
-    console.log("subDepartmentOptions : ", subDepartmentOptions);
-    console.log("all Section : ", allSection);
-    console.log("fillter section : ", filteredSection);
-    console.log("key Position : ", keyPosition);
+    // const handleChange = (setFn) => (changes, source) => {
+    //     if (source === 'loadData' || !changes) return;
 
-    // โหลด section ทั้งหมดจาก Firebase
-    useEffect(() => {
-        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/section`);
+    //     setFn((prev) => {
+    //         const newData = [...prev];
+    //         let hasChange = false;
 
-        onValue(optionRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                const opts = Object.values(data).map((item) => ({
-                    ...item, // ต้องมี item.departmentid อยู่
-                    value: `${item.ID}:${item.sectionname}`,
-                    label: item.sectionname,
-                }));
-                setAllSection(opts);
-            } else {
-                setAllSection([]);
-            }
-        });
-    }, [companyId]);
+    //         changes.forEach(([row, prop, oldVal, newVal]) => {
+    //             if (oldVal !== newVal) {
+    //                 newData[row][prop] = newVal;
+    //                 hasChange = true;
+    //             }
+    //         });
 
-    // 🔁 กรอง section โดยอิงจาก departmentId ที่ได้จาก keyPosition
-    useEffect(() => {
-        const departmentId = keyPosition?.split(":")[0];
+    //         return hasChange ? newData : prev;
+    //     });
+    // };
 
-        const filtered = allSection.filter(section => String(section.departmentid) === departmentId);
 
-        // เพิ่มตัวเลือก "ไม่มี" ที่ด้านบน
-        filtered.unshift({ value: "0:ไม่มี", label: "ไม่มี" });
+    // const handleAddRow = (type) => {
+    //     if (type === 'employee') {
+    //         const newRow = { Name: '', employee: '' };
+    //         setEmployee((prev) => [...prev, newRow]);
+    //     } else if (type === 'department') {
+    //         const newRow = { DepartmentName: '', Section: '' };
+    //         setDepartment((prev) => [...prev, newRow]);
+    //     } else if (type === 'position') {
+    //         const newRow = { PositionName: '', DepartmentName: '', employee: '' };
+    //         setPosition((prev) => [...prev, newRow]);
+    //     }
+    // };
 
-        setFilteredSection(filtered.length > 0 ? filtered : [{ value: "0:ไม่มี", label: "ไม่มี" }]);
-    }, [keyPosition, allSection]);
-
-    console.log("position : ", position);
-    console.log("department : ", department);
-    console.log("section : ", section);
-
-    const columns = [
-        { label: "ชื่อตำแหน่ง", key: "positionname", type: "text" },
-        {
-            label: "ระดับ",
-            key: "levelid",
-            type: "select",
-            width: "20%",
-            options: level,
-        },
-        {
-            label: "ฝ่ายงาน",
-            key: "deptid",
-            type: "select",
-            width: "20%",
-            options: department,
-        },
-        {
-            label: "ส่วนงาน",
-            key: "sectionid",
-            type: "dependent-select",
-            dependsOn: "deptid",
-            options: section.map((item) => ({
-                label: item.label,
-                value: item.value,
-                parent: item.keyposition, // 👈 ใช้เฉพาะ ID ฝ่ายงาน
-            })),
-        },
-    ];
-
-    console.log("section :: ",section.map((item) => ({
-                label: item.label,
-                value: item.value,
-                parent: item.keyposition.split(":")[0], // 👈 ใช้เฉพาะ ID ฝ่ายงาน
-            })))
+    // const handleRemoveRow = (type) => {
+    //     if (type === 'employee') {
+    //         setEmployee((prev) => prev.slice(0, -1));
+    //     } else if (type === 'department') {
+    //         setDepartment((prev) => prev.slice(0, -1));
+    //     } else if (type === 'position') {
+    //         setPosition((prev) => prev.slice(0, -1));
+    //     }
+    // };
 
     const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
         const invalidMessages = [];
 
-        position.forEach((row, rowIndex) => {
+        employee.forEach((row, rowIndex) => {
             columns.forEach((col) => {
                 const value = row[col.key];
 
@@ -281,18 +181,25 @@ const PositionDetail = () => {
             });
         });
 
+        // ✅ ตรวจสอบว่า employee.name ซ้ำหรือไม่
+        const names = employee.map(row => row.name?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
+        if (duplicates.length > 0) {
+            invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
+        }
+
+        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
         if (invalidMessages.length > 0) {
-            // รวมข้อความเป็นบรรทัด ๆ
             ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
             return;
         }
 
         // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, position)
+        set(companiesRef, employee)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
-                setEditPosition(false);
+                setEditEmployee(false);
             })
             .catch((error) => {
                 ShowError("เกิดข้อผิดพลาดในการบันทึก");
@@ -301,39 +208,40 @@ const PositionDetail = () => {
     };
 
     const handleCancel = () => {
-        const positionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
-        onValue(positionRef, (snapshot) => {
-            const positionData = snapshot.val() || [{ ID: 0, positionname: '', levelid: ':', deptid: ':', sectionid: ':' }];
-            setPosition(positionData);
-            setEditPosition(false);
+        onValue(employeeRef, (snapshot) => {
+            const employeeData = snapshot.val() || [{ ID: 0, name: '', employeenumber: '' }];
+            setEmployee(employeeData);
+            setEditEmployee(false);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
+
 
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
-                        <Typography variant="h5" fontWeight="bold" gutterBottom>ตำแหน่งงาน (Position)</Typography>
+                        <Typography variant="h5" fontWeight="bold" gutterBottom>พนักงาน (employee)</Typography>
                     </Grid>
                 </Grid>
             </Box>
             <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
                 <Box>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลตำแหน่งงาน</Typography>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลพนักงาน</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
-                        <Grid item size={editPosition ? 12 : 11}>
+                        <Grid item size={editEmployee ? 12 : 11}>
                             {
-                                editPosition ?
+                                editEmployee ?
                                     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                         {/* <HotTable
-                                            data={position}
-                                            afterChange={handleChange(setPosition)}
+                                            data={employee}
+                                            afterChange={handleChange(setEmployee)}
                                             licenseKey="non-commercial-and-evaluation"
                                             preventOverflow="horizontal"
-                                            colHeaders={['ชื่อตำแหน่ง', 'ฝ่ายงาน', 'ระดับ']}
+                                            colHeaders={['ชื่อ', 'ระดับ']}
                                             rowHeaders={true}
                                             width="100%"
                                             height="auto"
@@ -346,15 +254,14 @@ const PositionDetail = () => {
                                             copyPaste={true}
                                             className="mui-hot-table"
                                             columns={[
-                                                { data: 'PositionName', className: 'htCenter htMiddle' },
-                                                { data: 'Department', className: 'htCenter htMiddle' },
-                                                { data: 'Lavel', className: 'htCenter htMiddle' },
+                                                { data: 'Name', className: 'htCenter htMiddle' },
+                                                { data: 'employee', className: 'htCenter htMiddle' },
                                             ]}
                                         /> */}
                                         <TableExcel
                                             columns={columns}
-                                            initialData={position}
-                                            onDataChange={setPosition}
+                                            initialData={employee}
+                                            onDataChange={setEmployee}
                                         />
                                     </Paper>
                                     :
@@ -363,26 +270,22 @@ const PositionDetail = () => {
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                    <TablecellHeader>ชื่อตำแหน่ง</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "20%" }}>ระดับ</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "20%" }}>ฝ่ายงาน</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "20%" }}>ส่วนงาน</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "60%" }}>ชื่อ</TablecellHeader>
+                                                    <TablecellHeader>ระดับ</TablecellHeader>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
                                                 {
-                                                    position.length === 0 ?
+                                                    employee.length === 0 ?
                                                         <TableRow>
-                                                            <TablecellNoData colSpan={4}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                            <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                         </TableRow>
                                                         :
-                                                        position.map((row, index) => (
+                                                        employee.map((row, index) => (
                                                             <TableRow>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.positionname}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.levelid.split(":")[1]}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.deptid.split(":")[1]}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.sectionid.split(":")[1]}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.employeenumber}</TableCell>
                                                             </TableRow>
                                                         ))}
                                             </TableBody>
@@ -391,7 +294,7 @@ const PositionDetail = () => {
                             }
                         </Grid>
                         {
-                            !editPosition &&
+                            !editEmployee &&
                             <Grid item size={1} textAlign="right">
                                 <Box display="flex" justifyContent="center" alignItems="center">
                                     <Button
@@ -406,18 +309,18 @@ const PositionDetail = () => {
                                             alignItems: "center",
                                             textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
                                         }}
-                                        onClick={() => setEditPosition(true)}
+                                        onClick={() => setEditEmployee(true)}
                                     >
                                         <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                         แก้ไข
                                     </Button>
                                     {/* {
-                                    editPosition ?
+                                    editEmployee ?
                                         <Box textAlign="right">
-                                            <IconButton variant="contained" color="info" onClick={() => handleAddRow("position")}>
+                                            <IconButton variant="contained" color="info" onClick={() => handleAddRow("employee")}>
                                                 <AddCircleOutlineIcon />
                                             </IconButton>
-                                            <IconButton variant="contained" color="error" onClick={() => handleRemoveRow("position")}>
+                                            <IconButton variant="contained" color="error" onClick={() => handleRemoveRow("employee")}>
                                                 <RemoveCircleOutlineIcon />
                                             </IconButton>
                                         </Box>
@@ -434,7 +337,7 @@ const PositionDetail = () => {
                                                 alignItems: "center",
                                                 textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
                                             }}
-                                            onClick={() => setEditPosition(true)}
+                                            onClick={() => setEditEmployee(true)}
                                         >
                                             <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                             แก้ไข
@@ -445,7 +348,7 @@ const PositionDetail = () => {
                         }
                     </Grid>
                     {
-                        editPosition &&
+                        editEmployee &&
                         <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                             <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                             <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
@@ -457,4 +360,4 @@ const PositionDetail = () => {
     )
 }
 
-export default PositionDetail
+export default EmployeeDetail
