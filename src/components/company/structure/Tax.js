@@ -28,7 +28,7 @@ import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
 
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
@@ -39,69 +39,13 @@ import { useFirebase } from "../../../server/ProjectFirebaseContext";
 
 const TaxDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const { companyName } = useParams();
+    const [searchParams] = useSearchParams();
+    const companyName = searchParams.get("company");
+    //const { companyName } = useParams();
     const [editTax, setEditTax] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [tax, setTax] = useState([
-        {
-            "id": 1,
-            "summaryStart": 0,
-            "summaryEnd": 150000,
-            "tax": "0%",
-            "note": "ได้รับการยกเว้นภาษี"
-        },
-        {
-            "id": 2,
-            "summaryStart": 150001,
-            "summaryEnd": 300000,
-            "tax": "5%",
-            "note": "(เงินได้สุทธิ – 150,000) x 5%"
-        },
-        {
-            "id": 3,
-            "summaryStart": 300001,
-            "summaryEnd": 500000,
-            "tax": "10%",
-            "note": "(เงินได้สุทธิ – 300,000) x 10% + 7,500"
-        },
-        {
-            "id": 4,
-            "summaryStart": 500001,
-            "summaryEnd": 750000,
-            "tax": "15%",
-            "note": "(เงินได้สุทธิ – 500,000) x 15% + 27,500"
-        },
-        {
-            "id": 5,
-            "summaryStart": 750001,
-            "summaryEnd": 1000000,
-            "tax": "20%",
-            "note": "(เงินได้สุทธิ – 750,000) x 20% + 65,000"
-        },
-        {
-            "id": 6,
-            "summaryStart": 1000001,
-            "summaryEnd": 2000000,
-            "tax": "25%",
-            "note": "(เงินได้สุทธิ – 1,000,000) x 25% + 115,000"
-        },
-        {
-            "id": 7,
-            "summaryStart": 2000001,
-            "summaryEnd": 5000000,
-            "tax": "30%",
-            "note": "(เงินได้สุทธิ – 2,000,000) x 30% + 365,000"
-        },
-        {
-            "id": 8,
-            "summaryStart": 5000001,
-            "summaryEnd": null,
-            "tax": "35%",
-            "note": "(เงินได้สุทธิ – 5,000,000) x 35% + 1,265,000"
-        }
-    ]
-    );
+    const [tax, setTax] = useState([{ ID: 0, summaryStart: 0, summaryEnd: 0, tax: 0, note: '' }]);
 
     const columns = [
         { label: "เริ่มต้น", key: "summaryStart", type: "text" },

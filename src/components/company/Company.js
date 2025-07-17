@@ -22,7 +22,7 @@ import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
 import AddIcon from '@mui/icons-material/Add';
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useFirebase } from "../../server/ProjectFirebaseContext";
 import { Item } from "../../theme/style";
 import theme from "../../theme/theme";
@@ -32,7 +32,9 @@ import LogoGreen from '../../img/HumantechGreen.png';
 
 const Company = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const { domain } = useParams();
+    //const { domain } = useParams();
+    const [searchParams] = useSearchParams();
+    const domain = searchParams.get("domain");
     const navigate = useNavigate();
     const [show, setShow] = useState(1);
     const [showMenu, setshowMenu] = useState(1);
@@ -69,20 +71,20 @@ const Company = () => {
             <Box sx={{ flexGrow: 1, p: 5 }}>
                 <Grid container spacing={2} marginTop={-10}>
                     <Grid item size={12} textAlign="center">
-                        <img src={LogoGreen} width={500}/>
+                        <img src={LogoGreen} width={500} />
                         <Typography variant="h3" fontSize={30} marginTop={-2} fontWeight="bold" gutterBottom>
                             ( ระบบจัดการบริษัท )
                         </Typography>
                     </Grid>
                     <Grid item size={12} textAlign="center">
-                        <Divider sx={{ border: `1px solid ${theme.palette.primary.dark}` }}/>
+                        <Divider sx={{ border: `1px solid ${theme.palette.primary.dark}` }} />
                     </Grid>
                     <Grid item size={12} textAlign="right">
                         <Box p={2}>
                             <Grid container spacing={2} marginBottom={2}>
                                 <Grid item size={1} />
                                 <Grid item size={2} >
-                                    <Typography variant="subtitle2" color="error" sx={{ textAlign: "center",marginBottom: -0.5, marginTop: 3 }} fontWeight="bold" gutterBottom>*เพิ่มบริษัทกดตรงนี้*</Typography>
+                                    <Typography variant="subtitle2" color="error" sx={{ textAlign: "center", marginBottom: -0.5, marginTop: 3 }} fontWeight="bold" gutterBottom>*เพิ่มบริษัทกดตรงนี้*</Typography>
                                     <Card sx={{ height: '25vh', borderRadius: 5 }} elevation={6}>
                                         <InsertCompany />
                                     </Card>
@@ -112,7 +114,11 @@ const Company = () => {
                                                         <Grid container spacing={3} marginRight={8} >
                                                             <Grid item size={6}>
                                                                 <Button variant="outlined" fullWidth size="large"
-                                                                    onClick={() => navigate(`/${domain}/${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}`)}
+                                                                    onClick={
+                                                                        () =>
+                                                                            //navigate(`/${domain}/${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}`)
+                                                                            navigate(`/?domain=${domain}&company=${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}&page=`)
+                                                                    }
                                                                 >จัดการบริษัท</Button>
                                                             </Grid>
                                                             <Grid item size={6}>
@@ -131,9 +137,9 @@ const Company = () => {
                             </Grid>
                         </Box>
                     </Grid>
-                </Grid>
-            </Box>
-        </Container>
+                </Grid >
+            </Box >
+        </Container >
     )
 }
 

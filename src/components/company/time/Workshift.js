@@ -28,7 +28,7 @@ import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
 
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
@@ -39,7 +39,9 @@ import { useFirebase } from "../../../server/ProjectFirebaseContext";
 
 const WorkShiftDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const { companyName } = useParams();
+    const [searchParams] = useSearchParams();
+    const companyName = searchParams.get("company");
+    //const { companyName } = useParams();
     const [editWorkshift, setEditWorkshift] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);

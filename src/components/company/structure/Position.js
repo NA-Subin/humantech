@@ -29,7 +29,7 @@ import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
 import { HTTP } from "../../../server/axios";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
@@ -41,7 +41,9 @@ import "dayjs/locale/th";
 
 const PositionDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const { companyName } = useParams();
+    const [searchParams] = useSearchParams();
+    const companyName = searchParams.get("company");
+    //const { companyName } = useParams();
     const [editLavel, setEditLavel] = useState(false);
     const [editDepartment, setEditDepartment] = useState(false);
     const [editPosition, setEditPosition] = useState(false);
@@ -158,26 +160,7 @@ const PositionDetail = () => {
     const [filteredSection, setFilteredSection] = useState([]); // Section ที่กรองแล้ว
     const [keyPosition, setKeyPosition] = useState("");       // เช่น "3:ผู้จัดการฝ่ายการตลาด"
 
-    const subDepartmentOptions = section.map((item) => {
-        const [id, name] = item.value.split(":");
-
-        // สร้าง mapping ระหว่างชื่อ → ฝ่าย
-        let parent = "";
-        if (name.includes("บัญชี")) parent = "1";            // ฝ่ายบัญชี
-        else if (name.includes("การตลาด")) parent = "2";      // ฝ่ายการตลาด
-        else if (name.includes("ไอที")) parent = "3";         // ฝ่ายไอที
-        else parent = "0"; // default อื่น ๆ
-
-        return {
-            value: item.value,
-            label: item.label,
-            parent: [parent], // ต้องเป็น array เพื่อรองรับหลายฝ่าย
-        };
-    });
-
-
     console.log("position : ", position);
-    console.log("subDepartmentOptions : ", subDepartmentOptions);
     console.log("all Section : ", allSection);
     console.log("fillter section : ", filteredSection);
     console.log("key Position : ", keyPosition);
@@ -246,11 +229,11 @@ const PositionDetail = () => {
         },
     ];
 
-    console.log("section :: ",section.map((item) => ({
-                label: item.label,
-                value: item.value,
-                parent: item.keyposition.split(":")[0], // 👈 ใช้เฉพาะ ID ฝ่ายงาน
-            })))
+    console.log("section :: ", section.map((item) => ({
+        label: item.label,
+        value: item.value,
+        parent: item.keyposition.split(":")[0], // 👈 ใช้เฉพาะ ID ฝ่ายงาน
+    })))
 
     const handleSave = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);

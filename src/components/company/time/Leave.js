@@ -28,7 +28,7 @@ import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
 
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
@@ -39,13 +39,16 @@ import { useFirebase } from "../../../server/ProjectFirebaseContext";
 
 const LeaveDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const { companyName } = useParams();
+    const [searchParams] = useSearchParams();
+    const companyName = searchParams.get("company");
+    //const { companyName } = useParams();
     const [editLeave, setEditLeave] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [leave, setLeave] = useState([{ ID: 0, name: '' }]);
     const columns = [
-        { label: "ประเภทการลา", key: "name", type: "text" }
+        { label: "ประเภทการลา", key: "name", type: "text" },
+        { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
@@ -210,6 +213,7 @@ const LeaveDetail = () => {
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
                                                     <TablecellHeader>ประเภทการลา</TablecellHeader>
+                                                    <TablecellHeader>จำนวนวัน</TablecellHeader>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
@@ -223,6 +227,7 @@ const LeaveDetail = () => {
                                                             <TableRow>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.max}</TableCell>
                                                             </TableRow>
                                                         ))}
                                             </TableBody>

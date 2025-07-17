@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { styled, useTheme, alpha } from '@mui/material/styles';
 import { getDatabase, ref, push, onValue } from "firebase/database";
 import Box from '@mui/material/Box';
@@ -35,6 +35,7 @@ import KeyboardReturnRoundedIcon from '@mui/icons-material/KeyboardReturnRounded
 import MuiAccordion from '@mui/material/Accordion';
 import MuiAccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
+import ApartmentIcon from '@mui/icons-material/Apartment';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded';
 import PasswordRoundedIcon from '@mui/icons-material/PasswordRounded';
@@ -51,7 +52,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Slide from '@mui/material/Slide';
 import Logo from '../../img/Humantech.png';
 import LogoGreen from '../../img/HumantechGreen.png';
-import { Button, ButtonGroup, Grid } from '@mui/material';
+import { Button, ButtonGroup, Collapse, Grid } from '@mui/material';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../server/firebase';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
@@ -245,10 +246,15 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 export default function SideBarCompany() {
     const navigate = useNavigate();
     const { firebaseDB, domainKey } = useFirebase();
-    const { domain, companyName } = useParams();
+    //const { domain, companyName } = useParams();
+    const [searchParams] = useSearchParams();
+    const domain = searchParams.get("domain");
+    const companyName = searchParams.get("company");
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const companyId = companyName?.split(":")[0];
+    const [openData, setOpenData] = useState(true);
+    const [openEmployee, setOpenEmployee] = useState(true);
 
     useEffect(() => {
         if (!firebaseDB) return;
@@ -487,7 +493,9 @@ export default function SideBarCompany() {
                                 onMouseLeave={() => setOpenLogo(false)}
                                 sx={{ '&:hover': { backgroundColor: theme.palette.primary.light }, marginTop: openLogo ? -1 : 0, marginBottom: openLogo ? -1 : 0 }}
                                 component={Link}
-                                to={`/${domain}/dashboard`}>
+                                //to={`/${domain}/dashboard`}
+                                to={`/?domain=${domain}&page=dashboard`}
+                            >
                                 {openLogo ?
                                     <Box>
                                         <Box display="flex" justifyContent="center" alignItems="center">
@@ -705,7 +713,7 @@ export default function SideBarCompany() {
                         ""
                 } */}
                 <Divider />
-                <List sx={{ marginBottom: 1, py: 0 }}>
+                <List sx={{ marginBottom: 2, py: 0 }}>
                     {['หน้าแรก'].map((text, index) => {
                         const isSelected = selectedMenu === text;
 
@@ -715,13 +723,14 @@ export default function SideBarCompany() {
                                 disablePadding
                                 sx={{
                                     display: open ? 'block' : 'flex',
-                                    height: 36,
+                                    height: 30,
                                     py: 0.3,
                                 }}
                             >
                                 <ListItemButton
                                     component={Link}
-                                    to={`/${domain}/${companyName}`}
+                                    //to={`/${domain}/${companyName}`}
+                                    to={`/?domain=${domain}&company=${companyName}&page=dashboard`}
                                     onClick={() => setSelectedMenu(text)}
                                     sx={{
                                         minHeight: 32,
@@ -761,290 +770,418 @@ export default function SideBarCompany() {
                         )
                     })}
                 </List>
-                <Divider />
-                <List sx={{ mb: 2, py: 0 }}>
-                    {open && (
-                        <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1 }}>
-                            โครงสร้างบริษัท
-                        </Typography>
+                {!openData && <Divider />}
+                <ListItem
+                    key={"โครงสร้างองค์กร"}
+                    disablePadding
+                    sx={{
+                        height: 30, // กำหนดความสูงให้ ListItem
+                        paddingY: 1,
+                    }}
+                >
+                    <ListItemButton
+                        onClick={() => setOpenData(!openData)}
+                        sx={{
+                            height: 30, // ปรับขึ้นนิดนึงให้ไม่แน่นเกินไป
+                            px: 2,      // padding แนวนอน
+                            fontWeight: !openData && 'bold'
+                        }}
+                    >
+                        {/* ไอคอนซ้าย */}
+                        <ListItemIcon sx={{
+                            minWidth: 28,
+                            mr: open ? 2 : 'auto',
+                            ml: open ? 1 : 'auto',
+                            justifyContent: 'center',
+                            color: !openData ? "black" : '#616161',
+                        }}>
+                            <ApartmentIcon />
+                        </ListItemIcon>
+
+                        {/* ข้อความ */}
+                        <ListItemText
+                            primary="โครงสร้างองค์กร"
+                            primaryTypographyProps={{
+                                fontSize: "16px",
+                                fontWeight: !openData && "bold"
+                            }}
+                            sx={{
+                                opacity: open ? 1 : 0,
+                                '& .MuiTypography-root': {
+                                    fontSize: '15px',
+                                }
+                            }}
+                        />
+
+                        {/* ไอคอนขวา */}
+                        <ListItemIcon sx={{ minWidth: 30, justifyContent: 'flex-end', color: theme.palette.dark }}>
+                            {!openData ? <KeyboardArrowDownIcon /> : <KeyboardArrowUpIcon />}
+                        </ListItemIcon>
+                    </ListItemButton>
+
+                </ListItem>
+                {openData && <Divider />}
+                <List sx={{ mb: 2, py: 0, marginLeft: open ? 2 : 0 }}>
+                    {!openData && (
+                        <React.Fragment>
+                            {open &&
+                                <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1, marginBottom: -0.5 }}>
+                                    โครงสร้างบริษัท
+                                </Typography>
+                            }
+                            {[
+                                'ระดับตำแหน่งงาน',
+                                'แผนก/ฝ่ายงาน',
+                                'ส่วนงาน',
+                                'ตำแหน่งงาน'
+                            ].map((text, index) => {
+                                const isSelected = selectedMenu === text;
+
+                                return (
+                                    <ListItem
+                                        key={text}
+                                        disablePadding
+                                        sx={{
+                                            display: open ? 'block' : 'flex',
+                                            height: 34,
+                                            py: 0.3,
+                                        }}
+                                    >
+                                        <ListItemButton
+                                            component={Link}
+                                            onClick={() => setSelectedMenu(text)}
+                                            // to={
+                                            //     index === 0
+                                            //         ? `/${domain}/${companyName}/level`
+                                            //         : index === 1
+                                            //             ? `/${domain}/${companyName}/department`
+                                            //             : index === 2
+                                            //                 ? `/${domain}/${companyName}/section`
+                                            //                 : `/${domain}/${companyName}/position`
+
+                                            // }
+                                            to={
+                                                index === 0
+                                                    ? `/?domain=${domain}&company=${companyName}&page=level`
+                                                    : index === 1
+                                                        ? `/?domain=${domain}&company=${companyName}&page=department`
+                                                        : index === 2
+                                                            ? `/?domain=${domain}&company=${companyName}&page=section`
+                                                            : `/?domain=${domain}&company=${companyName}&page=position`
+
+                                            }
+                                            sx={{
+                                                height: 30,
+                                                px: open ? 2 : 1,
+                                                py: 0.5,
+                                                paddingLeft: isSelected ? 4 : 2,
+                                                backgroundColor: isSelected ? 'primary.main' : 'transparent',
+                                                color: isSelected ? 'white' : 'inherit',
+                                                '&:hover': {
+                                                    backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
+                                                },
+                                            }}
+                                        >
+                                            <ListItemIcon
+                                                sx={{
+                                                    minWidth: 28,
+                                                    mr: open ? 2 : 'auto',
+                                                    ml: open ? 1 : 'auto',
+                                                    justifyContent: 'center',
+                                                    color: isSelected ? 'white' : '#616161',
+                                                }}
+                                            >
+                                                <HailIcon sx={{ fontSize: 18 }} />
+                                            </ListItemIcon>
+
+                                            <ListItemText
+                                                primary={text}
+                                                sx={{
+                                                    opacity: open ? 1 : 0,
+                                                    '& .MuiTypography-root': {
+                                                        fontSize: '13px',
+                                                    },
+                                                }}
+                                            />
+                                        </ListItemButton>
+                                    </ListItem>
+                                )
+                            }
+                            )}
+                            {!openData && <Divider />}
+                            {open && <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1, marginBottom: -0.5 }}>
+                                โครงสร้างภาษี
+                            </Typography>}
+
+                            {['ประกันสังคม', 'ภาษี', 'ค่าลดหย่อนภาษี'].map((text, index) => {
+                                const isSelected = selectedMenu === text;
+
+                                return (
+                                    <ListItem
+                                        key={text}
+                                        disablePadding
+                                        sx={{
+                                            display: open ? 'block' : 'flex',
+                                            height: 34, // ลดความสูง
+                                            paddingY: 0.3,
+                                        }}
+                                    >
+                                        <ListItemButton
+                                            component={Link}
+                                            // to={
+                                            //     index === 0
+                                            //         ? `/${domain}/${companyName}/social-security`
+                                            //         : index === 1
+                                            //             ? `/${domain}/${companyName}/tax`
+                                            //             : `/${domain}/${companyName}/deduction`
+                                            // }
+                                            to={
+                                                index === 0
+                                                    ? `/?domain=${domain}&company=${companyName}&page=social-security`
+                                                    : index === 1
+                                                        ? `/?domain=${domain}&company=${companyName}&page=tax`
+                                                        : `/?domain=${domain}&company=${companyName}&page=deduction`
+                                            }
+                                            onClick={() => setSelectedMenu(text)}
+                                            sx={{
+                                                height: 30,
+                                                paddingY: 0.5,
+                                                paddingX: open ? 2 : 1,
+                                                paddingLeft: isSelected ? 4 : 2,
+                                                backgroundColor: isSelected ? 'primary.main' : 'transparent',
+                                                color: isSelected ? 'white' : 'inherit',
+                                                '&:hover': {
+                                                    backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
+                                                },
+                                            }}
+                                        >
+                                            <ListItemIcon
+                                                sx={{
+                                                    minWidth: 28,
+                                                    mr: open ? 2 : 'auto',
+                                                    justifyContent: 'center',
+                                                    marginLeft: open ? 1 : 'auto',
+                                                    color: isSelected ? 'white' : '#616161',
+                                                }}
+                                            >
+                                                <AttachMoneyIcon sx={{ fontSize: 18 }} />
+                                            </ListItemIcon>
+
+                                            <ListItemText
+                                                primary={text}
+                                                sx={{
+                                                    opacity: open ? 1 : 0,
+                                                    '& .MuiTypography-root': {
+                                                        fontSize: '13px', // ลดขนาดตัวอักษร
+                                                    },
+                                                }}
+                                            />
+                                        </ListItemButton>
+                                    </ListItem>
+                                )
+                            })}
+                            {!openData && <Divider />}
+                            {open && <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1, marginBottom: -0.5 }}>
+                                โครงสร้างเวลา
+                            </Typography>}
+
+                            {['ประเภทการลา', 'โอที', 'กะการทำงาน', 'วันหยุดบริษัท'].map((text, index) => {
+                                const isSelected = selectedMenu === text;
+
+                                return (
+                                    <ListItem
+                                        key={text}
+                                        disablePadding
+                                        sx={{
+                                            display: open ? 'block' : 'flex',
+                                            height: 34, // ลดความสูง
+                                            paddingY: 0.3,
+                                        }}
+                                    >
+                                        <ListItemButton
+                                            component={Link}
+                                            // to={
+                                            //     index === 0
+                                            //         ? `/${domain}/${companyName}/leave`
+                                            //         : index === 1
+                                            //             ? `/${domain}/${companyName}/workshift`
+                                            //             : `/${domain}/${companyName}/dayoff`
+                                            // }
+                                            to={
+                                                index === 0
+                                                    ? `/?domain=${domain}&company=${companyName}&page=leave`
+                                                    : index === 1
+                                                        ? `/?domain=${domain}&company=${companyName}&page=ot`
+                                                        : index === 2
+                                                            ? `/?domain=${domain}&company=${companyName}&page=workshift`
+                                                            : `/?domain=${domain}&company=${companyName}&page=dayoff`
+                                            }
+                                            onClick={() => setSelectedMenu(text)}
+                                            sx={{
+                                                height: 30,
+                                                paddingY: 0.5,
+                                                paddingX: open ? 2 : 1,
+                                                paddingLeft: isSelected ? 4 : 2,
+                                                backgroundColor: isSelected ? 'primary.main' : 'transparent',
+                                                color: isSelected ? 'white' : 'inherit',
+                                                '&:hover': {
+                                                    backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
+                                                },
+                                            }}
+                                        >
+                                            <ListItemIcon
+                                                sx={{
+                                                    minWidth: 28,
+                                                    mr: open ? 2 : 'auto',
+                                                    justifyContent: 'center',
+                                                    marginLeft: open ? 1 : 'auto',
+                                                    color: isSelected ? 'white' : '#616161',
+                                                }}
+                                            >
+                                                <AccessTimeFilledIcon sx={{ fontSize: 18 }} />
+                                            </ListItemIcon>
+
+                                            <ListItemText
+                                                primary={text}
+                                                sx={{
+                                                    opacity: open ? 1 : 0,
+                                                    '& .MuiTypography-root': {
+                                                        fontSize: '13px', // ลดขนาดตัวอักษร
+                                                    },
+                                                }}
+                                            />
+                                        </ListItemButton>
+                                    </ListItem>
+                                )
+                            })}
+                        </React.Fragment>
                     )}
-
-                    {[
-                        'ระดับตำแหน่งงาน',
-                        'แผนก/ฝ่ายงาน',
-                        'ส่วนงาน',
-                        'ตำแหน่งงาน'
-                    ].map((text, index) => {
-                        const isSelected = selectedMenu === text;
-
-                        return (
-                            <ListItem
-                                key={text}
-                                disablePadding
-                                sx={{
-                                    display: open ? 'block' : 'flex',
-                                    height: 36,
-                                    py: 0.3,
-                                }}
-                            >
-                                <ListItemButton
-                                    component={Link}
-                                    onClick={() => setSelectedMenu(text)}
-                                    to={
-                                        index === 0
-                                            ? `/${domain}/${companyName}/level`
-                                            : index === 1
-                                                ? `/${domain}/${companyName}/department`
-                                                : index === 2
-                                                    ? `/${domain}/${companyName}/section`
-                                                    : `/${domain}/${companyName}/position`
-
-                                    }
-                                    sx={{
-                                        minHeight: 32,
-                                        px: open ? 2 : 1,
-                                        py: 0.5,
-                                        paddingLeft: isSelected ? 4 : 2,
-                                        backgroundColor: isSelected ? 'primary.main' : 'transparent',
-                                        color: isSelected ? 'white' : 'inherit',
-                                        '&:hover': {
-                                            backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
-                                        },
-                                    }}
-                                >
-                                    <ListItemIcon
-                                        sx={{
-                                            minWidth: 28,
-                                            mr: open ? 2 : 'auto',
-                                            ml: open ? 1 : 'auto',
-                                            justifyContent: 'center',
-                                            color: isSelected ? 'white' : '#616161',
-                                        }}
-                                    >
-                                        <HailIcon sx={{ fontSize: 18 }} />
-                                    </ListItemIcon>
-
-                                    <ListItemText
-                                        primary={text}
-                                        sx={{
-                                            opacity: open ? 1 : 0,
-                                            '& .MuiTypography-root': {
-                                                fontSize: '15px',
-                                            },
-                                        }}
-                                    />
-                                </ListItemButton>
-                            </ListItem>
-                        )
-                    })}
                 </List>
+                <ListItem
+                    key={"โครงสร้างพนักงาน"}
+                    disablePadding
+                    sx={{
+                        height: 30, // กำหนดความสูงให้ ListItem
+                        paddingY: 1,
+                    }}
+                >
+                    <ListItemButton
+                        onClick={() => setOpenEmployee(!openEmployee)}
+                        sx={{
+                            height: 30, // ปรับขึ้นนิดนึงให้ไม่แน่นเกินไป
+                            px: 2,      // padding แนวนอน
+                        }}
+                    >
+                        {/* ไอคอนซ้าย */}
+                        <ListItemIcon sx={{
+                            minWidth: 28,
+                            mr: open ? 2 : 'auto',
+                            ml: open ? 1 : 'auto',
+                            justifyContent: 'center',
+                            color: !openEmployee ? "black" : '#616161',
+                        }}>
+                            <ApartmentIcon />
+                        </ListItemIcon>
+
+                        {/* ข้อความ */}
+                        <ListItemText
+                            primary="โครงสร้างพนักงาน"
+                            primaryTypographyProps={{
+                                fontSize: "16px",
+                                fontWeight: !openEmployee && "bold"
+                            }}
+                            sx={{
+                                opacity: open ? 1 : 0,
+                                '& .MuiTypography-root': {
+                                    fontSize: '15px',
+                                },
+                            }}
+                        />
+
+                        {/* ไอคอนขวา */}
+                        <ListItemIcon sx={{ minWidth: 30, justifyContent: 'flex-end', color: theme.palette.dark }}>
+                            {!openEmployee ? <KeyboardArrowDownIcon /> : <KeyboardArrowUpIcon />}
+                        </ListItemIcon>
+                    </ListItemButton>
+
+                </ListItem>
                 <Divider />
-                <List sx={{ mb: 2, py: 0 }}>
-                    {open && (
-                        <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1 }}>
-                            โครงสร้างพนักงาน
-                        </Typography>
-                    )}
+                <List sx={{ mb: 2, py: 0, marginLeft: open ? 4 : 0 }}>
+                    {!openEmployee &&
+                        <React.Fragment>
+                            {open && (
+                                <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1 }}>
+                                    โครงสร้างพนักงาน
+                                </Typography>
+                            )}
 
-                    {[
-                        'พนักงาน'
-                    ].map((text, index) => {
-                        const isSelected = selectedMenu === text;
+                            {[
+                                'พนักงาน'
+                            ].map((text, index) => {
+                                const isSelected = selectedMenu === text;
 
-                        return (
-                            <ListItem
-                                key={text}
-                                disablePadding
-                                sx={{
-                                    display: open ? 'block' : 'flex',
-                                    height: 36,
-                                    py: 0.3,
-                                }}
-                            >
-                                <ListItemButton
-                                    component={Link}
-                                    onClick={() => setSelectedMenu(text)}
-                                    to={
-                                        index === 0
-                                            ? `/${domain}/${companyName}/employee`
-                                            : `/${domain}/${companyName}/employee`
-
-                                    }
-                                    sx={{
-                                        minHeight: 32,
-                                        px: open ? 2 : 1,
-                                        py: 0.5,
-                                        paddingLeft: isSelected ? 4 : 2,
-                                        backgroundColor: isSelected ? 'primary.main' : 'transparent',
-                                        color: isSelected ? 'white' : 'inherit',
-                                        '&:hover': {
-                                            backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
-                                        },
-                                    }}
-                                >
-                                    <ListItemIcon
+                                return (
+                                    <ListItem
+                                        key={text}
+                                        disablePadding
                                         sx={{
-                                            minWidth: 28,
-                                            mr: open ? 2 : 'auto',
-                                            ml: open ? 1 : 'auto',
-                                            justifyContent: 'center',
-                                            color: isSelected ? 'white' : '#616161',
+                                            display: open ? 'block' : 'flex',
+                                            height: 34,
+                                            py: 0.3,
                                         }}
                                     >
-                                        <HailIcon sx={{ fontSize: 18 }} />
-                                    </ListItemIcon>
+                                        <ListItemButton
+                                            component={Link}
+                                            onClick={() => setSelectedMenu(text)}
+                                            // to={
+                                            //     index === 0
+                                            //         ? `/${domain}/${companyName}/employee`
+                                            //         : `/${domain}/${companyName}/employee`
+                                            // }
+                                            to={
+                                                index === 0
+                                                    ? `/?domain=${domain}&company=${companyName}&page=employee`
+                                                    : `/?domain=${domain}&company=${companyName}&page=employee`
+                                            }
+                                            sx={{
+                                                minHeight: 32,
+                                                px: open ? 2 : 1,
+                                                py: 0.5,
+                                                paddingLeft: isSelected ? 4 : 2,
+                                                backgroundColor: isSelected ? 'primary.main' : 'transparent',
+                                                color: isSelected ? 'white' : 'inherit',
+                                                '&:hover': {
+                                                    backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
+                                                },
+                                            }}
+                                        >
+                                            <ListItemIcon
+                                                sx={{
+                                                    minWidth: 28,
+                                                    mr: open ? 2 : 'auto',
+                                                    ml: open ? 1 : 'auto',
+                                                    justifyContent: 'center',
+                                                    color: isSelected ? 'white' : '#616161',
+                                                }}
+                                            >
+                                                <HailIcon sx={{ fontSize: 18 }} />
+                                            </ListItemIcon>
 
-                                    <ListItemText
-                                        primary={text}
-                                        sx={{
-                                            opacity: open ? 1 : 0,
-                                            '& .MuiTypography-root': {
-                                                fontSize: '15px',
-                                            },
-                                        }}
-                                    />
-                                </ListItemButton>
-                            </ListItem>
-                        )
-                    })}
-                </List>
-                <Divider />
-                <List sx={{ marginBottom: 2, paddingY: 0 }}>
-                    {open ? (
-                        <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1 }}>
-                            โครงสร้างภาษี
-                        </Typography>
-                    ) : null}
-
-                    {['ประกันสังคม', 'ภาษี', 'ค่าลดหย่อนภาษี'].map((text, index) => {
-                        const isSelected = selectedMenu === text;
-
-                        return (
-                            <ListItem
-                                key={text}
-                                disablePadding
-                                sx={{
-                                    display: open ? 'block' : 'flex',
-                                    height: 36, // ลดความสูง
-                                    paddingY: 0.3,
-                                }}
-                            >
-                                <ListItemButton
-                                    component={Link}
-                                    to={
-                                        index === 0
-                                            ? `/${domain}/${companyName}/social-security`
-                                            : index === 1
-                                                ? `/${domain}/${companyName}/tax`
-                                                : `/${domain}/${companyName}/deduction`
-                                    }
-                                    onClick={() => setSelectedMenu(text)}
-                                    sx={{
-                                        minHeight: 32,
-                                        paddingY: 0.5,
-                                        paddingX: open ? 2 : 1,
-                                        paddingLeft: isSelected ? 4 : 2,
-                                        backgroundColor: isSelected ? 'primary.main' : 'transparent',
-                                        color: isSelected ? 'white' : 'inherit',
-                                        '&:hover': {
-                                            backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
-                                        },
-                                    }}
-                                >
-                                    <ListItemIcon
-                                        sx={{
-                                            minWidth: 28,
-                                            mr: open ? 2 : 'auto',
-                                            justifyContent: 'center',
-                                            marginLeft: open ? 1 : 'auto',
-                                            color: isSelected ? 'white' : '#616161',
-                                        }}
-                                    >
-                                        <AttachMoneyIcon sx={{ fontSize: 18 }} />
-                                    </ListItemIcon>
-
-                                    <ListItemText
-                                        primary={text}
-                                        sx={{
-                                            opacity: open ? 1 : 0,
-                                            '& .MuiTypography-root': {
-                                                fontSize: '15px', // ลดขนาดตัวอักษร
-                                            },
-                                        }}
-                                    />
-                                </ListItemButton>
-                            </ListItem>
-                        )
-                    })}
-                </List>
-                <Divider />
-                <List sx={{ marginBottom: 2, paddingY: 0 }}>
-                    {open ? (
-                        <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1 }}>
-                            โครงสร้างเวลา
-                        </Typography>
-                    ) : null}
-
-                    {['ประเภทการลา', 'กะการทำงาน', 'วันหยุดบริษัท'].map((text, index) => {
-                        const isSelected = selectedMenu === text;
-
-                        return (
-                            <ListItem
-                                key={text}
-                                disablePadding
-                                sx={{
-                                    display: open ? 'block' : 'flex',
-                                    height: 36, // ลดความสูง
-                                    paddingY: 0.3,
-                                }}
-                            >
-                                <ListItemButton
-                                    component={Link}
-                                    to={
-                                        index === 0
-                                            ? `/${domain}/${companyName}/leave`
-                                            : index === 1
-                                                ? `/${domain}/${companyName}/workshift`
-                                                : `/${domain}/${companyName}/dayoff`
-                                    }
-                                    onClick={() => setSelectedMenu(text)}
-                                    sx={{
-                                        minHeight: 32,
-                                        paddingY: 0.5,
-                                        paddingX: open ? 2 : 1,
-                                        paddingLeft: isSelected ? 4 : 2,
-                                        backgroundColor: isSelected ? 'primary.main' : 'transparent',
-                                        color: isSelected ? 'white' : 'inherit',
-                                        '&:hover': {
-                                            backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
-                                        },
-                                    }}
-                                >
-                                    <ListItemIcon
-                                        sx={{
-                                            minWidth: 28,
-                                            mr: open ? 2 : 'auto',
-                                            justifyContent: 'center',
-                                            marginLeft: open ? 1 : 'auto',
-                                            color: isSelected ? 'white' : '#616161',
-                                        }}
-                                    >
-                                        <AccessTimeFilledIcon sx={{ fontSize: 18 }} />
-                                    </ListItemIcon>
-
-                                    <ListItemText
-                                        primary={text}
-                                        sx={{
-                                            opacity: open ? 1 : 0,
-                                            '& .MuiTypography-root': {
-                                                fontSize: '15px', // ลดขนาดตัวอักษร
-                                            },
-                                        }}
-                                    />
-                                </ListItemButton>
-                            </ListItem>
-                        )
-                    })}
+                                            <ListItemText
+                                                primary={text}
+                                                sx={{
+                                                    opacity: open ? 1 : 0,
+                                                    '& .MuiTypography-root': {
+                                                        fontSize: '13px',
+                                                    },
+                                                }}
+                                            />
+                                        </ListItemButton>
+                                    </ListItem>
+                                )
+                            })}
+                        </React.Fragment>
+                    }
                 </List>
             </Drawer>
         </>

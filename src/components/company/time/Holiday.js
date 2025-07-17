@@ -28,7 +28,7 @@ import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany, IconButtonError } from "../../../theme/style"
 import CancelIcon from '@mui/icons-material/Cancel';
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Backdrop, Dialog, DialogActions, DialogContent, DialogTitle, InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
@@ -50,7 +50,9 @@ const CustomBackdrop = styled(Backdrop)(({ theme }) => ({
 
 const HolidayDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const { companyName } = useParams();
+    const [searchParams] = useSearchParams();
+    const companyName = searchParams.get("company");
+    //const { companyName } = useParams();
     const [editLeave, setEditLeave] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
@@ -133,7 +135,7 @@ const HolidayDetail = () => {
     }, [firebaseDB, companyId]);
 
     const handleSave = (monthHolidays, allHolidayList) => {
-        console.log("monthHolidays : ",monthHolidays);
+        console.log("monthHolidays : ", monthHolidays);
         let maxId = allHolidayList.reduce((max, item) => Math.max(max, item.ID), 0);
         const updatedHolidayList = [...allHolidayList];
 
@@ -148,7 +150,7 @@ const HolidayDetail = () => {
             }
         });
 
-        console.log("assignedHolidays : ",assignedHolidays);
+        console.log("assignedHolidays : ", assignedHolidays);
 
         // ✅ รวมข้อมูลใหม่เข้า updatedHolidayList
         assignedHolidays.forEach(h => {

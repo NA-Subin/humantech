@@ -37,29 +37,19 @@ import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 
-const DepartmentDetail = () => {
+const OTDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     //const { companyName } = useParams();
-    const [editLavel, setEditLavel] = useState(false);
-    const [editDepartment, setEditDepartment] = useState(false);
-    const [editPosition, setEditPosition] = useState(false);
+    const [editWorkshift, setEditWorkshift] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [department, setDepartment] = useState([{ ID: 0, deptname: '', keyposition: '' }]);
-    const levelOptions = Array.from({ length: 10 }, (_, i) => ({
-        value: `${i + 1}`,
-        label: `${i + 1}`,
-    }));
+    const [workshift, setWorkshift] = useState([{ ID: 0, name: '' }]);
     const columns = [
-        { label: "ชื่อแผนก", key: "deptname", type: "text", width: "60%" },
-        {
-            label: "ระดับ",
-            key: "keyposition",
-            type: "select",
-            options: levelOptions,
-        },
+        { label: "เข้า", key: "start", type: "time" },
+        { label: "ออก", key: "stop", type: "time" },
+        { label: "กะการทำงาน", key: "name", type: "text" }
     ];
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
@@ -90,16 +80,16 @@ const DepartmentDetail = () => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const departmentRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
+        const workshiftRef = ref(firebaseDB, `workgroup/company/${companyId}/workshift`);
 
-        const unsubscribe = onValue(departmentRef, (snapshot) => {
-            const departmentData = snapshot.val();
+        const unsubscribe = onValue(workshiftRef, (snapshot) => {
+            const workshiftData = snapshot.val();
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!departmentData) {
-                setDepartment([{ ID: 0, deptname: '', keyposition: '' }]);
+            if (!workshiftData) {
+                setWorkshift([{ ID: 0, name: '' }]);
             } else {
-                setDepartment(departmentData);
+                setWorkshift(workshiftData);
             }
         });
 
@@ -107,11 +97,11 @@ const DepartmentDetail = () => {
     }, [firebaseDB, companyId]);
 
     const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/workshift`);
 
         const invalidMessages = [];
 
-        department.forEach((row, rowIndex) => {
+        workshift.forEach((row, rowIndex) => {
             columns.forEach((col) => {
                 const value = row[col.key];
 
@@ -136,7 +126,7 @@ const DepartmentDetail = () => {
         });
 
         // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        const names = department.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        const names = workshift.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
         const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
         if (duplicates.length > 0) {
             invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
@@ -149,11 +139,11 @@ const DepartmentDetail = () => {
         }
 
         // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, department)
+        set(companiesRef, workshift)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
-                setEditDepartment(false);
+                setEditWorkshift(false);
             })
             .catch((error) => {
                 ShowError("เกิดข้อผิดพลาดในการบันทึก");
@@ -162,12 +152,12 @@ const DepartmentDetail = () => {
     };
 
     const handleCancel = () => {
-        const DepartmentRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
+        const workshiftRef = ref(firebaseDB, `workgroup/company/${companyId}/workshift`);
 
-        onValue(DepartmentRef, (snapshot) => {
-            const DepartmentData = snapshot.val() || [{ ID: 0, deptname: '', keyposition: '' }];
-            setDepartment(DepartmentData);
-            setEditDepartment(false);
+        onValue(workshiftRef, (snapshot) => {
+            const workshiftData = snapshot.val() || [{ ID: 0, name: '' }];
+            setWorkshift(workshiftData);
+            setEditWorkshift(false);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
@@ -176,22 +166,22 @@ const DepartmentDetail = () => {
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
-                        <Typography variant="h5" fontWeight="bold" gutterBottom>แผนก/ฝ่ายงาน (Department)</Typography>
+                        <Typography variant="h5" fontWeight="bold" gutterBottom>งานโอที (OT)</Typography>
                     </Grid>
                 </Grid>
             </Box>
             <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
                 <Box>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลฝ่ายงาน</Typography>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลงานโอที</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
-                        <Grid item size={editDepartment ? 12 : 11}>
+                        <Grid item size={editWorkshift ? 12 : 11}>
                             {
-                                editDepartment ?
+                                editWorkshift ?
                                     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                         {/* <HotTable
-                                            data={department}
-                                            afterChange={handleChange(setDepartment)}
+                                            data={workshift}
+                                            afterChange={handleChange(setWorkshift)}
                                             licenseKey="non-commercial-and-evaluation"
                                             colHeaders={['ชื่อแผนก', 'ส่วนงาน']}
                                             rowHeaders={true}
@@ -212,8 +202,8 @@ const DepartmentDetail = () => {
                                         /> */}
                                         <TableExcel
                                             columns={columns}
-                                            initialData={department}
-                                            onDataChange={setDepartment}
+                                            initialData={workshift}
+                                            onDataChange={setWorkshift}
                                         />
                                     </Paper>
 
@@ -222,23 +212,28 @@ const DepartmentDetail = () => {
                                         <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                    <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "60%" }}>ชื่อแผนก/ฝ่ายงาน</TablecellHeader>
-                                                    <TablecellHeader>ระดับ</TablecellHeader>
+                                                    <TablecellHeader rowSpan={2} sx={{ width: 80 }}>ลำดับ</TablecellHeader>
+                                                    <TablecellHeader colSpan={2}>ช่วงเวลา</TablecellHeader>
+                                                    <TablecellHeader rowSpan={2}>กะการทำงาน</TablecellHeader>
+                                                </TableRow>
+                                                <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                    <TablecellHeader>เข้า</TablecellHeader>
+                                                    <TablecellHeader>ออก</TablecellHeader>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
                                                 {
-                                                    department.length === 0 ?
+                                                    workshift.length === 0 ?
                                                         <TableRow>
                                                             <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                         </TableRow>
                                                         :
-                                                        department.map((row, index) => (
+                                                        workshift.map((row, index) => (
                                                             <TableRow>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.deptname}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.keyposition}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.start}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.stop}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
                                                             </TableRow>
                                                         ))}
                                             </TableBody>
@@ -247,7 +242,7 @@ const DepartmentDetail = () => {
                             }
                         </Grid>
                         {
-                            !editDepartment &&
+                            !editWorkshift &&
                             <Grid item size={1} textAlign="right">
                                 <Box display="flex" justifyContent="center" alignItems="center">
                                     <Button
@@ -262,18 +257,18 @@ const DepartmentDetail = () => {
                                             alignItems: "center",
                                             textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
                                         }}
-                                        onClick={() => setEditDepartment(true)}
+                                        onClick={() => setEditWorkshift(true)}
                                     >
                                         <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                         แก้ไข
                                     </Button>
                                     {/* {
-                                    editDepartment ?
+                                    editWorkshift ?
                                         <Box textAlign="right">
-                                            <IconButton variant="contained" color="info" onClick={() => handleAddRow("department")}>
+                                            <IconButton variant="contained" color="info" onClick={() => handleAddRow("workshift")}>
                                                 <AddCircleOutlineIcon />
                                             </IconButton>
-                                            <IconButton variant="contained" color="error" onClick={() => handleRemoveRow("department")}>
+                                            <IconButton variant="contained" color="error" onClick={() => handleRemoveRow("workshift")}>
                                                 <RemoveCircleOutlineIcon />
                                             </IconButton>
                                         </Box>
@@ -290,7 +285,7 @@ const DepartmentDetail = () => {
                                                 alignItems: "center",
                                                 textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
                                             }}
-                                            onClick={() => setEditDepartment(true)}
+                                            onClick={() => setEditWorkshift(true)}
                                         >
                                             <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                             แก้ไข
@@ -301,7 +296,7 @@ const DepartmentDetail = () => {
                         }
                     </Grid>
                     {
-                        editDepartment &&
+                        editWorkshift &&
                         <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                             <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                             <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
@@ -313,4 +308,4 @@ const DepartmentDetail = () => {
     )
 }
 
-export default DepartmentDetail
+export default OTDetail

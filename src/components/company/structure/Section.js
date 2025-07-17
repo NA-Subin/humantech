@@ -29,7 +29,7 @@ import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
 import { HTTP } from "../../../server/axios";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
@@ -39,7 +39,9 @@ import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetal
 
 const SectionDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const { companyName } = useParams();
+    const [searchParams] = useSearchParams();
+    const companyName = searchParams.get("company");
+    //const { companyName } = useParams();
     const [editLavel, setEditLavel] = useState(false);
     const [editDepartment, setEditDepartment] = useState(false);
     const [editSection, setEditSection] = useState(false);

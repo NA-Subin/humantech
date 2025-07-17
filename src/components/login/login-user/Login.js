@@ -85,7 +85,8 @@ const DomainLogin = () => {
             console.log("Domain Data:", domainData);
             localStorage.setItem("domainData", JSON.stringify(domainData));
             alert("✅ เข้าสู่ระบบสำเร็จ");
-            navigate(`/${encodeURIComponent(domainKey)}`)
+            // navigate(`/${encodeURIComponent(domainKey)}`)
+            navigate(`/?domain=${encodeURIComponent(domainKey)}`);
             //window.location.href = "/dashboard"; // 👈 force reload app
         } catch (e) {
             console.error(e);

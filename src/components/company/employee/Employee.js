@@ -29,17 +29,20 @@ import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
 import { HTTP } from "../../../server/axios";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import 'handsontable/dist/handsontable.full.min.css';
 import MuiExcelLikeTable from "../test";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
+import AddEmployee from "./AddEmployee";
 
 const EmployeeDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const { companyName } = useParams();
+    const [searchParams] = useSearchParams();
+    const companyName = searchParams.get("company");
+    //const { companyName } = useParams();
     const [editEmployee, setEditEmployee] = useState(false);
     const [editDepartment, setEditDepartment] = useState(false);
     const [editPosition, setEditPosition] = useState(false);
@@ -229,7 +232,16 @@ const EmployeeDetail = () => {
             </Box>
             <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
                 <Box>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลพนักงาน</Typography>
+                    {
+                        <Grid container spacing={2} sx={{ marginBottom: 1 }}>
+                            <Grid item size={10}>
+                                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลพนักงาน</Typography>
+                            </Grid>
+                            <Grid item size={2} sx={{ textAlign: "right" }}>
+                                <AddEmployee />
+                            </Grid>
+                        </Grid>
+                    }
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
                         <Grid item size={editEmployee ? 12 : 11}>
