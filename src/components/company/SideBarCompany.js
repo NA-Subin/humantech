@@ -253,8 +253,8 @@ export default function SideBarCompany() {
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const companyId = companyName?.split(":")[0];
-    const [openData, setOpenData] = useState(true);
-    const [openEmployee, setOpenEmployee] = useState(true);
+    const [openData, setOpenData] = useState(false);
+    const [openEmployee, setOpenEmployee] = useState(false);
 
     useEffect(() => {
         if (!firebaseDB) return;
