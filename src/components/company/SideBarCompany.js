@@ -35,6 +35,7 @@ import KeyboardReturnRoundedIcon from '@mui/icons-material/KeyboardReturnRounded
 import MuiAccordion from '@mui/material/Accordion';
 import MuiAccordionSummary from '@mui/material/AccordionSummary';
 import AccordionDetails from '@mui/material/AccordionDetails';
+import LocationCityIcon from '@mui/icons-material/LocationCity';
 import ApartmentIcon from '@mui/icons-material/Apartment';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import MailOutlineRoundedIcon from '@mui/icons-material/MailOutlineRounded';
@@ -891,7 +892,7 @@ export default function SideBarCompany() {
                                                     color: isSelected ? 'white' : '#616161',
                                                 }}
                                             >
-                                                <HailIcon sx={{ fontSize: 18 }} />
+                                                <LocationCityIcon sx={{ fontSize: 18 }} />
                                             </ListItemIcon>
 
                                             <ListItemText
@@ -1116,7 +1117,8 @@ export default function SideBarCompany() {
                             )}
 
                             {[
-                                'พนักงาน'
+                                'พนักงาน',
+                                'เอกสารและการอนุมัติ'
                             ].map((text, index) => {
                                 const isSelected = selectedMenu === text;
 

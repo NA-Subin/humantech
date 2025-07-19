@@ -1,4 +1,4 @@
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use, useMemo } from "react";
 import { getDatabase, ref, push, onValue, set } from "firebase/database";
 import '../../../App.css'
 import Box from '@mui/material/Box';
@@ -9,16 +9,7 @@ import Collapse from '@mui/material/Collapse';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import ButtonGroup from '@mui/material/ButtonGroup';
-import IconButton from '@mui/material/IconButton';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import BadgeIcon from '@mui/icons-material/Badge';
 import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import GirlIcon from '@mui/icons-material/Girl';
@@ -44,6 +35,10 @@ import 'handsontable/dist/handsontable.full.min.css';
 import MuiExcelLikeTable from "../test";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowConfirm, ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
+import { DatePicker, LocalizationProvider, PickersDay } from '@mui/x-date-pickers';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs from 'dayjs';
+import "dayjs/locale/th";
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
@@ -51,20 +46,23 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Slide from '@mui/material/Slide';
 import { TransitionProps } from '@mui/material/transitions';
+import { formatThaiFull, formatThaiSlash } from "../../../theme/DateTH";
+import ThaiDateSelector from "../../../theme/ThaiDateSelector";
+import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
 
-const Transition = React.forwardRef(function Transition(
-    props: TransitionProps & { children: React.ReactElement },
-    ref: React.Ref<unknown>,
-) {
-    return <Slide direction="up" ref={ref} {...props} />;
-});
+// const Transition = React.forwardRef(function Transition(
+//     props: TransitionProps & { children: React.ReactElement },
+//     ref: React.Ref<unknown>,
+// ) {
+//     return <Slide direction="up" ref={ref} {...props} />;
+// });
 
-const SlideTransition = React.forwardRef(function Transition(
-    props: TransitionProps & { children: React.ReactElement<any, any> },
-    ref: React.Ref<unknown>
-) {
-    return <Slide direction="left" ref={ref} {...props} />;
-});
+// const SlideTransition = React.forwardRef(function Transition(
+//     props: TransitionProps & { children: React.ReactElement<any, any> },
+//     ref: React.Ref<unknown>
+// ) {
+//     return <Slide direction="left" ref={ref} {...props} />;
+// });
 
 
 const AddEmployee = () => {
@@ -79,6 +77,13 @@ const AddEmployee = () => {
     const [openTruck, setOpenTruck] = React.useState("");
     const [militaryStatus, setMilitaryStatus] = React.useState("");
     const [education, setEducation] = React.useState(true);
+    const [selectedDate, setSelectedDate] = useState(dayjs(new Date).format("DD/MM/YYYY"));
+    const handleDateChangeDate = (newValue) => {
+        if (newValue) {
+            const formattedDate = dayjs(newValue); // แปลงวันที่เป็นฟอร์แมต
+            setSelectedDate(formattedDate);
+        }
+    };
     const [educationList, setEducationList] = useState([
         {
             education: "",
@@ -97,15 +102,24 @@ const AddEmployee = () => {
             writing: "",
         },
     ]);
-
+    const companyId = companyName?.split(":")[0];
     const [editEmployee, setEditEmployee] = useState(false);
     const [editDepartment, setEditDepartment] = useState(false);
-    const [editPosition, setEditPosition] = useState(false);
+    const [thailand, setThailand] = useState([]);
+    const [address, setAddress] = useState({});
+    const [addressTrain, setAddressTrain] = useState({});
+    const [checkPosition, setCheckPosition] = useState("0:0");
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [employee, setEmployee] = useState([{ ID: 0, name: '', employeenumber: '' }]);
+    const [employee, setEmployee] = useState([{ ID: 0, position: '', }]);
     const [department, setDepartment] = useState([{ DepartmentName: '', Section: '' }]);
-    const [position, setPosition] = useState([{ PositionName: '', DepartmentName: '', employee: '' }]);
+    const [position, setPosition] = useState([{
+        ID: 0,
+        deptid: "",
+        levelid: "",
+        positionname: "",
+        sectionid: "",
+    }]);
     const employeeOptions = Array.from({ length: 10 }, (_, i) => ({
         value: `${i + 1}`,
         label: `${i + 1}`,
@@ -119,6 +133,70 @@ const AddEmployee = () => {
             options: employeeOptions,
         },
     ];
+
+    const [birthDate, setBirthDate] = useState(null);
+    const [dateStart, setDateStart] = useState(null);
+    const [dateEnd, setDateEnd] = useState(null);
+    const [dateStartCost, setDateStartCost] = useState(null);
+    const [dateEndCost, setDateEndCost] = useState(null);
+
+    // const [selectedDay, setSelectedDay] = useState("");
+    // const [selectedMonth, setSelectedMonth] = useState("");
+    // const [selectedYear, setSelectedYear] = useState("");
+    // const [province, setProvince] = useState("");
+    // const [amphure, setAmphure] = useState("");
+    // const [tambon, setTambon] = useState("");
+
+    // const provinceId = Number(province.split(":")[0]);
+    // const amphureId = Number(amphure.split(":")[0]);
+    // const tambonId = Number(tambon.split(":")[0]);
+
+    // // ใช้ useMemo ช่วยประสิทธิภาพ
+    // const amphureList = useMemo(() => {
+    //     const prov = thailand.find(p => p.id === provinceId);
+    //     return prov?.amphure || [];
+    // }, [province, thailand]);
+
+    // const tambonList = useMemo(() => {
+    //     const amp = amphureList.find(a => a.id === amphureId);
+    //     return amp?.tambon || [];
+    // }, [amphureList, amphure]);
+
+    // const zipCode = useMemo(() => {
+    //     const tb = tambonList.find(t => t.id === tambonId);
+    //     return tb?.zip_code || "";
+    // }, [tambonList, tambon]);
+
+
+    // const monthNames = [
+    //     "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+    //     "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    // ];
+
+    // const getDaysInMonth = (month, year) => {
+    //     if (!month || !year) return 31;
+    //     const engYear = parseInt(year) - 543; // ถ้าใช้ พ.ศ. → ค.ศ.
+    //     return dayjs(`${engYear}-${month}-01`).daysInMonth();
+    // };
+
+    // const daysInMonth = getDaysInMonth(selectedMonth, selectedYear);
+
+    // const handleMonthChange = (e) => {
+    //     const newMonth = e.target.value;
+    //     setSelectedMonth(newMonth);
+    //     if (selectedDay > getDaysInMonth(newMonth, selectedYear)) {
+    //         setSelectedDay(""); // ล้างวันที่ถ้าเกินจำนวนวันใหม่
+    //     }
+    // };
+
+    // const handleYearChange = (e) => {
+    //     const newYear = e.target.value;
+    //     setSelectedYear(newYear);
+    //     if (selectedDay > getDaysInMonth(selectedMonth, newYear)) {
+    //         setSelectedDay("");
+    //     }
+    // };
+
     const [step, setStep] = useState(0);
     const [animating, setAnimating] = useState(false);
     const [direction, setDirection] = useState("next");
@@ -127,6 +205,113 @@ const AddEmployee = () => {
         opacity: 1,
         transition: "transform 0.3s ease, opacity 0.3s ease",
     });
+
+    useEffect(() => {
+        if (!firebaseDB) return;
+
+        const companiesRef = ref(firebaseDB, "workgroup/company");
+        const unsubscribe = onValue(companiesRef, (snapshot) => {
+            const data = snapshot.exists() ? snapshot.val() : {};
+            const list = Object.entries(data).map(([key, value]) => ({
+                id: key,
+                ...value,
+            }));
+            setCompanies(list);
+
+            // ค้นหา company ตาม companyId
+            const found = list.find((item, index) => String(index) === companyId);
+            if (found) {
+                setSelectedCompany(found);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+
+        const unsubscribe = onValue(employeeRef, (snapshot) => {
+            const employeeData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!employeeData) {
+                setEmployee([{ ID: 0, name: '', employeenumber: '' }]);
+            } else {
+                setEmployee(employeeData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB) return;
+
+        const thailandRef = ref(firebaseDB, `workgroup/thailand`);
+
+        const unsubscribe = onValue(thailandRef, (snapshot) => {
+            const thailandData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!thailandData) {
+                setThailand([{ ID: 0, name: '', employeenumber: '' }]);
+            } else {
+                setThailand(thailandData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const positionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+
+        const unsubscribe = onValue(positionRef, (snapshot) => {
+            const positionData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!positionData) {
+                setPosition([{
+                    ID: 0,
+                    deptid: "",
+                    levelid: "",
+                    positionname: "",
+                    sectionid: "",
+                }]);
+            } else {
+                setPosition(positionData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const positionRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+
+        const unsubscribe = onValue(positionRef, (snapshot) => {
+            const employeeData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!employeeData) {
+                setEmployee([{
+                    ID: 0,
+                    position: "",
+                }]);
+            } else {
+                setEmployee(employeeData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
 
     const handleAdd = () => {
         setEducationList([
@@ -221,6 +406,74 @@ const AddEmployee = () => {
 
     const steps = [
         {
+            title: "เลือกตำแหน่งพนักงาน",
+            content: (
+                <>
+                    <Grid container spacing={2} marginTop={2}>
+                        {position.map((row, index) => {
+                            const currentCount = employee.filter(
+                                (emp) => Number(emp.position.split(":")[0]) === row.ID
+                            ).length;
+
+                            const isFull = currentCount >= row.max;
+
+                            return (
+                                <Grid
+                                    key={index}
+                                    item
+                                    size={6}
+                                    onClick={() => {
+                                        if (!isFull) {
+                                            console.log(`เลือกตำแหน่ง: ${row.positionname}`);
+                                            setCheckPosition(`${row.ID}:${row.positionname}`);
+                                            // หรือเรียกฟังก์ชัน handleSelect(row) ที่คุณกำหนดไว้
+                                        }
+                                    }}
+                                    sx={{
+                                        height: "70px",
+                                        backgroundColor: checkPosition.split(":")[1] === row.positionname ? theme.palette.primary.main : (isFull ? "#e0e0e0" : "lightgray"),
+                                        borderRadius: 3,
+                                        cursor: isFull ? "not-allowed" : "pointer",
+                                        pointerEvents: isFull ? "none" : "auto" // ปิดการคลิกจริง
+                                    }}
+                                >
+                                    <Box sx={{
+                                        display: "flex",
+                                        justifyContent: "right",
+                                        alignItems: "center",
+                                        p: 2,
+                                        paddingRight: 5.5,
+                                        marginTop: 0.5
+                                    }}>
+                                        <Typography
+                                            variant="subtitle2"
+                                            sx={{ color: checkPosition.split(":")[1] === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
+                                            gutterBottom
+                                        >
+                                            {`${row.positionname}`}
+                                        </Typography>
+                                        <Box sx={{ textAlign: "right" }}>
+                                            <Typography
+                                                variant="h6"
+                                                fontWeight="bold"
+                                                sx={{ color: checkPosition.split(":")[1] === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
+                                                gutterBottom
+                                            >
+                                                {`(${currentCount}/${row.max})`}
+                                            </Typography>
+                                        </Box>
+                                    </Box>
+                                    <Box sx={{ textAlign: "right", marginTop: -7.5, marginRight: 0.5 }}>
+                                        <BadgeIcon sx={{ fontSize: 40, color: checkPosition.split(":")[1] === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray") }} />
+                                    </Box>
+                                </Grid>
+                            );
+                        })}
+                    </Grid>
+                </>
+            ),
+        },
+        {
             title: "ข้อมูลส่วนบุคคล",
             content: (
                 <>
@@ -295,26 +548,83 @@ const AddEmployee = () => {
                                 <MenuItem value="ยังไม่ได้เกณฑ์">ยังไม่ได้เกณฑ์</MenuItem>
                             </TextField>
                         </Grid>
-                        <Grid item size={4}>
-                            <Typography variant="subtitle2" fontWeight="bold" >วันเกิด</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
+                        <Grid item size={12}>
+                            <Typography variant="subtitle2" fontWeight="bold" >กรอกข้อมูลวันเกิด</Typography>
+                            <ThaiDateSelector
+                                label="วันเกิด"
+                                value={birthDate}
+                                onChange={(val) => setBirthDate(val)}
                             />
-                        </Grid>
-                        <Grid item size={4}>
-                            <Typography variant="subtitle2" fontWeight="bold" >เดือน</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
-                            />
-                        </Grid>
-                        <Grid item size={4}>
-                            <Typography variant="subtitle2" fontWeight="bold" >ปี</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
-                            />
+                            {/* <Grid container spacing={2}>
+                                <Grid item size={4}>
+                                    <Typography variant="subtitle2" fontWeight="bold">
+                                        วันที่
+                                    </Typography>
+                                    <TextField
+                                        select
+                                        fullWidth
+                                        size="small"
+                                        value={selectedDay}
+                                        onChange={(e) => setSelectedDay(e.target.value)}
+                                        SelectProps={{
+                                            MenuProps: {
+                                                PaperProps: {
+                                                    style: {
+                                                        maxHeight: 150, // ปรับตรงนี้ เช่น 200px
+                                                    },
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => (
+                                            <MenuItem key={day} value={day}>
+                                                {day}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                </Grid>
+
+                                <Grid item size={4}>
+                                    <Typography variant="subtitle2" fontWeight="bold">
+                                        เดือน
+                                    </Typography>
+                                    <TextField
+                                        select
+                                        fullWidth
+                                        size="small"
+                                        value={selectedMonth}
+                                        onChange={handleMonthChange}
+                                        SelectProps={{
+                                            MenuProps: {
+                                                PaperProps: {
+                                                    style: {
+                                                        maxHeight: 150, // ปรับตรงนี้ เช่น 200px
+                                                    },
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        {monthNames.map((month, index) => (
+                                            <MenuItem key={index + 1} value={index + 1}>
+                                                {month}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                </Grid>
+
+                                <Grid item size={4}>
+                                    <Typography variant="subtitle2" fontWeight="bold">
+                                        ปี (พ.ศ.)
+                                    </Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={selectedYear}
+                                        onChange={handleYearChange}
+                                        placeholder="เช่น 2568"
+                                    />
+                                </Grid>
+                            </Grid> */}
                         </Grid>
                         <Grid item size={6}>
                             <Typography variant="subtitle2" fontWeight="bold" >สัญชาติ</Typography>
@@ -389,34 +699,84 @@ const AddEmployee = () => {
                                 fullWidth
                             />
                         </Grid>
-                        <Grid item size={6}>
+                        <Grid item size={12}>
+                            <ThaiAddressSelector
+                                label="ที่อยู่ปัจจุบัน"
+                                thailand={thailand}
+                                value={address}
+                                onChange={(val) => setAddress(val)}
+                            />
+                        </Grid>
+                        {/* <Grid item size={6}>
                             <Typography variant="subtitle2" fontWeight="bold" >จังหวัด</Typography>
                             <TextField
+                                select
                                 fullWidth
                                 size="small"
-                            />
+                                value={province}
+                                onChange={(e) => setProvince(e.target.value)}
+                                SelectProps={{
+                                    MenuProps: { PaperProps: { style: { maxHeight: 150 } } }
+                                }}
+                            >
+                                {thailand.map((row) => (
+                                    <MenuItem key={row.id} value={`${row.id}:${row.name_th}`}>
+                                        {row.name_th}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                            
                         </Grid>
                         <Grid item size={6}>
                             <Typography variant="subtitle2" fontWeight="bold" >เขต/อำเภอ</Typography>
                             <TextField
+                                select
                                 fullWidth
                                 size="small"
-                            />
+                                value={amphure}
+                                onChange={(e) => setAmphure(e.target.value)}
+                                SelectProps={{
+                                    MenuProps: { PaperProps: { style: { maxHeight: 150 } } }
+                                }}
+                            >
+                                {amphureList.map((amp) => (
+                                    <MenuItem key={amp.id} value={`${amp.id}:${amp.name_th}`}>
+                                        {amp.name_th}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                            
                         </Grid>
                         <Grid item size={6}>
                             <Typography variant="subtitle2" fontWeight="bold" >แขวง/ตำบล</Typography>
                             <TextField
+                                select
                                 fullWidth
                                 size="small"
-                            />
+                                value={tambon}
+                                onChange={(e) => setTambon(e.target.value)}
+                                SelectProps={{
+                                    MenuProps: { PaperProps: { style: { maxHeight: 150 } } }
+                                }}
+                            >
+                                {tambonList.map((tb) => (
+                                    <MenuItem key={tb.id} value={`${tb.id}:${tb.name_th}`}>
+                                        {tb.name_th}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+
+                            
                         </Grid>
                         <Grid item size={6}>
                             <Typography variant="subtitle2" fontWeight="bold" >รหัสไปรณีย์</Typography>
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={zipCode}
                             />
-                        </Grid>
+                            
+                        </Grid> */}
                         <Grid item size={12}>
                             <Typography variant="subtitle2" fontWeight="bold" >พาหนะส่วนตัว</Typography>
                             <Grid container spacing={2} marginLeft={2} marginRight={2} >
@@ -681,19 +1041,159 @@ const AddEmployee = () => {
             content: (
                 <>
                     <Grid container spacing={2} marginTop={3} sx={{ width: "100%" }}>
-                        <Grid item size={6}>
-                            <Typography variant="subtitle2" fontWeight="bold" >เริ่มตั้งแต่</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
+                        <Grid item size={12}>
+                            <ThaiDateSelector
+                                label="เริ่มตั้งแต่วันที่"
+                                value={dateStart}
+                                onChange={(val) => setDateStart(val)}
                             />
+                            {/* <Grid container spacing={2}>
+                                <Grid item size={4}>
+                                    <Typography variant="subtitle2" fontWeight="bold">
+                                        เริ่มตั้งแต่วันที่
+                                    </Typography>
+                                    <TextField
+                                        select
+                                        fullWidth
+                                        size="small"
+                                        value={selectedDay}
+                                        onChange={(e) => setSelectedDay(e.target.value)}
+                                        SelectProps={{
+                                            MenuProps: {
+                                                PaperProps: {
+                                                    style: {
+                                                        maxHeight: 150, // ปรับตรงนี้ เช่น 200px
+                                                    },
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => (
+                                            <MenuItem key={day} value={day}>
+                                                {day}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                </Grid>
+
+                                <Grid item size={4}>
+                                    <Typography variant="subtitle2" fontWeight="bold">
+                                        เดือน
+                                    </Typography>
+                                    <TextField
+                                        select
+                                        fullWidth
+                                        size="small"
+                                        value={selectedMonth}
+                                        onChange={handleMonthChange}
+                                        SelectProps={{
+                                            MenuProps: {
+                                                PaperProps: {
+                                                    style: {
+                                                        maxHeight: 150, // ปรับตรงนี้ เช่น 200px
+                                                    },
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        {monthNames.map((month, index) => (
+                                            <MenuItem key={index + 1} value={index + 1}>
+                                                {month}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                </Grid>
+
+                                <Grid item size={4}>
+                                    <Typography variant="subtitle2" fontWeight="bold">
+                                        ปี (พ.ศ.)
+                                    </Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={selectedYear}
+                                        onChange={handleYearChange}
+                                        placeholder="เช่น 2568"
+                                    />
+                                </Grid>
+                            </Grid> */}
                         </Grid>
-                        <Grid item size={6}>
-                            <Typography variant="subtitle2" fontWeight="bold" >จนถึง</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
+                        <Grid item size={12}>
+                            <ThaiDateSelector
+                                label="จนถึงวันที่"
+                                value={dateEnd}
+                                onChange={(val) => setDateEnd(val)}
                             />
+                            {/* <Grid container spacing={2}>
+                                <Grid item size={4}>
+                                    <Typography variant="subtitle2" fontWeight="bold">
+                                        จนถึงวันที่
+                                    </Typography>
+                                    <TextField
+                                        select
+                                        fullWidth
+                                        size="small"
+                                        value={selectedDay}
+                                        onChange={(e) => setSelectedDay(e.target.value)}
+                                        SelectProps={{
+                                            MenuProps: {
+                                                PaperProps: {
+                                                    style: {
+                                                        maxHeight: 150, // ปรับตรงนี้ เช่น 200px
+                                                    },
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => (
+                                            <MenuItem key={day} value={day}>
+                                                {day}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                </Grid>
+
+                                <Grid item size={4}>
+                                    <Typography variant="subtitle2" fontWeight="bold">
+                                        เดือน
+                                    </Typography>
+                                    <TextField
+                                        select
+                                        fullWidth
+                                        size="small"
+                                        value={selectedMonth}
+                                        onChange={handleMonthChange}
+                                        SelectProps={{
+                                            MenuProps: {
+                                                PaperProps: {
+                                                    style: {
+                                                        maxHeight: 150, // ปรับตรงนี้ เช่น 200px
+                                                    },
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        {monthNames.map((month, index) => (
+                                            <MenuItem key={index + 1} value={index + 1}>
+                                                {month}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                </Grid>
+
+                                <Grid item size={4}>
+                                    <Typography variant="subtitle2" fontWeight="bold">
+                                        ปี (พ.ศ.)
+                                    </Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={selectedYear}
+                                        onChange={handleYearChange}
+                                        placeholder="เช่น 2568"
+                                    />
+                                </Grid>
+                            </Grid> */}
                         </Grid>
                         <Grid item size={12}>
                             <Typography variant="subtitle2" fontWeight="bold" >ชื่อบริษัท</Typography>
@@ -710,6 +1210,14 @@ const AddEmployee = () => {
                                 multiline
                                 rows={3}
                                 fullWidth
+                            />
+                        </Grid>
+                        <Grid item size={12}>
+                            <ThaiAddressSelector
+                                label="ที่อยู่ปัจจุบัน"
+                                thailand={thailand}
+                                value={addressTrain}
+                                onChange={(val) => setAddressTrain(val)}
                             />
                         </Grid>
                         <Grid item size={6}>
@@ -759,19 +1267,29 @@ const AddEmployee = () => {
             content: (
                 <>
                     <Grid container spacing={2} marginTop={3} sx={{ width: "100%" }}>
-                        <Grid item size={6}>
-                            <Typography variant="subtitle2" fontWeight="bold" >เริ่มตั้งแต่</Typography>
+                        <Grid item size={12}>
+                            <ThaiDateSelector
+                                label="เริ่มตั้งแต่วันที่"
+                                value={dateStartCost}
+                                onChange={(val) => setDateStartCost(val)}
+                            />
+                            {/* <Typography variant="subtitle2" fontWeight="bold" >เริ่มตั้งแต่</Typography>
                             <TextField
                                 fullWidth
                                 size="small"
-                            />
+                            /> */}
                         </Grid>
-                        <Grid item size={6}>
-                            <Typography variant="subtitle2" fontWeight="bold" >จนถึง</Typography>
+                        <Grid item size={12}>
+                            <ThaiDateSelector
+                                label="จนถึง"
+                                value={dateEndCost}
+                                onChange={(val) => setDateEndCost(val)}
+                            />
+                            {/* <Typography variant="subtitle2" fontWeight="bold" >จนถึง</Typography>
                             <TextField
                                 fullWidth
                                 size="small"
-                            />
+                            /> */}
                         </Grid>
                         <Grid item size={12}>
                             <Typography variant="subtitle2" fontWeight="bold" >สถาบัน</Typography>
@@ -937,24 +1455,6 @@ const AddEmployee = () => {
                                         size="small"
                                     />
                                 </Grid>
-                                <Grid item size={1}>
-                                    <Typography variant="subtitle2" sx={{ marginTop: 1, textAlign: "right" }} fontWeight="bold" >4.</Typography>
-                                </Grid>
-                                <Grid item size={11}>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                    />
-                                </Grid>
-                                <Grid item size={1}>
-                                    <Typography variant="subtitle2" sx={{ marginTop: 1, textAlign: "right" }} fontWeight="bold" >5.</Typography>
-                                </Grid>
-                                <Grid item size={11}>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                    />
-                                </Grid>
                                 <Grid item size={12}>
                                     <Typography variant="subtitle2" fontWeight="bold" >ความสามารถในการขับขี่</Typography>
                                     <TextField
@@ -964,20 +1464,22 @@ const AddEmployee = () => {
                                 </Grid>
                                 <Grid item size={12}>
                                     <Typography variant="subtitle2" fontWeight="bold" >ความเร็วในการพิมพ์</Typography>
-                                </Grid>
-                                <Grid item size={6}>
-                                    <Typography variant="subtitle2" fontWeight="bold" >ไทย</Typography>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                    />
-                                </Grid>
-                                <Grid item size={6}>
-                                    <Typography variant="subtitle2" fontWeight="bold" >อังกฤษ</Typography>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                    />
+                                    <Grid container spacing={2}>
+                                        <Grid item size={6}>
+                                            <Typography variant="subtitle2" fontWeight="bold" >ไทย</Typography>
+                                            <TextField
+                                                fullWidth
+                                                size="small"
+                                            />
+                                        </Grid>
+                                        <Grid item size={6}>
+                                            <Typography variant="subtitle2" fontWeight="bold" >อังกฤษ</Typography>
+                                            <TextField
+                                                fullWidth
+                                                size="small"
+                                            />
+                                        </Grid>
+                                    </Grid>
                                 </Grid>
                                 <Grid item size={12}>
                                     <Typography variant="subtitle2" fontWeight="bold" >โครงการ ผลงาน และประสบการณ์อื่นๆ</Typography>
@@ -1006,159 +1508,6 @@ const AddEmployee = () => {
             ),
         },
     ];
-
-    // แยก companyId จาก companyName (เช่น "0:HPS-0000")
-    const companyId = companyName?.split(":")[0];
-
-    useEffect(() => {
-        if (!firebaseDB) return;
-
-        const companiesRef = ref(firebaseDB, "workgroup/company");
-        const unsubscribe = onValue(companiesRef, (snapshot) => {
-            const data = snapshot.exists() ? snapshot.val() : {};
-            const list = Object.entries(data).map(([key, value]) => ({
-                id: key,
-                ...value,
-            }));
-            setCompanies(list);
-
-            // ค้นหา company ตาม companyId
-            const found = list.find((item, index) => String(index) === companyId);
-            if (found) {
-                setSelectedCompany(found);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
-
-    useEffect(() => {
-        if (!firebaseDB || !companyId) return;
-
-        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
-
-        const unsubscribe = onValue(employeeRef, (snapshot) => {
-            const employeeData = snapshot.val();
-
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!employeeData) {
-                setEmployee([{ ID: 0, name: '', employeenumber: '' }]);
-            } else {
-                setEmployee(employeeData);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
-
-
-
-    // const handleChange = (setFn) => (changes, source) => {
-    //     if (source === 'loadData' || !changes) return;
-
-    //     setFn((prev) => {
-    //         const newData = [...prev];
-    //         let hasChange = false;
-
-    //         changes.forEach(([row, prop, oldVal, newVal]) => {
-    //             if (oldVal !== newVal) {
-    //                 newData[row][prop] = newVal;
-    //                 hasChange = true;
-    //             }
-    //         });
-
-    //         return hasChange ? newData : prev;
-    //     });
-    // };
-
-
-    // const handleAddRow = (type) => {
-    //     if (type === 'employee') {
-    //         const newRow = { Name: '', employee: '' };
-    //         setEmployee((prev) => [...prev, newRow]);
-    //     } else if (type === 'department') {
-    //         const newRow = { DepartmentName: '', Section: '' };
-    //         setDepartment((prev) => [...prev, newRow]);
-    //     } else if (type === 'position') {
-    //         const newRow = { PositionName: '', DepartmentName: '', employee: '' };
-    //         setPosition((prev) => [...prev, newRow]);
-    //     }
-    // };
-
-    // const handleRemoveRow = (type) => {
-    //     if (type === 'employee') {
-    //         setEmployee((prev) => prev.slice(0, -1));
-    //     } else if (type === 'department') {
-    //         setDepartment((prev) => prev.slice(0, -1));
-    //     } else if (type === 'position') {
-    //         setPosition((prev) => prev.slice(0, -1));
-    //     }
-    // };
-
-    const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
-
-        const invalidMessages = [];
-
-        employee.forEach((row, rowIndex) => {
-            columns.forEach((col) => {
-                const value = row[col.key];
-
-                if (value === "") {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
-                    return;
-                }
-
-                if (col.type === "number" && isNaN(Number(value))) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
-                    return;
-                }
-
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
-            });
-        });
-
-        // ✅ ตรวจสอบว่า employee.name ซ้ำหรือไม่
-        const names = employee.map(row => row.name?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
-        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
-        if (duplicates.length > 0) {
-            invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
-        }
-
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
-        if (invalidMessages.length > 0) {
-            ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
-            return;
-        }
-
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, employee)
-            .then(() => {
-                ShowSuccess("บันทึกข้อมูลสำเร็จ");
-                console.log("บันทึกสำเร็จ");
-                setEditEmployee(false);
-            })
-            .catch((error) => {
-                ShowError("เกิดข้อผิดพลาดในการบันทึก");
-                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
-            });
-    };
-
-    const handleCancel = () => {
-        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
-
-        onValue(employeeRef, (snapshot) => {
-            const employeeData = snapshot.val() || [{ ID: 0, name: '', employeenumber: '' }];
-            setEmployee(employeeData);
-            setEditEmployee(false);
-        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
-    };
 
     const handleNext = () => {
         if (step < steps.length - 1 && !animating) {

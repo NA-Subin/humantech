@@ -147,7 +147,7 @@ const PositionDetail = () => {
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
             if (!positionData) {
-                setPosition([{ ID: 0, positionname: '', levelid: ':', deptid: ':', sectionid: ':' }]);
+                setPosition([{ ID: 0, positionname: '', levelid: ':', deptid: ':', sectionid: ':', max: ':' }]);
             } else {
                 setPosition(positionData);
             }
@@ -227,6 +227,7 @@ const PositionDetail = () => {
                 parent: item.keyposition, // 👈 ใช้เฉพาะ ID ฝ่ายงาน
             })),
         },
+        { label: "อัตราที่ต้องการ", key: "max", type: "number" },
     ];
 
     console.log("section :: ", section.map((item) => ({
@@ -287,7 +288,7 @@ const PositionDetail = () => {
         const positionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
 
         onValue(positionRef, (snapshot) => {
-            const positionData = snapshot.val() || [{ ID: 0, positionname: '', levelid: ':', deptid: ':', sectionid: ':' }];
+            const positionData = snapshot.val() || [{ ID: 0, positionname: '', levelid: ':', deptid: ':', sectionid: ':', max: ':' }];
             setPosition(positionData);
             setEditPosition(false);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
@@ -347,9 +348,10 @@ const PositionDetail = () => {
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
                                                     <TablecellHeader>ชื่อตำแหน่ง</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "20%" }}>ระดับ</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "20%" }}>ฝ่ายงาน</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "20%" }}>ส่วนงาน</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "15%" }}>ระดับ</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "15%" }}>ฝ่ายงาน</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "15%" }}>ส่วนงาน</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "10%" }}>อัตราที่ต้องการ</TablecellHeader>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
@@ -366,6 +368,7 @@ const PositionDetail = () => {
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.levelid.split(":")[1]}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.deptid.split(":")[1]}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.sectionid.split(":")[1]}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.max}</TableCell>
                                                             </TableRow>
                                                         ))}
                                             </TableBody>
