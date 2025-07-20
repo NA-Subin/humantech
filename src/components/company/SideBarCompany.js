@@ -59,7 +59,7 @@ import { auth } from '../../server/firebase';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
 
 
-const drawerWidth = 250;
+const drawerWidth = 260;
 
 const openedMixin = (theme) => ({
     width: drawerWidth,
@@ -748,8 +748,8 @@ export default function SideBarCompany() {
                                     <ListItemIcon
                                         sx={{
                                             minWidth: 28,
-                                            mr: open ? 2 : 'auto',
-                                            ml: open ? 1 : 'auto',
+                                            mr: open ? 0.5 : 'auto',
+                                            ml: open ? 0.5 : 'auto',
                                             justifyContent: 'center',
                                             color: isSelected ? 'white' : '#616161',
                                         }}
@@ -791,8 +791,8 @@ export default function SideBarCompany() {
                         {/* ไอคอนซ้าย */}
                         <ListItemIcon sx={{
                             minWidth: 28,
-                            mr: open ? 2 : 'auto',
-                            ml: open ? 1 : 'auto',
+                            mr: open ? 0.5 : 'auto',
+                            ml: open ? 0.5 : 'auto',
                             justifyContent: 'center',
                             color: !openData ? "black" : '#616161',
                         }}>
@@ -886,8 +886,8 @@ export default function SideBarCompany() {
                                             <ListItemIcon
                                                 sx={{
                                                     minWidth: 28,
-                                                    mr: open ? 2 : 'auto',
-                                                    ml: open ? 1 : 'auto',
+                                                    mr: open ? 0.5 : 'auto',
+                                                    ml: open ? 0.5 : 'auto',
                                                     justifyContent: 'center',
                                                     color: isSelected ? 'white' : '#616161',
                                                 }}
@@ -959,7 +959,7 @@ export default function SideBarCompany() {
                                             <ListItemIcon
                                                 sx={{
                                                     minWidth: 28,
-                                                    mr: open ? 2 : 'auto',
+                                                    mr: open ? 0.5 : 'auto',
                                                     justifyContent: 'center',
                                                     marginLeft: open ? 1 : 'auto',
                                                     color: isSelected ? 'white' : '#616161',
@@ -1033,7 +1033,7 @@ export default function SideBarCompany() {
                                             <ListItemIcon
                                                 sx={{
                                                     minWidth: 28,
-                                                    mr: open ? 2 : 'auto',
+                                                    mr: open ? 0.5 : 'auto',
                                                     justifyContent: 'center',
                                                     marginLeft: open ? 1 : 'auto',
                                                     color: isSelected ? 'white' : '#616161',
@@ -1076,8 +1076,8 @@ export default function SideBarCompany() {
                         {/* ไอคอนซ้าย */}
                         <ListItemIcon sx={{
                             minWidth: 28,
-                            mr: open ? 2 : 'auto',
-                            ml: open ? 1 : 'auto',
+                            mr: open ? 0.5 : 'auto',
+                            ml: open ? 0.5 : 'auto',
                             justifyContent: 'center',
                             color: !openEmployee ? "black" : '#616161',
                         }}>
@@ -1107,18 +1107,17 @@ export default function SideBarCompany() {
 
                 </ListItem>
                 <Divider />
-                <List sx={{ mb: 2, py: 0, marginLeft: open ? 4 : 0 }}>
+                <List sx={{ mb: 2, py: 0, marginLeft: open ? 2 : 0 }}>
                     {!openEmployee &&
                         <React.Fragment>
                             {open && (
-                                <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1 }}>
+                                <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1, marginBottom: -0.5 }}>
                                     โครงสร้างพนักงาน
                                 </Typography>
                             )}
-
                             {[
                                 'พนักงาน',
-                                'เอกสารและการอนุมัติ'
+                                'คำนวณเงินเดือน'
                             ].map((text, index) => {
                                 const isSelected = selectedMenu === text;
 
@@ -1160,8 +1159,85 @@ export default function SideBarCompany() {
                                             <ListItemIcon
                                                 sx={{
                                                     minWidth: 28,
-                                                    mr: open ? 2 : 'auto',
-                                                    ml: open ? 1 : 'auto',
+                                                    mr: open ? 0.5 : 'auto',
+                                                    ml: open ? 0.5 : 'auto',
+                                                    justifyContent: 'center',
+                                                    color: isSelected ? 'white' : '#616161',
+                                                }}
+                                            >
+                                                <HailIcon sx={{ fontSize: 18 }} />
+                                            </ListItemIcon>
+
+                                            <ListItemText
+                                                primary={text}
+                                                sx={{
+                                                    opacity: open ? 1 : 0,
+                                                    '& .MuiTypography-root': {
+                                                        fontSize: '13px',
+                                                    },
+                                                }}
+                                            />
+                                        </ListItemButton>
+                                    </ListItem>
+                                )
+                            })}
+                            {!openData && <Divider />}
+                            {open && (
+                                <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1, marginBottom: -0.5 }}>
+                                    เอกสารและการอนุมัติ
+                                </Typography>
+                            )}
+
+                            {[
+                                'ขอลา',
+                                'ขอโอที',
+                                'ขอแก้ไขเวลา',
+                                'ขอทำงานนอกสถานที่',
+                                'ขอหนังสือรับรองการทำงาน',
+                                'ขอหนังสือรับรองเงินเดือน',
+                            ].map((text, index) => {
+                                const isSelected = selectedMenu === text;
+
+                                return (
+                                    <ListItem
+                                        key={text}
+                                        disablePadding
+                                        sx={{
+                                            display: open ? 'block' : 'flex',
+                                            height: 34,
+                                            py: 0.3,
+                                        }}
+                                    >
+                                        <ListItemButton
+                                            component={Link}
+                                            onClick={() => setSelectedMenu(text)}
+                                            // to={
+                                            //     index === 0
+                                            //         ? `/${domain}/${companyName}/employee`
+                                            //         : `/${domain}/${companyName}/employee`
+                                            // }
+                                            to={
+                                                index === 0
+                                                    ? `/?domain=${domain}&company=${companyName}&page=employee`
+                                                    : `/?domain=${domain}&company=${companyName}&page=employee`
+                                            }
+                                            sx={{
+                                                minHeight: 32,
+                                                px: open ? 2 : 1,
+                                                py: 0.5,
+                                                paddingLeft: isSelected ? 4 : 2,
+                                                backgroundColor: isSelected ? 'primary.main' : 'transparent',
+                                                color: isSelected ? 'white' : 'inherit',
+                                                '&:hover': {
+                                                    backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
+                                                },
+                                            }}
+                                        >
+                                            <ListItemIcon
+                                                sx={{
+                                                    minWidth: 28,
+                                                    mr: open ? 0.5 : 'auto',
+                                                    ml: open ? 0.5 : 'auto',
                                                     justifyContent: 'center',
                                                     color: isSelected ? 'white' : '#616161',
                                                 }}
