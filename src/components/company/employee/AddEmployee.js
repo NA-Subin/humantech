@@ -17,6 +17,8 @@ import BoyIcon from '@mui/icons-material/Boy';
 import TwoWheelerIcon from '@mui/icons-material/TwoWheeler';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
+import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
+import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -49,6 +51,7 @@ import { TransitionProps } from '@mui/material/transitions';
 import { formatThaiFull, formatThaiSlash } from "../../../theme/DateTH";
 import ThaiDateSelector from "../../../theme/ThaiDateSelector";
 import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
+import { database } from "../../../server/firebase";
 
 // const Transition = React.forwardRef(function Transition(
 //     props: TransitionProps & { children: React.ReactElement },
@@ -207,6 +210,25 @@ const AddEmployee = () => {
     });
 
     useEffect(() => {
+        if (!database) return;
+
+        const thailandRef = ref(database, `thailand`);
+
+        const unsubscribe = onValue(thailandRef, (snapshot) => {
+            const thailandData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!thailandData) {
+                setThailand([{ ID: 0, name: '', employeenumber: '' }]);
+            } else {
+                setThailand(thailandData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [database]);
+
+    useEffect(() => {
         if (!firebaseDB) return;
 
         const companiesRef = ref(firebaseDB, "workgroup/company");
@@ -246,25 +268,6 @@ const AddEmployee = () => {
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
-
-    useEffect(() => {
-        if (!firebaseDB) return;
-
-        const thailandRef = ref(firebaseDB, `workgroup/thailand`);
-
-        const unsubscribe = onValue(thailandRef, (snapshot) => {
-            const thailandData = snapshot.val();
-
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!thailandData) {
-                setThailand([{ ID: 0, name: '', employeenumber: '' }]);
-            } else {
-                setThailand(thailandData);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB]);
 
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -379,6 +382,68 @@ const AddEmployee = () => {
         );
     };
 
+    const handleNext = () => {
+        if (step < steps.length - 1 && !animating) {
+            setDirection("prev");
+            setAnimating(true);
+            setStyle({
+                transform: "translateX(-200px)",
+                opacity: 0,
+                transition: "transform 0.3s ease, opacity 0.3s ease",
+            });
+            setTimeout(() => {
+                setStep(prev => prev + 1);
+                setStyle({
+                    transform: "translateX(200px)",
+                    opacity: 0,
+                    transition: "none",
+                });
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setStyle({
+                            transform: "translateX(0)",
+                            opacity: 1,
+                            transition: "transform 0.3s ease, opacity 0.3s ease",
+                        });
+                        setAnimating(false);
+                    });
+                });
+            }, 300);
+        }
+    };
+
+    const handlePrev = () => {
+        if (step > 0 && !animating) {
+            setDirection("next");
+            setAnimating(true);
+            setStyle({
+                transform: "translateX(200px)",
+                opacity: 0,
+                transition: "transform 0.3s ease, opacity 0.3s ease",
+            });
+            setTimeout(() => {
+                setStep(prev => prev - 1);
+                setStyle({
+                    transform: "translateX(-200px)",
+                    opacity: 0,
+                    transition: "none",
+                });
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        setStyle({
+                            transform: "translateX(0)",
+                            opacity: 1,
+                            transition: "transform 0.3s ease, opacity 0.3s ease",
+                        });
+                        setAnimating(false);
+                    });
+                });
+            }, 300);
+        }
+    };
+
     const educationStatus = [
         { value: "กำลังศึกษา", label: "กำลังศึกษา" },
         { value: "จบการศึกษา", label: "จบการศึกษา" },
@@ -484,6 +549,7 @@ const AddEmployee = () => {
                                 fullWidth
                                 size="small"
                                 value={name}
+                                placeholder="กรุณากรอกชื่อ"
                                 onChange={(e) => setName(e.target.value)}
                             />
                         </Grid>
@@ -491,6 +557,7 @@ const AddEmployee = () => {
                             <Typography variant="subtitle2" fontWeight="bold" >นามสกุล</Typography>
                             <TextField
                                 fullWidth
+                                placeholder="กรุณากรอกนามสกุล"
                                 size="small"
                             />
                         </Grid>
@@ -541,6 +608,7 @@ const AddEmployee = () => {
                                 fullWidth
                                 size="small"
                                 value={militaryStatus}
+                                SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
                                 onChange={(e) => setMilitaryStatus(e.target.value)}
                             >
                                 <MenuItem value="ผ่านการเกณฑ์แล้ว">ผ่านการเกณฑ์แล้ว</MenuItem>
@@ -631,6 +699,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกสัญชาติ"
                             />
                         </Grid>
                         <Grid item size={6}>
@@ -638,6 +707,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกศาสนา"
                             />
                         </Grid>
                         <Grid item size={6}>
@@ -645,6 +715,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกน้ำหนัก"
                             />
                         </Grid>
                         <Grid item size={6}>
@@ -652,6 +723,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกส่วนสูง"
                             />
                         </Grid>
                         <Grid item size={12}>
@@ -659,6 +731,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกสถานภาพ"
                             />
                         </Grid>
                         <Grid item size={6}>
@@ -666,6 +739,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกเบอร์โทรศัพท์"
                             />
                         </Grid>
                         <Grid item size={6}>
@@ -673,6 +747,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกเบอร์โทรศัพท์บ้าน"
                             />
                         </Grid>
                         <Grid item size={12}>
@@ -680,6 +755,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอก LINE ID"
                             />
                         </Grid>
                         <Grid item size={12}>
@@ -687,6 +763,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกประเทศ"
                             />
                         </Grid>
                         <Grid item size={12}>
@@ -694,6 +771,7 @@ const AddEmployee = () => {
                             <TextField
                                 type="text"
                                 size="small"
+                                placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
                                 multiline
                                 rows={3}
                                 fullWidth
@@ -704,6 +782,7 @@ const AddEmployee = () => {
                                 label="ที่อยู่ปัจจุบัน"
                                 thailand={thailand}
                                 value={address}
+                                placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
                                 onChange={(val) => setAddress(val)}
                             />
                         </Grid>
@@ -910,6 +989,7 @@ const AddEmployee = () => {
                                     fullWidth
                                     size="small"
                                     value={item.educationLevel}
+                                    SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
                                     onChange={(e) =>
                                         handleChange(index, "educationLevel", e.target.value)
                                     }
@@ -933,6 +1013,7 @@ const AddEmployee = () => {
                                                 fullWidth
                                                 size="small"
                                                 value={item.institution}
+                                                placeholder="กรถุณากรอกสถานศึกษา"
                                                 onChange={(e) =>
                                                     handleChange(index, "institution", e.target.value)
                                                 }
@@ -948,6 +1029,7 @@ const AddEmployee = () => {
                                             <TextField
                                                 fullWidth
                                                 size="small"
+                                                placeholder="กรุณากรอกสถานศึกษา"
                                                 value={item.institution}
                                                 onChange={(e) =>
                                                     handleChange(index, "institution", e.target.value)
@@ -960,7 +1042,9 @@ const AddEmployee = () => {
                                                 select
                                                 fullWidth
                                                 size="small"
+                                                placeholder="เช่น 2568"
                                                 value={item.educationLevel}
+                                                SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
                                                 onChange={(e) =>
                                                     handleChange(index, "majorCategory", e.target.value)
                                                 }
@@ -977,6 +1061,7 @@ const AddEmployee = () => {
                                             <TextField
                                                 fullWidth
                                                 size="small"
+                                                placeholder="กรุณากรอกคณะ"
                                             />
                                         </Grid>
                                         <Grid item size={12}>
@@ -984,6 +1069,7 @@ const AddEmployee = () => {
                                             <TextField
                                                 fullWidth
                                                 size="small"
+                                                placeholder="กรุณากรอกสาขา"
                                             />
                                         </Grid>
                                         <Grid item size={12}>
@@ -991,6 +1077,7 @@ const AddEmployee = () => {
                                             <TextField
                                                 fullWidth
                                                 size="small"
+                                                placeholder="กรุณากรอกชื่อปริญญา"
                                             />
                                         </Grid>
                                     </React.Fragment>
@@ -1003,6 +1090,7 @@ const AddEmployee = () => {
                                     fullWidth
                                     size="small"
                                     value={item.graduateYear}
+                                    placeholder="กรุณากรอกปีที่สำเร็จการศึกษา"
                                     onChange={(e) =>
                                         handleChange(index, "graduateYear", e.target.value)
                                     }
@@ -1017,6 +1105,7 @@ const AddEmployee = () => {
                                     fullWidth
                                     size="small"
                                     value={item.gpa}
+                                    placeholder="กรุณากรอกเกรดเฉลี่ย"
                                     onChange={(e) =>
                                         handleChange(index, "gpa", e.target.value)
                                     }
@@ -1200,6 +1289,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกชื่อบริษัท"
                             />
                         </Grid>
                         <Grid item size={12}>
@@ -1210,6 +1300,7 @@ const AddEmployee = () => {
                                 multiline
                                 rows={3}
                                 fullWidth
+                                placeholder="กรุณากรอกที่อยู่"
                             />
                         </Grid>
                         <Grid item size={12}>
@@ -1217,6 +1308,7 @@ const AddEmployee = () => {
                                 label="ที่อยู่ปัจจุบัน"
                                 thailand={thailand}
                                 value={addressTrain}
+                                placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
                                 onChange={(val) => setAddressTrain(val)}
                             />
                         </Grid>
@@ -1225,6 +1317,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกตำแหน่งงาน"
                             />
                         </Grid>
                         <Grid item size={6}>
@@ -1232,6 +1325,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกประเภทงาน"
                             />
                         </Grid>
                         <Grid item size={6}>
@@ -1239,6 +1333,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกระดับ"
                             />
                         </Grid>
                         <Grid item size={6}>
@@ -1246,6 +1341,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกเงินเดือน"
                             />
                         </Grid>
                         <Grid item size={12}>
@@ -1256,6 +1352,7 @@ const AddEmployee = () => {
                                 multiline
                                 rows={3}
                                 fullWidth
+                                placeholder="กรุณากรอกรายละเอียด"
                             />
                         </Grid>
                     </Grid>
@@ -1296,6 +1393,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกชื่อสถาบัน"
                             />
                         </Grid>
                         <Grid item size={12}>
@@ -1303,6 +1401,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกหลักสูตร"
                             />
                         </Grid>
                         <Grid item size={12}>
@@ -1310,6 +1409,7 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                placeholder="กรุณากรอกประกาศนียบัตร/วุฒิบัตร"
                             />
                         </Grid>
                     </Grid>
@@ -1348,6 +1448,7 @@ const AddEmployee = () => {
                                     onChange={(e) =>
                                         handleLanguageChange(index, "language", e.target.value)
                                     }
+                                    placeholder="กรุณากรอกชื่อภาษา"
                                 />
                                 {/* <TextField
                                     select
@@ -1381,6 +1482,7 @@ const AddEmployee = () => {
                                             size="small"
                                             value={lang.speaking}
                                             onChange={(e) => handleLanguageChange(index, "speaking", e.target.value)}
+                                            placeholder="กรุณากรอกความสามารถในการพูด"
                                         />
                                     </Grid>
                                     <Grid item size={2}>
@@ -1392,6 +1494,7 @@ const AddEmployee = () => {
                                             size="small"
                                             value={lang.reading}
                                             onChange={(e) => handleLanguageChange(index, "reading", e.target.value)}
+                                            placeholder="กรุณากรอกความสามารถในการอ่าน"
                                         />
                                     </Grid>
 
@@ -1404,6 +1507,7 @@ const AddEmployee = () => {
                                             size="small"
                                             value={lang.writing}
                                             onChange={(e) => handleLanguageChange(index, "writing", e.target.value)}
+                                            placeholder="กรุณากรอกความสามารถในการเขียน"
                                         />
                                     </Grid>
                                 </Grid>
@@ -1435,6 +1539,7 @@ const AddEmployee = () => {
                                     <TextField
                                         fullWidth
                                         size="small"
+                                        placeholder="กรุณากรอกความสามารถเฉพาะทาง"
                                     />
                                 </Grid>
                                 <Grid item size={1}>
@@ -1444,6 +1549,7 @@ const AddEmployee = () => {
                                     <TextField
                                         fullWidth
                                         size="small"
+                                        placeholder="กรุณากรอกความสามารถเฉพาะทาง"
                                     />
                                 </Grid>
                                 <Grid item size={1}>
@@ -1453,6 +1559,7 @@ const AddEmployee = () => {
                                     <TextField
                                         fullWidth
                                         size="small"
+                                        placeholder="กรุณากรอกความสามารถเฉพาะทาง"
                                     />
                                 </Grid>
                                 <Grid item size={12}>
@@ -1460,6 +1567,7 @@ const AddEmployee = () => {
                                     <TextField
                                         fullWidth
                                         size="small"
+                                        placeholder="กรุณากรอกความสามารถในการขับขี่"
                                     />
                                 </Grid>
                                 <Grid item size={12}>
@@ -1470,6 +1578,7 @@ const AddEmployee = () => {
                                             <TextField
                                                 fullWidth
                                                 size="small"
+                                                placeholder="กรุณากรอกความเร็วในการพิมพ์ภาษาไทย"
                                             />
                                         </Grid>
                                         <Grid item size={6}>
@@ -1477,6 +1586,7 @@ const AddEmployee = () => {
                                             <TextField
                                                 fullWidth
                                                 size="small"
+                                                placeholder="กรุณากรอกความเร็วในการพิมพ์ภาษาอังกฤษ"
                                             />
                                         </Grid>
                                     </Grid>
@@ -1489,6 +1599,7 @@ const AddEmployee = () => {
                                         multiline
                                         rows={3}
                                         fullWidth
+                                        placeholder="กรุณากรอกโครงการ ผลงาน และประสบการณ์อื่นๆ"
                                     />
                                 </Grid>
                                 <Grid item size={12}>
@@ -1499,6 +1610,7 @@ const AddEmployee = () => {
                                         multiline
                                         rows={3}
                                         fullWidth
+                                        placeholder="กรุณากรอกชื่อบุคคลอ้างอิง"
                                     />
                                 </Grid>
                             </Grid>
@@ -1509,214 +1621,244 @@ const AddEmployee = () => {
         },
     ];
 
-    const handleNext = () => {
-        if (step < steps.length - 1 && !animating) {
-            setDirection("prev");
-            setAnimating(true);
-            setStyle({
-                transform: "translateX(-200px)",
-                opacity: 0,
-                transition: "transform 0.3s ease, opacity 0.3s ease",
-            });
-            setTimeout(() => {
-                setStep(prev => prev + 1);
-                setStyle({
-                    transform: "translateX(200px)",
-                    opacity: 0,
-                    transition: "none",
-                });
-
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        setStyle({
-                            transform: "translateX(0)",
-                            opacity: 1,
-                            transition: "transform 0.3s ease, opacity 0.3s ease",
-                        });
-                        setAnimating(false);
-                    });
-                });
-            }, 300);
-        }
-    };
-
-    const handlePrev = () => {
-        if (step > 0 && !animating) {
-            setDirection("next");
-            setAnimating(true);
-            setStyle({
-                transform: "translateX(200px)",
-                opacity: 0,
-                transition: "transform 0.3s ease, opacity 0.3s ease",
-            });
-            setTimeout(() => {
-                setStep(prev => prev - 1);
-                setStyle({
-                    transform: "translateX(-200px)",
-                    opacity: 0,
-                    transition: "none",
-                });
-
-                requestAnimationFrame(() => {
-                    requestAnimationFrame(() => {
-                        setStyle({
-                            transform: "translateX(0)",
-                            opacity: 1,
-                            transition: "transform 0.3s ease, opacity 0.3s ease",
-                        });
-                        setAnimating(false);
-                    });
-                });
-            }, 300);
-        }
-    };
-
-
     return (
         <React.Fragment>
             <Button variant="contained" onClick={handleClickOpen}>
                 เพิ่มพนักงาน
             </Button>
-            {/* Dialog ด้านซ้าย (ก่อนหน้า) */}
-            {/* เงาแบบ Box ด้านซ้าย */}
-            {
-                open &&
-                (step > 0 && (
-                    <Paper
-                        elevation={4}
+            <Box position="relative">
+                {/* ปุ่มด้านซ้าย */}
+                {
+                    open && (step > 0 &&
+                        <Button
+                            variant="text"
+                            color="primary"
+                            disableRipple
+                            disableElevation
+                            onClick={handlePrev}
+                            sx={{
+                                position: "fixed",
+                                top: "50%",
+                                left: "calc(44% - 320px)", // ขยับจาก center ไปทางซ้าย (Dialog กว้าง 600px)
+                                transform: "translateY(-50%)",
+                                zIndex: 1501, // สูงกว่า Dialog backdrop (zIndex default ของ MUI คือ 1300+)
+                                backgroundColor: "transparent",
+                                '&:hover': {
+                                    backgroundColor: "transparent",
+                                },
+                                //backgroundColor: "white",
+                                //...style,
+                            }}
+                        >
+                            <Typography
+                                variant="h2"
+                                fontWeight="bold"
+                                color="white"
+                                sx={{
+                                    fontSize: 100,
+                                    transform: "scaleY(2)",
+                                    opacity: 0.3,
+                                    '&:hover': {
+                                        color: theme.palette.primary.light,
+                                        textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)", // เงาปกติ
+                                        opacity: 1,
+                                    },
+                                }}
+                                gutterBottom
+                            >
+                                {"<"}
+                            </Typography>
+                            {/* <KeyboardArrowLeftIcon sx={{ fontSize: 100, color: "white", border: `1px solid gray`, }} /> */}
+                        </Button>)
+                }
+
+                {/* ปุ่มด้านขวา */}
+                {open && (step < steps.length - 1 && (
+                    <Button
+                        variant="text"
+                        color="primary"
+                        disableRipple
+                        disableElevation
+                        onClick={handleNext}
                         sx={{
                             position: "fixed",
                             top: "50%",
-                            left: "calc(50% - 700px)",
-                            height: "80vh", // <<< เท่ากับ Dialog หลัก
-                            width: "600px",
+                            left: "calc(51% + 320px)", // ขยับจาก center ไปทางขวา
                             transform: "translateY(-50%)",
-                            p: 2,
-                            borderRadius: 4,
-                            pointerEvents: "none",
-                            zIndex: (theme) => theme.zIndex.modal - 1,
-                            textAlign: "left", // <-- เพิ่มบรรทัดนี้
-                            backgroundColor: "rgba(255, 255, 255, 0.95)", // <-- พื้นหลังขาวใสขึ้น
-                            backdropFilter: "blur(2px)", // <-- เพิ่มเอฟเฟกต์เบลอแบบ Dialog
-                            boxShadow: (theme) => theme.shadows[5], // เหมือน Dialog
+                            zIndex: 1501,
+                            backgroundColor: "transparent",
+                            '&:hover': {
+                                backgroundColor: "transparent",
+                            },
+                            //backgroundColor: "white",
+                            //...style,
                         }}
                     >
-                        <Typography variant="h6" fontWeight="bold" textAlign="center">
-                            {steps[step - 1].title}
-                        </Typography>
-                        <Divider sx={{ marginTop: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
-                        <Box
+                        <Typography
+                            variant="h2"
+                            fontWeight="bold"
+                            color="white"
                             sx={{
-                                maxHeight: 'calc(77vh - 100px)', // ลบความสูงของหัวเรื่อง, padding ฯลฯ
-                                overflowY: 'auto',
-                                pr: 1, // padding ขวาเผื่อ scrollbar
+                                fontSize: 100,
+                                transform: "scaleY(2)",
+                                opacity: 0.3,
+                                '&:hover': {
+                                    color: theme.palette.primary.light,
+                                    textShadow: "2px 2px 4px rgba(0, 0, 0, 0.5)", // เงาปกติ
+                                    opacity: 1,
+                                },
                             }}
+                            gutterBottom
                         >
-                            {steps[step - 1].content}
-                        </Box>
-                    </Paper>
-                ))
-            }
-
-            {/* Dialog หลัก */}
-            <Dialog
-                open={open ? true : false}
-                PaperProps={{
-                    sx: {
-                        borderRadius: 4, // ค่าตรงนี้คือความมน ยิ่งมากยิ่งมน (ค่า default คือ 1 หรือ 4px)
-                        width: "600px",
-                        height: "90vh", // <<< เท่ากับ Dialog หลัก
-                        position: "absolute",
-                        ...style,
-                    },
-                }}
-            >
-                <DialogTitle
-                    sx={{
-                        // borderBottom: `1px solid ${theme.palette.primary.main}`,
-                        // backgroundColor: theme.palette.primary.dark,
-                        // color: "white",
-                        // height: "50px",
-                        // paddingTop: -1
-                        textAlign: "center",
-                        fontWeight: "bold"
-                    }}
-                >
-                    <Grid container spacing={2}>
-                        <Grid item size={10}>
-                            {steps[step].title}
-                        </Grid>
-                        <Grid item size={2} sx={{ textAlign: "right" }}>
-                            <IconButtonError sx={{ marginTop: -2 }} onClick={handleClose}>
-                                <CloseIcon />
-                            </IconButtonError>
-                        </Grid>
-                    </Grid>
-                    <Divider sx={{ marginTop: 2, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
-                </DialogTitle>
-                <DialogContent
-                    sx={{
-                        position: "relative",
-                        overflow: "hidden",
-                        overflowY: 'auto',
-                        height: "300px", // หรือความสูง fixed ที่คุณใช้
-                    }}
-                >
-                    {steps[step].content}
-                </DialogContent>
-                <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
-                    <Button color="info" onClick={handlePrev} disabled={step === 0}>
-                        ← ก่อนหน้า
+                            {">"}
+                        </Typography>
+                        {/* <KeyboardArrowRightIcon sx={{ fontSize: 100, color: "white", border: `2px solid gray`, }} /> */}
                     </Button>
-                    {step < steps.length - 1 ? (
-                        <Button color="info" onClick={handleNext}>ถัดไป →</Button>
-                    ) : (
-                        <Button variant="contained" color="success">
-                            บันทึก
-                        </Button>
-                    )}
-                </DialogActions>
-            </Dialog>
+                ))}
 
-            {/* เงาแบบ Box ด้านขวา */}
-            {
-                open &&
-                (step < steps.length - 1 && (
-                    <Paper
-                        elevation={4}
-                        sx={{
-                            position: "fixed",
-                            top: "50%",
-                            right: "calc(50% - 700px)",
-                            height: "80vh", // <<< เท่ากับ Dialog หลัก
-                            width: "600px",
-                            transform: "translateY(-50%)",
-                            p: 2,
-                            borderRadius: 4,
-                            pointerEvents: "none",
-                            zIndex: (theme) => theme.zIndex.modal - 1,
-                            textAlign: "left", // <-- เพิ่มบรรทัดนี้
-                            backgroundColor: "rgba(255, 255, 255, 0.95)", // <-- พื้นหลังขาวใสขึ้น
-                            backdropFilter: "blur(2px)", // <-- เพิ่มเอฟเฟกต์เบลอแบบ Dialog
-                            boxShadow: (theme) => theme.shadows[5], // เหมือน Dialog
-                        }}
-                    >
-                        <Typography variant="h6" fontWeight="bold" textAlign="center" >
-                            {steps[step + 1].title}
-                        </Typography>
-                        <Divider sx={{ marginTop: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
-                        <Box
+                {/* Dialog ด้านซ้าย (ก่อนหน้า) */}
+                {/* เงาแบบ Box ด้านซ้าย */}
+                {
+                    open &&
+                    (step > 0 && (
+                        <Paper
+                            elevation={4}
                             sx={{
-                                maxHeight: 'calc(77vh - 100px)', // ลบความสูงของหัวเรื่อง, padding ฯลฯ
-                                overflowY: 'auto',
-                                pr: 1, // padding ขวาเผื่อ scrollbar
+                                position: "fixed",
+                                top: "50%",
+                                left: "calc(50% - 700px)",
+                                height: "80vh", // <<< เท่ากับ Dialog หลัก
+                                width: "600px",
+                                transform: "translateY(-50%)",
+                                p: 2,
+                                borderRadius: 4,
+                                pointerEvents: "none",
+                                zIndex: (theme) => theme.zIndex.modal - 1,
+                                textAlign: "left", // <-- เพิ่มบรรทัดนี้
+                                backgroundColor: "rgba(255, 255, 255, 0.95)", // <-- พื้นหลังขาวใสขึ้น
+                                backdropFilter: "blur(2px)", // <-- เพิ่มเอฟเฟกต์เบลอแบบ Dialog
+                                boxShadow: (theme) => theme.shadows[5], // เหมือน Dialog
                             }}
                         >
-                            {steps[step + 1].content}
-                        </Box>
-                    </Paper>
-                ))
-            }
+                            <Typography variant="h6" fontWeight="bold" textAlign="center">
+                                {steps[step - 1].title}
+                            </Typography>
+                            <Divider sx={{ marginTop: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                            <Box
+                                sx={{
+                                    maxHeight: 'calc(77vh - 100px)', // ลบความสูงของหัวเรื่อง, padding ฯลฯ
+                                    overflowY: 'auto',
+                                    pr: 1, // padding ขวาเผื่อ scrollbar
+                                }}
+                            >
+                                {steps[step - 1].content}
+                            </Box>
+                        </Paper>
+                    ))
+                }
+
+                {/* Dialog หลัก */}
+                <Dialog
+                    open={open ? true : false}
+                    //onClose={handleClose}
+                    PaperProps={{
+                        sx: {
+                            borderRadius: 4, // ค่าตรงนี้คือความมน ยิ่งมากยิ่งมน (ค่า default คือ 1 หรือ 4px)
+                            width: "600px",
+                            height: "90vh", // <<< เท่ากับ Dialog หลัก
+                            position: "absolute",
+                            ...style,
+                        },
+                    }}
+                >
+                    <DialogTitle
+                        sx={{
+                            // borderBottom: `1px solid ${theme.palette.primary.main}`,
+                            // backgroundColor: theme.palette.primary.dark,
+                            // color: "white",
+                            // height: "50px",
+                            // paddingTop: -1
+                            textAlign: "center",
+                            fontWeight: "bold"
+                        }}
+                    >
+                        <Grid container spacing={2}>
+                            <Grid item size={10}>
+                                {steps[step].title}
+                            </Grid>
+                            <Grid item size={2} sx={{ textAlign: "right" }}>
+                                <IconButtonError sx={{ marginTop: -2 }} onClick={handleClose}>
+                                    <CloseIcon />
+                                </IconButtonError>
+                            </Grid>
+                        </Grid>
+                        <Divider sx={{ marginTop: 2, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                    </DialogTitle>
+                    <DialogContent
+                        sx={{
+                            position: "relative",
+                            overflow: "hidden",
+                            overflowY: 'auto',
+                            height: "300px", // หรือความสูง fixed ที่คุณใช้
+                        }}
+                    >
+                        {steps[step].content}
+                    </DialogContent>
+                    <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
+                        <Button color="info" onClick={handlePrev} disabled={step === 0}>
+                            ← ก่อนหน้า
+                        </Button>
+                        {step < steps.length - 1 ? (
+                            <Button color="info" onClick={handleNext}>ถัดไป →</Button>
+                        ) : (
+                            <Button variant="contained" color="success">
+                                บันทึก
+                            </Button>
+                        )}
+                    </DialogActions>
+                </Dialog>
+
+                {/* เงาแบบ Box ด้านขวา */}
+                {
+                    open &&
+                    (step < steps.length - 1 && (
+                        <Paper
+                            elevation={4}
+                            sx={{
+                                position: "fixed",
+                                top: "50%",
+                                right: "calc(50% - 700px)",
+                                height: "80vh", // <<< เท่ากับ Dialog หลัก
+                                width: "600px",
+                                transform: "translateY(-50%)",
+                                p: 2,
+                                borderRadius: 4,
+                                pointerEvents: "none",
+                                zIndex: (theme) => theme.zIndex.modal - 1,
+                                textAlign: "left", // <-- เพิ่มบรรทัดนี้
+                                backgroundColor: "rgba(255, 255, 255, 0.95)", // <-- พื้นหลังขาวใสขึ้น
+                                backdropFilter: "blur(2px)", // <-- เพิ่มเอฟเฟกต์เบลอแบบ Dialog
+                                boxShadow: (theme) => theme.shadows[5], // เหมือน Dialog
+                            }}
+                        >
+                            <Typography variant="h6" fontWeight="bold" textAlign="center" >
+                                {steps[step + 1].title}
+                            </Typography>
+                            <Divider sx={{ marginTop: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                            <Box
+                                sx={{
+                                    maxHeight: 'calc(77vh - 100px)', // ลบความสูงของหัวเรื่อง, padding ฯลฯ
+                                    overflowY: 'auto',
+                                    pr: 1, // padding ขวาเผื่อ scrollbar
+                                }}
+                            >
+                                {steps[step + 1].content}
+                            </Box>
+                        </Paper>
+                    ))
+                }
+
+            </Box>
             {/* <Dialog
                 open={open}
                 slots={{

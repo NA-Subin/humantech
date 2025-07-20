@@ -57,6 +57,7 @@ export default function ThaiDateSelector({ label = "", value, onChange }) {
           select
           fullWidth
           size="small"
+          placeholder="เลือกวันที่"
           value={selectedDay}
           onChange={(e) => setSelectedDay(e.target.value)}
           SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
@@ -72,6 +73,7 @@ export default function ThaiDateSelector({ label = "", value, onChange }) {
           select
           fullWidth
           size="small"
+          placeholder="เลือกเดือน"
           value={selectedMonth}
           onChange={handleMonthChange}
           SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
