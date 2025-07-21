@@ -14,6 +14,7 @@ import {
     Box,
     IconButton,
     Tooltip,
+    Checkbox,
 } from "@mui/material";
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
@@ -306,7 +307,7 @@ export default function TableExcel({
                                                                                 {opt.label}
                                                                             </option>
                                                                         ))
-                                                                        : <option value="">ไม่มี</option> // 👈 กรณีไม่พบ option ที่สัมพันธ์
+                                                                        : <option value="0:ไม่มี">ไม่มี</option> // 👈 กรณีไม่พบ option ที่สัมพันธ์
                                                                 );
                                                             }
 
@@ -325,37 +326,28 @@ export default function TableExcel({
                                                 )} */}
                                                 </>
                                             )
-                                                : col.type === "date" ? (
-                                                    <input
-                                                        type="date"
-                                                        value={
-                                                            row[col.key]
-                                                                ? dayjs(row[col.key], "DD/MM/YYYY").format("YYYY-MM-DD")
-                                                                : ""
-                                                        }
-                                                        onChange={(e) => {
-                                                            const newDate = dayjs(e.target.value).format("DD/MM/YYYY"); // 👈 แปลงกลับ
-                                                            handleCellChange(newDate, rowIdx, col.key);
-                                                        }}
-                                                        style={{
-                                                            width: "100%",
-                                                            height: "100%",
-                                                            padding: "4px",
-                                                            border: "none",
-                                                            outline: isCellSelected(rowIdx, colIdx)
-                                                                ? `1px solid ${theme.palette.primary.dark}`
-                                                                : "none",
-                                                            backgroundColor: getCellBackgroundColor(row[col.key], col),
-                                                            textAlign: "center",
-                                                            fontFamily: theme.typography.fontFamily,
-                                                        }}
+                                                :
+
+                                                col.type === "checkbox" ? (
+                                                    <Checkbox
+                                                        checked={row[col.key] === 1}
+                                                        onChange={(e) => handleCellChange(e.target.checked ? 1 : 0, rowIdx, col.key)}
+                                                        color="primary" // ใช้สีตาม theme.palette.primary.main
+                                                        sx={{ p: 0 }} // optional: ลด padding ถ้าต้องการให้พอดี cell
                                                     />
                                                 )
-                                                    : col.type === "time" ? (
+                                                    : col.type === "date" ? (
                                                         <input
-                                                            type="time"
-                                                            value={row[col.key] || ""}
-                                                            onChange={(e) => handleCellChange(e.target.value, rowIdx, col.key)}
+                                                            type="date"
+                                                            value={
+                                                                row[col.key]
+                                                                    ? dayjs(row[col.key], "DD/MM/YYYY").format("YYYY-MM-DD")
+                                                                    : ""
+                                                            }
+                                                            onChange={(e) => {
+                                                                const newDate = dayjs(e.target.value).format("DD/MM/YYYY"); // 👈 แปลงกลับ
+                                                                handleCellChange(newDate, rowIdx, col.key);
+                                                            }}
                                                             style={{
                                                                 width: "100%",
                                                                 height: "100%",
@@ -370,37 +362,56 @@ export default function TableExcel({
                                                             }}
                                                         />
                                                     )
-                                                        : (
-                                                            <div
-                                                                contentEditable
-                                                                suppressContentEditableWarning
-                                                                dir="ltr"
-                                                                onBlur={(e) => {
-                                                                    let newValue = e.currentTarget.innerText;
-                                                                    if (col?.type === "number") {
-                                                                        const filtered = newValue.replace(/[^\d.-]/g, "");
-                                                                        if (filtered !== newValue) {
-                                                                            e.currentTarget.innerText = filtered;
-                                                                            newValue = filtered;
-                                                                        }
-                                                                    }
-                                                                    handleCellChange(newValue, rowIdx, col.key);
-                                                                }}
+                                                        : col.type === "time" ? (
+                                                            <input
+                                                                type="time"
+                                                                value={row[col.key] || ""}
+                                                                onChange={(e) => handleCellChange(e.target.value, rowIdx, col.key)}
                                                                 style={{
+                                                                    width: "100%",
+                                                                    height: "100%",
+                                                                    padding: "4px",
+                                                                    border: "none",
                                                                     outline: isCellSelected(rowIdx, colIdx)
                                                                         ? `1px solid ${theme.palette.primary.dark}`
                                                                         : "none",
                                                                     backgroundColor: getCellBackgroundColor(row[col.key], col),
-                                                                    direction: "ltr",
-                                                                    unicodeBidi: "normal",
-                                                                    whiteSpace: "pre-wrap",
-                                                                    fontFamily: theme.typography.fontFamily
+                                                                    textAlign: "center",
+                                                                    fontFamily: theme.typography.fontFamily,
                                                                 }}
-                                                            >
-                                                                {row[col.key] ?? ""}
-                                                            </div>
+                                                            />
+                                                        )
+                                                            : (
+                                                                <div
+                                                                    contentEditable
+                                                                    suppressContentEditableWarning
+                                                                    dir="ltr"
+                                                                    onBlur={(e) => {
+                                                                        let newValue = e.currentTarget.innerText;
+                                                                        if (col?.type === "number") {
+                                                                            const filtered = newValue.replace(/[^\d.-]/g, "");
+                                                                            if (filtered !== newValue) {
+                                                                                e.currentTarget.innerText = filtered;
+                                                                                newValue = filtered;
+                                                                            }
+                                                                        }
+                                                                        handleCellChange(newValue, rowIdx, col.key);
+                                                                    }}
+                                                                    style={{
+                                                                        outline: isCellSelected(rowIdx, colIdx)
+                                                                            ? `1px solid ${theme.palette.primary.dark}`
+                                                                            : "none",
+                                                                        backgroundColor: getCellBackgroundColor(row[col.key], col),
+                                                                        direction: "ltr",
+                                                                        unicodeBidi: "normal",
+                                                                        whiteSpace: "pre-wrap",
+                                                                        fontFamily: theme.typography.fontFamily
+                                                                    }}
+                                                                >
+                                                                    {row[col.key] ?? ""}
+                                                                </div>
 
-                                                        )}
+                                                            )}
                                         </TableCell>
 
                                     ))}

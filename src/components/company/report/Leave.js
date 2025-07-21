@@ -29,30 +29,42 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
 
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Checkbox, InputAdornment } from "@mui/material";
+import { InputAdornment, MenuItem } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
+import SelectEmployeeGroup from "../../../theme/SearchEmployee";
 
-const LeaveDetail = () => {
+const ReportLeave = () => {
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     //const { companyName } = useParams();
+    const [department, setDepartment] = useState("");
+    const [section, setSection] = useState("");
+    const [position, setPosition] = useState("");
+    const [employee, setEmployee] = useState("");
+    const [departments, setDepartments] = useState([]);
+    const [sections, setSections] = useState([]);
+    const [positions, setPositions] = useState([]);
+    const [employees, setEmployees] = useState([]);
+
     const [editLeave, setEditLeave] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [leave, setLeave] = useState([{ ID: 0, name: '' }]);
     const columns = [
         { label: "ประเภทการลา", key: "name", type: "text" },
-        { label: "จำนวนวัน", key: "maxDaysPerYear", type: "text" },
-        { label: "สะสมวันลา", key: "canCarryForward", type: "checkbox" },
-        { label: "ได้รับค่าจ้าง", key: "isPaid", type: "checkbox" },
-        { label: "แนบเอกสาร", key: "requiresDocument", type: "checkbox" }
+        { label: "จำนวนวัน", key: "max", type: "text" }
     ];
+
+    console.log("Departments:", department);
+    console.log("Sections:", section);
+    console.log("Positions:", position);
+    console.log("Employees:", employee);
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
@@ -82,16 +94,73 @@ const LeaveDetail = () => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
+        const departmentRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
 
-        const unsubscribe = onValue(leaveRef, (snapshot) => {
-            const leaveData = snapshot.val();
+        const unsubscribe = onValue(departmentRef, (snapshot) => {
+            const departmentData = snapshot.val();
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!leaveData) {
-                setLeave([{ ID: 0, name: '' }]);
+            if (!departmentData) {
+                setDepartments([{ ID: 0, name: '' }]);
             } else {
-                setLeave(leaveData);
+                setDepartments(departmentData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const sectionRef = ref(firebaseDB, `workgroup/company/${companyId}/section`);
+
+        const unsubscribe = onValue(sectionRef, (snapshot) => {
+            const sectionData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!sectionData) {
+                setSections([{ ID: 0, name: '' }]);
+            } else {
+                setSections(sectionData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const positionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+
+        const unsubscribe = onValue(positionRef, (snapshot) => {
+            const positionData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!positionData) {
+                setPositions([{ ID: 0, name: '' }]);
+            } else {
+                setPositions(positionData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+
+        const unsubscribe = onValue(employeeRef, (snapshot) => {
+            const employeeData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!employeeData) {
+                setEmployees([{ ID: 0, name: '' }]);
+            } else {
+                setEmployees(employeeData);
             }
         });
 
@@ -99,7 +168,7 @@ const LeaveDetail = () => {
     }, [firebaseDB, companyId]);
 
     const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/section`);
 
         const invalidMessages = [];
 
@@ -168,44 +237,37 @@ const LeaveDetail = () => {
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
-                        <Typography variant="h5" fontWeight="bold" gutterBottom>ประเภทการลา (Leave)</Typography>
+                        <Typography variant="h5" fontWeight="bold" gutterBottom>เอกสารขอลา (Documents requesting Leave)</Typography>
                     </Grid>
                 </Grid>
             </Box>
             <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
                 <Box>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลประเภทการลา</Typography>
+                    <SelectEmployeeGroup
+                        department={department}
+                        setDepartment={setDepartment}
+                        departments={departments}
+                        section={section}
+                        setSection={setSection}
+                        sections={sections}
+                        position={position}
+                        setPosition={setPosition}
+                        positions={positions}
+                        employee={employee}
+                        setEmployee={setEmployee}
+                        employees={employees}
+                    />
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลเอกสารขอลา</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
                         <Grid item size={editLeave ? 12 : 11}>
                             {
                                 editLeave ?
                                     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                                        {/* <HotTable
-                                            data={leave}
-                                            afterChange={handleChange(setLeave)}
-                                            licenseKey="non-commercial-and-evaluation"
-                                            colHeaders={['ชื่อแผนก', 'ส่วนงาน']}
-                                            rowHeaders={true}
-                                            width="100%"
-                                            height="auto"
-                                            stretchH="all"
-                                            manualColumnResize={true}
-                                            manualRowResize={true}
-                                            rowHeights={28}               // ความสูงของ td
-                                            columnHeaderHeight={45}       // ความสูงของ th (หัวตาราง)
-                                            contextMenu={true}
-                                            copyPaste={true}
-                                            className="mui-hot-table"
-                                            columns={[
-                                                { data: 'deptname', className: 'htCenter htMiddle' },
-                                                { data: 'section', className: 'htCenter htMiddle' },
-                                            ]}
-                                        /> */}
                                         <TableExcel
                                             columns={columns}
-                                            initialData={leave}
-                                            onDataChange={setLeave}
+                                            initialData={department}
+                                            onDataChange={setDepartment}
                                         />
                                     </Paper>
 
@@ -215,53 +277,13 @@ const LeaveDetail = () => {
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                    <TablecellHeader>ประเภทการลา</TablecellHeader>
-                                                    <TablecellHeader>จำนวนวัน</TablecellHeader>
-                                                    <TablecellHeader>สะสมวันลา</TablecellHeader>
-                                                    <TablecellHeader>ได้รับค่าจ้าง</TablecellHeader>
-                                                    <TablecellHeader>แนบเอกสาร</TablecellHeader>
+                                                    <TablecellHeader>ชื่อ</TablecellHeader>
+                                                    <TablecellHeader>วันที่</TablecellHeader>
+                                                    <TablecellHeader>จนถึงวันที่</TablecellHeader>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                {
-                                                    leave.length === 0 ?
-                                                        <TableRow>
-                                                            <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                        </TableRow>
-                                                        :
-                                                        leave.map((row, index) => (
-                                                            <TableRow>
-                                                                <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.maxDaysPerYear}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>
-                                                                    <Checkbox
-                                                                        sx={{ marginTop: -1, marginBottom: -1 }}
-                                                                        checked={row.canCarryForward === 1}
-                                                                        disabled
-                                                                        color="primary"
-                                                                    />
-                                                                </TableCell>
-
-                                                                <TableCell sx={{ textAlign: "center" }}>
-                                                                    <Checkbox
-                                                                        sx={{ marginTop: -1, marginBottom: -1 }}
-                                                                        checked={row.isPaid === 1}
-                                                                        disabled
-                                                                        color="primary"
-                                                                    />
-                                                                </TableCell>
-
-                                                                <TableCell sx={{ textAlign: "center" }}>
-                                                                    <Checkbox
-                                                                        sx={{ marginTop: -1, marginBottom: -1 }}
-                                                                        checked={row.requiresDocument === 1}
-                                                                        disabled
-                                                                        color="primary"
-                                                                    />
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        ))}
+                                                 
                                             </TableBody>
                                         </Table>
                                     </TableContainer>
@@ -288,35 +310,6 @@ const LeaveDetail = () => {
                                         <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                         แก้ไข
                                     </Button>
-                                    {/* {
-                                    editLeave ?
-                                        <Box textAlign="right">
-                                            <IconButton variant="contained" color="info" onClick={() => handleAddRow("leave")}>
-                                                <AddCircleOutlineIcon />
-                                            </IconButton>
-                                            <IconButton variant="contained" color="error" onClick={() => handleRemoveRow("leave")}>
-                                                <RemoveCircleOutlineIcon />
-                                            </IconButton>
-                                        </Box>
-                                        :
-                                        <Button
-                                            variant="contained"
-                                            size="small"
-                                            color="warning"
-                                            fullWidth
-                                            sx={{
-                                                height: "60px",
-                                                flexDirection: "column",
-                                                justifyContent: "center",
-                                                alignItems: "center",
-                                                textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
-                                            }}
-                                            onClick={() => setEditLeave(true)}
-                                        >
-                                            <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
-                                            แก้ไข
-                                        </Button>
-                                } */}
                                 </Box>
                             </Grid>
                         }
@@ -334,4 +327,4 @@ const LeaveDetail = () => {
     )
 }
 
-export default LeaveDetail
+export default ReportLeave

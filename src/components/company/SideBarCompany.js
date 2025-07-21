@@ -863,12 +863,12 @@ export default function SideBarCompany() {
                                             // }
                                             to={
                                                 index === 0
-                                                    ? `/?domain=${domain}&company=${companyName}&page=level`
+                                                    ? `/?domain=${domain}&company=${companyName}&operation=level`
                                                     : index === 1
-                                                        ? `/?domain=${domain}&company=${companyName}&page=department`
+                                                        ? `/?domain=${domain}&company=${companyName}&operation=department`
                                                         : index === 2
-                                                            ? `/?domain=${domain}&company=${companyName}&page=section`
-                                                            : `/?domain=${domain}&company=${companyName}&page=position`
+                                                            ? `/?domain=${domain}&company=${companyName}&operation=section`
+                                                            : `/?domain=${domain}&company=${companyName}&operation=position`
 
                                             }
                                             sx={{
@@ -938,10 +938,10 @@ export default function SideBarCompany() {
                                             // }
                                             to={
                                                 index === 0
-                                                    ? `/?domain=${domain}&company=${companyName}&page=social-security`
+                                                    ? `/?domain=${domain}&company=${companyName}&vat=social-security`
                                                     : index === 1
-                                                        ? `/?domain=${domain}&company=${companyName}&page=tax`
-                                                        : `/?domain=${domain}&company=${companyName}&page=deduction`
+                                                        ? `/?domain=${domain}&company=${companyName}&vat=tax`
+                                                        : `/?domain=${domain}&company=${companyName}&vat=deduction`
                                             }
                                             onClick={() => setSelectedMenu(text)}
                                             sx={{
@@ -1010,12 +1010,12 @@ export default function SideBarCompany() {
                                             // }
                                             to={
                                                 index === 0
-                                                    ? `/?domain=${domain}&company=${companyName}&page=leave`
+                                                    ? `/?domain=${domain}&company=${companyName}&time=leave`
                                                     : index === 1
-                                                        ? `/?domain=${domain}&company=${companyName}&page=ot`
+                                                        ? `/?domain=${domain}&company=${companyName}&time=ot`
                                                         : index === 2
-                                                            ? `/?domain=${domain}&company=${companyName}&page=workshift`
-                                                            : `/?domain=${domain}&company=${companyName}&page=dayoff`
+                                                            ? `/?domain=${domain}&company=${companyName}&time=workshift`
+                                                            : `/?domain=${domain}&company=${companyName}&time=dayoff`
                                             }
                                             onClick={() => setSelectedMenu(text)}
                                             sx={{
@@ -1141,8 +1141,8 @@ export default function SideBarCompany() {
                                             // }
                                             to={
                                                 index === 0
-                                                    ? `/?domain=${domain}&company=${companyName}&page=employee`
-                                                    : `/?domain=${domain}&company=${companyName}&page=employee`
+                                                    ? `/?domain=${domain}&company=${companyName}&employee=employee`
+                                                    : `/?domain=${domain}&company=${companyName}&employee=calculate`
                                             }
                                             sx={{
                                                 minHeight: 32,
@@ -1217,9 +1217,12 @@ export default function SideBarCompany() {
                                             //         : `/${domain}/${companyName}/employee`
                                             // }
                                             to={
-                                                index === 0
-                                                    ? `/?domain=${domain}&company=${companyName}&page=employee`
-                                                    : `/?domain=${domain}&company=${companyName}&page=employee`
+                                                index === 0 ? `/?domain=${domain}&company=${companyName}&report=leave`
+                                                : index === 1 ? `/?domain=${domain}&company=${companyName}&report=ot`
+                                                : index === 2 ? `/?domain=${domain}&company=${companyName}&report=time`
+                                                : index === 3 ? `/?domain=${domain}&company=${companyName}&report=working-outside`
+                                                : index === 4 ? `/?domain=${domain}&company=${companyName}&report=work-certificate`
+                                                    : `/?domain=${domain}&company=${companyName}&report=salary-certificate`
                                             }
                                             sx={{
                                                 minHeight: 32,

@@ -47,9 +47,11 @@ const WorkShiftDetail = () => {
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [workshift, setWorkshift] = useState([{ ID: 0, name: '' }]);
     const columns = [
+        { label: "กะการทำงาน", key: "name", type: "text" },
         { label: "เข้า", key: "start", type: "time" },
         { label: "ออก", key: "stop", type: "time" },
-        { label: "กะการทำงาน", key: "name", type: "text" }
+        { label: "เวลาพัก (นาที)", key: "breakMinutes", type: "number" },
+        { label: "จำนวนชั่วโมง", key: "totalWorkHours", type: "number" }
     ];
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
@@ -213,8 +215,10 @@ const WorkShiftDetail = () => {
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader rowSpan={2} sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                    <TablecellHeader colSpan={2}>ช่วงเวลา</TablecellHeader>
                                                     <TablecellHeader rowSpan={2}>กะการทำงาน</TablecellHeader>
+                                                    <TablecellHeader colSpan={2}>ช่วงเวลา</TablecellHeader>
+                                                    <TablecellHeader rowSpan={2}>เวลาพัก</TablecellHeader>
+                                                    <TablecellHeader rowSpan={2}>จำนวนชั่วโมง</TablecellHeader>
                                                 </TableRow>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader>เข้า</TablecellHeader>
@@ -231,9 +235,11 @@ const WorkShiftDetail = () => {
                                                         workshift.map((row, index) => (
                                                             <TableRow>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.start}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.stop}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.breakMinutes}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.totalWorkHours	}</TableCell>
                                                             </TableRow>
                                                         ))}
                                             </TableBody>

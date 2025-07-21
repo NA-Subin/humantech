@@ -42,14 +42,17 @@ const OTDetail = () => {
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     //const { companyName } = useParams();
-    const [editWorkshift, setEditWorkshift] = useState(false);
+    const [editOT, setEditOT] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [workshift, setWorkshift] = useState([{ ID: 0, name: '' }]);
+    const [ot, setOT] = useState([{ ID: 0, name: '' }]);
     const columns = [
-        { label: "เข้า", key: "start", type: "time" },
-        { label: "ออก", key: "stop", type: "time" },
-        { label: "กะการทำงาน", key: "name", type: "text" }
+        { label: "เข้า", key: "timetart", type: "time" },
+        { label: "ออก", key: "timeend", type: "time" },
+        { label: "ประเภทโอที", key: "ottype", type: "text" },
+        { label: "จำนวนชั่วโมง", key: "othours", type: "number" },
+        { label: "สถานะ", key: "status", type: "text" },
+        { label: "หมายเหตุ", key: "note", type: "text" }
     ];
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
@@ -80,16 +83,16 @@ const OTDetail = () => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const workshiftRef = ref(firebaseDB, `workgroup/company/${companyId}/workshift`);
+        const otRef = ref(firebaseDB, `workgroup/company/${companyId}/ot`);
 
-        const unsubscribe = onValue(workshiftRef, (snapshot) => {
-            const workshiftData = snapshot.val();
+        const unsubscribe = onValue(otRef, (snapshot) => {
+            const otData = snapshot.val();
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!workshiftData) {
-                setWorkshift([{ ID: 0, name: '' }]);
+            if (!otData) {
+                setOT([{ ID: 0,timetart: '', timeend: '', ottype: '', othours: '', status: '', note: '' }]);
             } else {
-                setWorkshift(workshiftData);
+                setOT(otData);
             }
         });
 
@@ -97,11 +100,11 @@ const OTDetail = () => {
     }, [firebaseDB, companyId]);
 
     const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/workshift`);
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/ot`);
 
         const invalidMessages = [];
 
-        workshift.forEach((row, rowIndex) => {
+        ot.forEach((row, rowIndex) => {
             columns.forEach((col) => {
                 const value = row[col.key];
 
@@ -126,7 +129,7 @@ const OTDetail = () => {
         });
 
         // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        const names = workshift.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        const names = ot.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
         const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
         if (duplicates.length > 0) {
             invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
@@ -139,11 +142,11 @@ const OTDetail = () => {
         }
 
         // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, workshift)
+        set(companiesRef, ot)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
-                setEditWorkshift(false);
+                setEditOT(false);
             })
             .catch((error) => {
                 ShowError("เกิดข้อผิดพลาดในการบันทึก");
@@ -152,12 +155,12 @@ const OTDetail = () => {
     };
 
     const handleCancel = () => {
-        const workshiftRef = ref(firebaseDB, `workgroup/company/${companyId}/workshift`);
+        const otRef = ref(firebaseDB, `workgroup/company/${companyId}/ot`);
 
-        onValue(workshiftRef, (snapshot) => {
-            const workshiftData = snapshot.val() || [{ ID: 0, name: '' }];
-            setWorkshift(workshiftData);
-            setEditWorkshift(false);
+        onValue(otRef, (snapshot) => {
+            const otData = snapshot.val() || [{ ID: 0,timetart: '', timeend: '', ottype: '', othours: '', status: '', note: '' }];
+            setOT(otData);
+            setEditOT(false);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
@@ -175,13 +178,13 @@ const OTDetail = () => {
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลงานโอที</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
-                        <Grid item size={editWorkshift ? 12 : 11}>
+                        <Grid item size={editOT ? 12 : 11}>
                             {
-                                editWorkshift ?
+                                editOT ?
                                     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                         {/* <HotTable
-                                            data={workshift}
-                                            afterChange={handleChange(setWorkshift)}
+                                            data={ot}
+                                            afterChange={handleChange(setOT)}
                                             licenseKey="non-commercial-and-evaluation"
                                             colHeaders={['ชื่อแผนก', 'ส่วนงาน']}
                                             rowHeaders={true}
@@ -202,8 +205,8 @@ const OTDetail = () => {
                                         /> */}
                                         <TableExcel
                                             columns={columns}
-                                            initialData={workshift}
-                                            onDataChange={setWorkshift}
+                                            initialData={ot}
+                                            onDataChange={setOT}
                                         />
                                     </Paper>
 
@@ -212,9 +215,12 @@ const OTDetail = () => {
                                         <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                    <TablecellHeader rowSpan={2} sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                    <TablecellHeader colSpan={2}>ช่วงเวลา</TablecellHeader>
-                                                    <TablecellHeader rowSpan={2}>กะการทำงาน</TablecellHeader>
+                                                    <TablecellHeader rowSpan={2} sx={{ width: 80, height: "5px" }}>ลำดับ</TablecellHeader>
+                                                    <TablecellHeader colSpan={2} sx={{ height: "5px" }}>ช่วงเวลา</TablecellHeader>
+                                                    <TablecellHeader rowSpan={2} sx={{ height: "5px" }}>ประเภทโอที</TablecellHeader>
+                                                    <TablecellHeader rowSpan={2} sx={{ height: "5px" }}>จำนวนชั่วโมง</TablecellHeader>
+                                                    <TablecellHeader rowSpan={2} sx={{ height: "5px" }}>สถานะ</TablecellHeader>
+                                                    <TablecellHeader rowSpan={2} sx={{ height: "5px" }}>หมายเหตุ</TablecellHeader>
                                                 </TableRow>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader>เข้า</TablecellHeader>
@@ -223,17 +229,20 @@ const OTDetail = () => {
                                             </TableHead>
                                             <TableBody>
                                                 {
-                                                    workshift.length === 0 ?
+                                                    ot.length === 0 ?
                                                         <TableRow>
-                                                            <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                            <TablecellNoData colSpan={7}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                         </TableRow>
                                                         :
-                                                        workshift.map((row, index) => (
+                                                        ot.map((row, index) => (
                                                             <TableRow>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.start}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.stop}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.timetart}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.timeend}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.ottype}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.othours}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.status}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.note}</TableCell>
                                                             </TableRow>
                                                         ))}
                                             </TableBody>
@@ -242,7 +251,7 @@ const OTDetail = () => {
                             }
                         </Grid>
                         {
-                            !editWorkshift &&
+                            !editOT &&
                             <Grid item size={1} textAlign="right">
                                 <Box display="flex" justifyContent="center" alignItems="center">
                                     <Button
@@ -257,18 +266,18 @@ const OTDetail = () => {
                                             alignItems: "center",
                                             textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
                                         }}
-                                        onClick={() => setEditWorkshift(true)}
+                                        onClick={() => setEditOT(true)}
                                     >
                                         <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                         แก้ไข
                                     </Button>
                                     {/* {
-                                    editWorkshift ?
+                                    editOT ?
                                         <Box textAlign="right">
-                                            <IconButton variant="contained" color="info" onClick={() => handleAddRow("workshift")}>
+                                            <IconButton variant="contained" color="info" onClick={() => handleAddRow("ot")}>
                                                 <AddCircleOutlineIcon />
                                             </IconButton>
-                                            <IconButton variant="contained" color="error" onClick={() => handleRemoveRow("workshift")}>
+                                            <IconButton variant="contained" color="error" onClick={() => handleRemoveRow("ot")}>
                                                 <RemoveCircleOutlineIcon />
                                             </IconButton>
                                         </Box>
@@ -285,7 +294,7 @@ const OTDetail = () => {
                                                 alignItems: "center",
                                                 textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
                                             }}
-                                            onClick={() => setEditWorkshift(true)}
+                                            onClick={() => setEditOT(true)}
                                         >
                                             <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                             แก้ไข
@@ -296,7 +305,7 @@ const OTDetail = () => {
                         }
                     </Grid>
                     {
-                        editWorkshift &&
+                        editOT &&
                         <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                             <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                             <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
