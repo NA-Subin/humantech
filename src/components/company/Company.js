@@ -22,6 +22,7 @@ import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import LinearProgress, { linearProgressClasses } from '@mui/material/LinearProgress';
 import AddIcon from '@mui/icons-material/Add';
+import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useFirebase } from "../../server/ProjectFirebaseContext";
 import { Item } from "../../theme/style";
@@ -29,6 +30,8 @@ import theme from "../../theme/theme";
 import InsertCompany from "./InsertCompany";
 import { Card, CardActionArea, CardContent } from "@mui/material";
 import LogoGreen from '../../img/HumantechGreen.png';
+import { logout } from "../../server/logoutAuth";
+import { ShowConfirm } from "../../sweetalert/sweetalert";
 
 const Company = () => {
     const { firebaseDB, domainKey } = useFirebase();
@@ -36,6 +39,19 @@ const Company = () => {
     const [searchParams] = useSearchParams();
     const domain = searchParams.get("domain");
     const navigate = useNavigate();
+
+    const handleLogout = () => {
+        ShowConfirm(
+            "ออกจากระบบ",
+            "คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?",
+            () => {
+                logout(navigate);
+            },
+            () => {
+                console.log("ยกเลิกการออกจากระบบ");
+            }
+        );
+    };
     const [show, setShow] = useState(1);
     const [showMenu, setshowMenu] = useState(1);
     const [page, setPage] = React.useState(0);
@@ -75,6 +91,11 @@ const Company = () => {
                         <Typography variant="h3" fontSize={30} marginTop={-2} fontWeight="bold" gutterBottom>
                             ( ระบบจัดการบริษัท )
                         </Typography>
+                    </Grid>
+                    <Grid item size={12} textAlign="right" marginTop={-12}>
+                        <Button onClick={handleLogout} variant="contained" size="large" color="error" endIcon={<MeetingRoomIcon />}>
+                            ออกจากระบบ
+                        </Button>
                     </Grid>
                     <Grid item size={12} textAlign="center">
                         <Divider sx={{ border: `1px solid ${theme.palette.primary.dark}` }} />

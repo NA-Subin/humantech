@@ -86,3 +86,36 @@
   background-color: var(--mui-primary-dark) !important;
   color: var(--mui-primary-contrastText) !important;
 }
+
+.custom-swal-popup {
+    border-radius: 20px !important;
+    padding: 30px !important;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.custom-confirm-button {
+    font-weight: bold;
+    padding: 8px 20px;
+    border-radius: 5px;
+}
+
+.custom-cancel-button {
+    font-weight: bold;
+    padding: 8px 20px;
+    border-radius: 5px;
+}
+
+/* ปรับ logo ขึ้นบน */
+.custom-swal-image {
+    margin-top: -20px;
+    margin-bottom: 0px;
+}
+
+/* ปรับ title ให้ติดกับ logo */
+.custom-swal-title {
+    margin-top: -10px !important;
+    font-weight: bold;
+}
+
+

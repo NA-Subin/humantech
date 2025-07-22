@@ -15,6 +15,8 @@ import theme from "../../../theme/theme";
 import { Card, InputAdornment } from "@mui/material";
 import Logo from '../../../img/Humantech.png';
 import { ref, get } from "firebase/database";  // ✅ เพิ่ม ref & get จาก modular API
+import { saveEncryptedCookie } from "../../../server/cookieUtils";
+import { ShowAccessLogin } from "../../../sweetalert/sweetalert";
 
 const DomainLogin = () => {
     const [domain, setDomain] = useState("");
@@ -61,9 +63,21 @@ const DomainLogin = () => {
         }
     };
 
+    // สร้าง secret key แบบสุ่ม 32 ตัว
+    // const generateSecret = () => {
+    //     return Array.from(crypto.getRandomValues(new Uint8Array(32)))
+    //         .map(b => b.toString(16).padStart(2, '0'))
+    //         .join('');
+    // };
+
+    // console.log(generateSecret());
+
+    console.log("Domain Data:", domainData);
+    console.log("Domain Key:", domainKey);
 
     const handleLogin = async () => {
         setError("");
+
         if (!domainKey || !password) {
             setError("กรุณากรอก Domain Key และ Password");
             return;
@@ -83,11 +97,23 @@ const DomainLogin = () => {
             const email = `${domainKey}@humantech.com`;
             await signInWithEmailAndPassword(auth, email, password);
             console.log("Domain Data:", domainData);
+
+            // Save to LocalStorage
             localStorage.setItem("domainData", JSON.stringify(domainData));
-            alert("✅ เข้าสู่ระบบสำเร็จ");
-            // navigate(`/${encodeURIComponent(domainKey)}`)
-            navigate(`/?domain=${encodeURIComponent(domainKey)}`);
-            //window.location.href = "/dashboard"; // 👈 force reload app
+
+            // Save to Secure Cookie
+            saveEncryptedCookie({
+                domainKey: domainData.domainKey,
+                companyName: domainData.companyName,
+                loginTime: Date.now(),
+                randomSession: Math.random().toString(36).slice(2),
+            });
+
+            ShowAccessLogin("เข้าสู่ระบบ", `ยินดีต้อนรับเข้าสู่ระบบ ${domainData.domainKey}`);
+            navigate(`/?domain=${encodeURIComponent(domainKey)}&page=dashboard`);
+            setTimeout(() => {
+                window.location.reload();
+            }, 50); // delay เล็กน้อยเพื่อให้ navigate สำเร็จก่อน
         } catch (e) {
             console.error(e);
             setError("ล็อกอินไม่สำเร็จ กรุณาตรวจสอบรหัสผ่าน");

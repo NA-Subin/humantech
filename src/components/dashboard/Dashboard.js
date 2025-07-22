@@ -217,18 +217,18 @@ const Dashboard = () => {
                                 }}>
                                 เข้าสู่ระบบ
                             </Button>
-                            <Button variant="contained" color="error"
-                                onClick={
-                                    () =>
-                                        //navigate(`/${domain}/dashboard`
-                                        navigate(`/?domain=${domain}&page=dashboard`)
-                                }
-                                fullWidth sx={{
-                                    marginTop: 2,
-                                    borderRadius: 15,
-                                }}>
+                            <Button
+                                variant="contained"
+                                color="error"
+                                onClick={() => {
+                                    window.location.href = `/?domain=${domain}&page=dashboard`;
+                                }}
+                                fullWidth
+                                sx={{ marginTop: 2, borderRadius: 15 }}
+                            >
                                 เข้าสู่ระบบจัดการบริษัท
                             </Button>
+
                         </CardContent>
                     </Box>
                 </Box>

@@ -1,4 +1,4 @@
-import { Routes, Route, useSearchParams } from "react-router-dom";
+import { Routes, Route, useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import DomainLogin from "./components/login/login-user/Login";
 import RequestDomainForm from "./components/registration/RegistationDomain";
 import AdminApproveDomainForm from "./components/registration/ConfigDomain";
@@ -28,6 +28,29 @@ import ReportWorkingOutside from "./components/company/report/WorkingOutside";
 import ReportWorkCertificat from "./components/company/report/WorkCertificate";
 import ReportSalaryCertificate from "./components/company/report/SalaryCertificate";
 import CalculateSalary from "./components/company/employee/CalculateSalary";
+import { loadEncryptedCookie } from "./server/cookieUtils";
+import { useEffect } from "react";
+
+const ProtectedRouteWrapper = ({ children }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const cookie = loadEncryptedCookie();
+
+    if (!cookie) {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    const currentDomain = new URLSearchParams(location.search).get("domain");
+    if (!currentDomain || currentDomain !== cookie.domainKey) {
+      navigate(`/?domain=${encodeURIComponent(cookie.domainKey)}&page=dashboard`, { replace: true });
+    }
+  }, [location]);
+
+  return children;
+};
 
 // รวมหน้า company routes ตาม page query param
 function CompanyRoutes({ page }: { page?: string }) {
@@ -151,7 +174,11 @@ export default function AppRouter() {
   return (
     <Routes>
       {/* เส้นทางหลัก ใช้ query param */}
-      <Route path="/" element={<MainEntry />} />
+      <Route path="/" element={
+        <ProtectedRouteWrapper>
+          <MainEntry />
+        </ProtectedRouteWrapper>
+      } />
 
       {/* public routes */}
       <Route path="/register-domain" element={<RequestDomainForm />} />
