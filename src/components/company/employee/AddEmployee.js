@@ -73,13 +73,113 @@ const AddEmployee = () => {
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     const [open, setOpen] = React.useState(false);
+
     const [name, setName] = React.useState("");
+    const [lastName, setLastName] = React.useState("");
     const [openSex, setOpenSex] = React.useState(true);
     const [openBike, setOpenBike] = React.useState("");
     const [openCar, setOpenCar] = React.useState("");
     const [openTruck, setOpenTruck] = React.useState("");
     const [militaryStatus, setMilitaryStatus] = React.useState("");
     const [education, setEducation] = React.useState(true);
+    const [nationality, setNationality] = React.useState("");
+    const [religion, setReligion] = React.useState("");
+    const [weight, setWeight] = React.useState("");
+    const [height, setHeight] = React.useState("");
+    const [statusEmployee, setStatusEmployee] = React.useState("");
+    const [phone, setPhone] = React.useState("");
+    const [homePhone, setHomePhone] = React.useState("");
+    const [country, setCountry] = React.useState("");
+    const [lineID, setLineID] = React.useState("");
+    const [address, setAddress] = useState({});
+    const [birthDate, setBirthDate] = useState(null);
+    const statuss = [
+        {
+            ID: 1,
+            value: "single",
+            label: "โสด"
+        },
+        {
+            ID: 2,
+            value: "married",
+            label: "สมรส"
+        },
+        {
+            ID: 3,
+            value: "divorced",
+            label: "หย่า"
+        },
+        {
+            ID: 4,
+            value: "widowed",
+            label: "หม้าย"
+        },
+        {
+            ID: 5,
+            value: "separated",
+            label: "แยกกันอยู่"
+        },
+        {
+            ID: 6,
+            value: "registered_partner",
+            label: "จดทะเบียนคู่ชีวิต"
+        },
+        {
+            ID: 7,
+            value: "unregistered_partner",
+            label: "อยู่ด้วยกันโดยไม่จดทะเบียน"
+        },
+        {
+            ID: 8,
+            value: "unknown",
+            label: "ไม่ระบุ"
+        }
+    ]
+
+
+    const personal = {
+        name: name,
+        lastname: lastName,
+        sex: openSex ? "ชาย" : "หญิง",
+        militaryStatus: militaryStatus,
+        birthDate: birthDate,
+        nationality: nationality,
+        religion: religion,
+        weight: weight,
+        height: height,
+        statusEmployee: statusEmployee,
+        phone: phone,
+        homephone: homePhone,
+        lineID: lineID,
+        country: country,
+        address: address,
+        vehicle: [
+            {
+                id: 0,
+                name: "Bike",
+                status: openBike ? "ขับได้" : "ขับไม่ได้",
+                drivinglicense: "มี",
+                image: ""
+            },
+            {
+                id: 1,
+                name: "Car",
+                status: openCar ? "ขับได้" : "ขับไม่ได้",
+                drivinglicense: "มี",
+                image: ""
+            },
+            {
+                id: 2,
+                name: "Truck",
+                status: openTruck ? "ขับได้" : "ขับไม่ได้",
+                drivinglicense: "มี",
+                image: ""
+            }
+        ]
+    }
+
+    console.log("personal : ", personal);
+
     const [selectedDate, setSelectedDate] = useState(dayjs(new Date).format("DD/MM/YYYY"));
     const handleDateChangeDate = (newValue) => {
         if (newValue) {
@@ -106,10 +206,13 @@ const AddEmployee = () => {
         },
     ]);
     const companyId = companyName?.split(":")[0];
+
+    console.log("educationList : ",educationList);
+
+    console.log("Compnay ID : ", companyId);
     const [editEmployee, setEditEmployee] = useState(false);
     const [editDepartment, setEditDepartment] = useState(false);
     const [thailand, setThailand] = useState([]);
-    const [address, setAddress] = useState({});
     const [addressTrain, setAddressTrain] = useState({});
     const [checkPosition, setCheckPosition] = useState("0:0");
     const [companies, setCompanies] = useState([]);
@@ -137,7 +240,6 @@ const AddEmployee = () => {
         },
     ];
 
-    const [birthDate, setBirthDate] = useState(null);
     const [dateStart, setDateStart] = useState(null);
     const [dateEnd, setDateEnd] = useState(null);
     const [dateStartCost, setDateStartCost] = useState(null);
@@ -150,9 +252,9 @@ const AddEmployee = () => {
     // const [amphure, setAmphure] = useState("");
     // const [tambon, setTambon] = useState("");
 
-    // const provinceId = Number(province.split(":")[0]);
-    // const amphureId = Number(amphure.split(":")[0]);
-    // const tambonId = Number(tambon.split(":")[0]);
+    // const provinceId = Number(province.split("-")[0]);
+    // const amphureId = Number(amphure.split("-")[0]);
+    // const tambonId = Number(tambon.split("-")[0]);
 
     // // ใช้ useMemo ช่วยประสิทธิภาพ
     // const amphureList = useMemo(() => {
@@ -253,25 +355,6 @@ const AddEmployee = () => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
-
-        const unsubscribe = onValue(employeeRef, (snapshot) => {
-            const employeeData = snapshot.val();
-
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!employeeData) {
-                setEmployee([{ ID: 0, name: '', employeenumber: '' }]);
-            } else {
-                setEmployee(employeeData);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
-
-    useEffect(() => {
-        if (!firebaseDB || !companyId) return;
-
         const positionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
 
         const unsubscribe = onValue(positionRef, (snapshot) => {
@@ -315,6 +398,8 @@ const AddEmployee = () => {
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
+
+    console.log("Employee : ", employee);
 
     const handleAdd = () => {
         setEducationList([
@@ -476,9 +561,16 @@ const AddEmployee = () => {
                 <>
                     <Grid container spacing={2} marginTop={2}>
                         {position.map((row, index) => {
-                            const currentCount = employee.filter(
-                                (emp) => Number(emp.position.split(":")[0]) === row.ID
-                            ).length;
+                            function getPositionId(position) {
+                                if (!position || typeof position !== "string") return null;
+                                const parts = position.split("-");
+                                return Number(parts[0].trim());
+                            }
+
+                            const currentCount = employee.filter(emp => getPositionId(emp.position) === row.ID).length;
+
+                            console.log("employee ; ", employee);
+                            console.log("current : ", currentCount);
 
                             const isFull = currentCount >= row.max;
 
@@ -490,13 +582,13 @@ const AddEmployee = () => {
                                     onClick={() => {
                                         if (!isFull) {
                                             console.log(`เลือกตำแหน่ง: ${row.positionname}`);
-                                            setCheckPosition(`${row.ID}:${row.positionname}`);
+                                            setCheckPosition(`${row.ID}-${row.positionname}`);
                                             // หรือเรียกฟังก์ชัน handleSelect(row) ที่คุณกำหนดไว้
                                         }
                                     }}
                                     sx={{
                                         height: "70px",
-                                        backgroundColor: checkPosition.split(":")[1] === row.positionname ? theme.palette.primary.main : (isFull ? "#e0e0e0" : "lightgray"),
+                                        backgroundColor: checkPosition.split("-")[1] === row.positionname ? theme.palette.primary.main : (isFull ? "#e0e0e0" : "lightgray"),
                                         borderRadius: 3,
                                         cursor: isFull ? "not-allowed" : "pointer",
                                         pointerEvents: isFull ? "none" : "auto" // ปิดการคลิกจริง
@@ -512,7 +604,7 @@ const AddEmployee = () => {
                                     }}>
                                         <Typography
                                             variant="subtitle2"
-                                            sx={{ color: checkPosition.split(":")[1] === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
+                                            sx={{ color: checkPosition.split("-")[1] === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
                                             gutterBottom
                                         >
                                             {`${row.positionname}`}
@@ -521,7 +613,7 @@ const AddEmployee = () => {
                                             <Typography
                                                 variant="h6"
                                                 fontWeight="bold"
-                                                sx={{ color: checkPosition.split(":")[1] === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
+                                                sx={{ color: checkPosition.split("-")[1] === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
                                                 gutterBottom
                                             >
                                                 {`(${currentCount}/${row.max})`}
@@ -529,7 +621,7 @@ const AddEmployee = () => {
                                         </Box>
                                     </Box>
                                     <Box sx={{ textAlign: "right", marginTop: -7.5, marginRight: 0.5 }}>
-                                        <BadgeIcon sx={{ fontSize: 40, color: checkPosition.split(":")[1] === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray") }} />
+                                        <BadgeIcon sx={{ fontSize: 40, color: checkPosition.split("-")[1] === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray") }} />
                                     </Box>
                                 </Grid>
                             );
@@ -557,7 +649,9 @@ const AddEmployee = () => {
                             <Typography variant="subtitle2" fontWeight="bold" >นามสกุล</Typography>
                             <TextField
                                 fullWidth
-                                placeholder="กรุณากรอกนามสกุล"
+                                value={lastName}
+                                placeholder="กรุณากรอกชื่อ"
+                                onChange={(e) => setLastName(e.target.value)}
                                 size="small"
                             />
                         </Grid>
@@ -699,6 +793,8 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={nationality}
+                                onChange={(e) => setNationality(e.target.value)}
                                 placeholder="กรุณากรอกสัญชาติ"
                             />
                         </Grid>
@@ -707,6 +803,8 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={religion}
+                                onChange={(e) => setReligion(e.target.value)}
                                 placeholder="กรุณากรอกศาสนา"
                             />
                         </Grid>
@@ -715,6 +813,8 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={weight}
+                                onChange={(e) => setWeight(e.target.value)}
                                 placeholder="กรุณากรอกน้ำหนัก"
                             />
                         </Grid>
@@ -723,22 +823,35 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={height}
+                                onChange={(e) => setHeight(e.target.value)}
                                 placeholder="กรุณากรอกส่วนสูง"
                             />
                         </Grid>
                         <Grid item size={12}>
                             <Typography variant="subtitle2" fontWeight="bold" >สถานภาพ</Typography>
                             <TextField
+                                select
                                 fullWidth
                                 size="small"
-                                placeholder="กรุณากรอกสถานภาพ"
-                            />
+                                value={statusEmployee}
+                                SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+                                onChange={(e) => setStatusEmployee(e.target.value)}
+                            >
+                                {
+                                    statuss.map((row,index) => (
+                                        <MenuItem key={index} value={`${row.label}`}>{row.label}</MenuItem>
+                                    ))
+                                }
+                            </TextField>
                         </Grid>
                         <Grid item size={6}>
                             <Typography variant="subtitle2" fontWeight="bold" >เบอร์โทรศัพท์</Typography>
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
                                 placeholder="กรุณากรอกเบอร์โทรศัพท์"
                             />
                         </Grid>
@@ -747,6 +860,8 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={homePhone}
+                                onChange={(e) => setHomePhone(e.target.value)}
                                 placeholder="กรุณากรอกเบอร์โทรศัพท์บ้าน"
                             />
                         </Grid>
@@ -755,6 +870,8 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={lineID}
+                                onChange={(e) => setLineID(e.target.value)}
                                 placeholder="กรุณากรอก LINE ID"
                             />
                         </Grid>
@@ -763,6 +880,8 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={country}
+                                onChange={(e) => setCountry(e.target.value)}
                                 placeholder="กรุณากรอกประเทศ"
                             />
                         </Grid>

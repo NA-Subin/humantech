@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ref, get, set, child } from "firebase/database";
+import { ref, get, set, child, onValue } from "firebase/database";
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -12,15 +12,324 @@ import { CardActionArea, CardContent, Grid, InputAdornment, TextField, Typograph
 import theme from '../../theme/theme';
 import { IconButtonError } from '../../theme/style';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
+import { database } from '../../server/firebase';
+import ThaiAddressSelector from '../../theme/ThaiAddressSelector';
 
 export default function InsertCompany() {
     const { firebaseDB, domainKey } = useFirebase();
     const [open, setOpen] = React.useState(false);
     const [shortName, setShortName] = React.useState("");
     const [companyName, setCompanyName] = React.useState("");
-    const [address, setAddress] = React.useState("");
     const [email, setEmail] = React.useState("");
     const [phone, setPhone] = React.useState("")
+    const [thailand, setThailand] = React.useState([]);
+    const [address, setAddress] = React.useState({});
+    const [addressAll, setAddressAll] = React.useState("");
+    const leave = [
+        {
+            "ID": 0,
+            "isPaid": 1,
+            "maxDaysPerYear": "30",
+            "name": "ลาป่วย",
+            "requiresDocument": 1
+        },
+        {
+            "ID": 1,
+            "isPaid": 1,
+            "maxDaysPerYear": "3",
+            "name": "ลากิจได้รับค่าจ้าง"
+        },
+        {
+            "ID": 2,
+            "maxDaysPerYear": "3",
+            "name": "ลากิจไม่ได้รับค่าจ้าง"
+        },
+        {
+            "ID": 3,
+            "isPaid": 1,
+            "maxDaysPerYear": "6",
+            "name": "ลาหยุดพักผ่อน"
+        },
+        {
+            "ID": 4,
+            "isPaid": 1,
+            "maxDaysPerYear": "30",
+            "name": "ลาคลอดบุตร",
+            "requiresDocument": 1
+        },
+        {
+            "ID": 5,
+            "isPaid": 1,
+            "maxDaysPerYear": "30",
+            "name": "ลาไปช่วยเหลือภรรยาที่คลอดบุตร",
+            "requiresDocument": 1
+        },
+        {
+            "ID": 6,
+            "isPaid": 1,
+            "maxDaysPerYear": "30",
+            "name": "ลาเพื่อเข้ารับการคัดเลือกทหาร",
+            "requiresDocument": 1
+        },
+        {
+            "ID": 7,
+            "isPaid": 1,
+            "maxDaysPerYear": "30",
+            "name": "ลาอุปสมบท",
+            "requiresDocument": 1
+        },
+        {
+            "ID": 8,
+            "isPaid": 1,
+            "maxDaysPerYear": "30",
+            "name": "ลาเพื่อทำหมัน",
+            "requiresDocument": 1
+        },
+        {
+            "ID": 9,
+            "isPaid": 1,
+            "maxDaysPerYear": "30",
+            "name": "ลาฝึกอบรม"
+        },
+        {
+            "ID": 10,
+            "isPaid": 1,
+            "maxDaysPerYear": "30",
+            "name": "ลาเพื่อจัดการศพ"
+        }
+    ]
+
+    const sso = [
+        {
+            "ID": 0,
+            "percent": 5,
+            "ssomax": 750
+        }
+    ]
+
+    const holiday = [
+        {
+            "ID": 1,
+            "date": "01/01/2025",
+            "holiday": "วันปีใหม่"
+        },
+        {
+            "ID": 2,
+            "date": "11/02/2025",
+            "holiday": "วันมาฆบูชา"
+        },
+        {
+            "ID": 3,
+            "date": "06/04/2025",
+            "holiday": "วันจักรี"
+        },
+        {
+            "ID": 4,
+            "date": "13/04/2025",
+            "holiday": "วันสงกรานต์"
+        },
+        {
+            "ID": 5,
+            "date": "14/04/2025",
+            "holiday": "วันสงกรานต์"
+        },
+        {
+            "ID": 6,
+            "date": "15/04/2025",
+            "holiday": "วันสงกรานต์"
+        },
+        {
+            "ID": 7,
+            "date": "01/05/2025",
+            "holiday": "วันแรงงานแห่งชาติ"
+        },
+        {
+            "ID": 8,
+            "date": "05/05/2025",
+            "holiday": "วันฉัตรมงคล"
+        },
+        {
+            "ID": 9,
+            "date": "09/05/2025",
+            "holiday": "วันพืชมงคล"
+        },
+        {
+            "ID": 10,
+            "date": "12/05/2025",
+            "holiday": "วันวิสาขบูชา"
+        },
+        {
+            "ID": 11,
+            "date": "28/07/2025",
+            "holiday": "วันเฉลิมพระชนมพรรษา ร.10"
+        },
+        {
+            "ID": 12,
+            "date": "12/08/2025",
+            "holiday": "วันแม่แห่งชาติ"
+        },
+        {
+            "ID": 13,
+            "date": "23/10/2025",
+            "holiday": "วันปิยมหาราช"
+        },
+        {
+            "ID": 14,
+            "date": "05/12/2025",
+            "holiday": "วันพ่อแห่งชาติ"
+        },
+        {
+            "ID": 15,
+            "date": "10/12/2025",
+            "holiday": "วันรัฐธรรมนูญ"
+        },
+        {
+            "ID": 16,
+            "date": "31/12/2025",
+            "holiday": "วันสิ้นปี"
+        }
+    ]
+
+    const workShift = [
+        {
+            "ID": 0,
+            "holiday": [
+                {
+                    "ID": 0,
+                    "name": "อาทิตย์",
+                    "zeller": 1
+                }
+            ],
+            "name": "กลางวัน",
+            "start": "08:00",
+            "status": "active",
+            "stop": "17:00"
+        },
+        {
+            "ID": 1,
+            "holiday": [
+                {
+                    "ID": 0,
+                    "name": "อาทิตย์",
+                    "zeller": 1
+                }
+            ],
+            "name": "กลางคืน",
+            "start": "20:00",
+            "status": "active",
+            "stop": "05:00"
+        }
+    ]
+
+    const tax = [
+        {
+            "id": 1,
+            "note": "ได้รับการยกเว้นภาษี",
+            "summaryEnd": 150000,
+            "summaryStart": 0,
+            "tax": "0%"
+        },
+        {
+            "id": 2,
+            "note": "(เงินได้สุทธิ – 150,000) x 5%",
+            "summaryEnd": 300000,
+            "summaryStart": 150001,
+            "tax": "5%"
+        },
+        {
+            "id": 3,
+            "note": "(เงินได้สุทธิ – 300,000) x 10%",
+            "summaryEnd": 500000,
+            "summaryStart": 300001,
+            "tax": "10%"
+        },
+        {
+            "id": 4,
+            "note": "(เงินได้สุทธิ – 500,000) x 15%",
+            "summaryEnd": 750000,
+            "summaryStart": 500001,
+            "tax": "15%"
+        },
+        {
+            "id": 5,
+            "note": "(เงินได้สุทธิ – 750,000) x 20%",
+            "summaryEnd": 1000000,
+            "summaryStart": 750001,
+            "tax": "20%"
+        },
+        {
+            "id": 6,
+            "note": "(เงินได้สุทธิ – 1,000,000) x 25%",
+            "summaryEnd": 2000000,
+            "summaryStart": 1000001,
+            "tax": "25%"
+        },
+        {
+            "id": 7,
+            "note": "(เงินได้สุทธิ – 2,000,000) x 30%",
+            "summaryEnd": 5000000,
+            "summaryStart": 2000001,
+            "tax": "30%"
+        },
+        {
+            "id": 8,
+            "note": "(เงินได้สุทธิ – 5,000,000) x 35%",
+            "summaryEnd": "-",
+            "summaryStart": 5000001,
+            "tax": "35%"
+        }
+    ]
+
+    const deductionData = [
+        { title: "ค่าลดหย่อนส่วนตัว", amount: 60000, unit: "บาท", detail: "สำหรับผู้มีเงินได้ทุกคน" },
+        { title: "คู่สมรสไม่มีเงินได้", amount: 60000, unit: "บาท", detail: "หากสมรสและคู่สมรสไม่มีรายได้" },
+        { title: "บุตร (คนที่ 1-2)", amount: 30000, unit: "บาท/คน", detail: "ลดหย่อนได้สำหรับบุตรชอบด้วยกฎหมาย" },
+        { title: "บุตรคนที่ 3 ขึ้นไป (เกิดปี 2561 เป็นต้นไป)", amount: 60000, unit: "บาท/คน", detail: "สำหรับบุตรชอบด้วยกฎหมาย คนที่ 3 ขึ้นไป" },
+        { title: "ค่าอุปการะบิดามารดา", amount: 30000, unit: "บาท/คน", detail: "อายุเกิน 60 ปี และไม่มีรายได้เกิน 30,000 บาทต่อปี" },
+        { title: "ค่าอุปการะคนพิการ/ทุพพลภาพ", amount: 60000, unit: "บาท/คน", detail: "สำหรับผู้ดูแลบุคคลพิการ" },
+        { title: "เบี้ยประกันชีวิต", amount: 100000, unit: "บาท", detail: "ตามที่จ่ายจริง สูงสุดไม่เกิน 100,000 บาท" },
+        { title: "เบี้ยประกันสุขภาพบิดามารดา", amount: 15000, unit: "บาท", detail: "สูงสุดไม่เกิน 15,000 บาท (รวมทุกกรมธรรม์)" },
+        { title: "กองทุนสำรองเลี้ยงชีพ / กบข. / กองทุนครูเอกชน / RMF", amount: 500000, unit: "บาท", detail: "รวมกันไม่เกิน 500,000 บาท และไม่เกิน 15% ของรายได้" },
+        { title: "กองทุน SSF", amount: 200000, unit: "บาท", detail: "ไม่เกิน 30% ของเงินได้ที่ต้องเสียภาษี และไม่เกิน 200,000 บาท" },
+        { title: "ดอกเบี้ยเงินกู้ยืมเพื่อซื้อที่อยู่อาศัย", amount: 100000, unit: "บาท", detail: "เฉพาะดอกเบี้ย ไม่รวมเงินต้น" },
+        { title: "เงินบริจาคเพื่อการศึกษา กีฬา สาธารณประโยชน์", amount: 0, unit: "บาท", detail: "หักได้ไม่เกิน 10% ของเงินได้หลังหักค่าใช้จ่ายและค่าลดหย่อน" },
+        { title: "เงินบริจาคให้พรรคการเมือง", amount: 10000, unit: "บาท", detail: "สูงสุดไม่เกิน 10,000 บาท" },
+        { title: "ค่าฝึกอบรม/พัฒนาฝีมือ", amount: 20000, unit: "บาท", detail: "ลดหย่อนได้ตามจ่ายจริง ไม่เกิน 20,000 บาท" }
+    ];
+
+    console.log("Address : ", address);
+
+    const tambonName = address?.tambon?.split("-")[1] || "";
+    const amphureName = address?.amphure?.split("-")[1] || "";
+    const provinceName = address?.province?.split("-")[1] || "";
+    const zip = address?.zipCode || "";
+
+    const fullAddress = `${addressAll} ตำบล${tambonName} อำเภอ${amphureName} จังหวัด${provinceName} ${zip}`;
+
+    console.log("Leave : ", leave);
+    console.log("SSO : ", sso);
+    console.log("Holiday : ", holiday);
+    console.log("WorkShirft : ", workShift);
+    console.log("tax : ", tax);
+
+    React.useEffect(() => {
+        if (!database) return;
+
+        const thailandRef = ref(database, `thailand`);
+
+        const unsubscribe = onValue(thailandRef, (snapshot) => {
+            const thailandData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!thailandData) {
+                setThailand([{ ID: 0, name: '', employeenumber: '' }]);
+            } else {
+                setThailand(thailandData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [database]);
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -43,11 +352,18 @@ export default function InsertCompany() {
             await set(child(companiesRef, String(nextIndex)), {
                 companyserial: shortName.trim(),
                 companyname: companyName,
-                companyaddress: address,
+                companyaddress: fullAddress,
+                Address: address,
                 email: email,
                 companytel: phone,
                 createdAt: new Date().toISOString(),
-                companyid: nextIndex
+                companyid: nextIndex,
+                leave: leave,
+                holiday: holiday,
+                sso: sso,
+                workshift: workShift,
+                tax: tax,
+                deduction: deductionData
             });
 
             setCompanyName("");
@@ -106,92 +422,64 @@ export default function InsertCompany() {
                 </DialogTitle>
                 <DialogContent>
                     <Grid container spacing={2} marginTop={2}>
-                        <Grid size={4}>
+                        <Grid item size={4}>
+                            <Typography variant="subtitle2" fontWeight="bold" >ชื่อย่อ</Typography>
                             <TextField
+                                type="text"
                                 size="small"
                                 value={shortName}
                                 onChange={(e) => setShortName(e.target.value)}
                                 fullWidth
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>
-                                                ชื่อย่อ :
-                                            </Typography>
-                                        </InputAdornment>
-                                    ),
-                                }}
                             />
                         </Grid>
-                        <Grid size={8}>
+                        <Grid item size={8}>
+                            <Typography variant="subtitle2" fontWeight="bold" >ชื่อบริษัท</Typography>
                             <TextField
+                                type="text"
                                 size="small"
                                 value={companyName}
                                 onChange={(e) => setCompanyName(e.target.value)}
                                 fullWidth
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>
-                                                ชื่อบริษัท :
-                                            </Typography>
-                                        </InputAdornment>
-                                    ),
-                                }}
                             />
                         </Grid>
-                        <Grid size={12}>
+                        <Grid item size={12}>
+                            <Typography variant="subtitle2" fontWeight="bold" >ที่อยู่ปัจจุบัน</Typography>
                             <TextField
-                                size="small"
                                 type="text"
+                                size="small"
+                                placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
                                 multiline
-                                rows={5}
-                                value={address}
-                                onChange={(e) => setAddress(e.target.value)}
+                                rows={3}
                                 fullWidth
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>
-                                                ที่อยู่ :
-                                            </Typography>
-                                        </InputAdornment>
-                                    ),
-                                }}
                             />
                         </Grid>
-                        <Grid size={6}>
+                        <Grid item size={12}>
+                            <ThaiAddressSelector
+                                label="ที่อยู่ปัจจุบัน"
+                                thailand={thailand}
+                                value={address}
+                                placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
+                                onChange={(val) => setAddress(val)}
+                            />
+                        </Grid>
+                        <Grid item size={6}>
+                            <Typography variant="subtitle2" fontWeight="bold" >Email</Typography>
                             <TextField
+                                type="text"
                                 size="small"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 fullWidth
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>
-                                                Email :
-                                            </Typography>
-                                        </InputAdornment>
-                                    ),
-                                }}
                             />
                         </Grid>
-                        <Grid size={6}>
+                        <Grid item size={6}>
+                            <Typography variant="subtitle2" fontWeight="bold" >เบอร์โทรศัพท์</Typography>
                             <TextField
+                                type="text"
                                 size="small"
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
                                 fullWidth
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>
-                                                เบอร์โทร :
-                                            </Typography>
-                                        </InputAdornment>
-                                    ),
-                                }}
                             />
                         </Grid>
                     </Grid>

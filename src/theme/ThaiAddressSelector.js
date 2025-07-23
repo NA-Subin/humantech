@@ -12,9 +12,9 @@ export default function ThaiAddressSelector({
   const [amphure, setAmphure] = useState(value.amphure || "");
   const [tambon, setTambon] = useState(value.tambon || "");
 
-  const provinceId = Number(province.split(":")[0]);
-  const amphureId = Number(amphure.split(":")[0]);
-  const tambonId = Number(tambon.split(":")[0]);
+  const provinceId = Number(province.split("-")[0]);
+  const amphureId = Number(amphure.split("-")[0]);
+  const tambonId = Number(tambon.split("-")[0]);
 
   const amphureList = useMemo(() => {
     const prov = thailand.find(p => p.id === provinceId);
@@ -57,11 +57,13 @@ export default function ThaiAddressSelector({
           }}
           SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
         >
-          {thailand.map(row => (
-            <MenuItem key={row.id} value={`${row.id}:${row.name_th}`}>
-              {row.name_th}
-            </MenuItem>
-          ))}
+          {thailand
+            .sort((a, b) => a.name_th.localeCompare(b.name_th, 'th')) // เรียงตามภาษาไทย
+            .map(row => (
+              <MenuItem key={row.id} value={`${row.id}-${row.name_th}`}>
+                {row.name_th}
+              </MenuItem>
+            ))}
         </TextField>
       </Grid>
 
@@ -76,8 +78,10 @@ export default function ThaiAddressSelector({
           }}
           SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
         >
-          {amphureList.map(amp => (
-            <MenuItem key={amp.id} value={`${amp.id}:${amp.name_th}`}>
+          {amphureList
+          .sort((a, b) => a.name_th.localeCompare(b.name_th, 'th')) // เรียงตามภาษาไทย
+          .map(amp => (
+            <MenuItem key={amp.id} value={`${amp.id}-${amp.name_th}`}>
               {amp.name_th}
             </MenuItem>
           ))}
@@ -92,8 +96,10 @@ export default function ThaiAddressSelector({
           onChange={(e) => setTambon(e.target.value)}
           SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
         >
-          {tambonList.map(tb => (
-            <MenuItem key={tb.id} value={`${tb.id}:${tb.name_th}`}>
+          {tambonList
+          .sort((a, b) => a.name_th.localeCompare(b.name_th, 'th')) // เรียงตามภาษาไทย
+          .map(tb => (
+            <MenuItem key={tb.id} value={`${tb.id}-${tb.name_th}`}>
               {tb.name_th}
             </MenuItem>
           ))}

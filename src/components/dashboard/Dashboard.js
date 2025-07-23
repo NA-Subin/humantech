@@ -21,9 +21,6 @@ const Dashboard = () => {
 
     const navigate = useNavigate();  // ใช้ useNavigate แทน useRouter
 
-    console.log("Domain Key:", domainKey);
-    console.log("company : ", companies);
-
     useEffect(() => {
         if (!firebaseDB) return;
 

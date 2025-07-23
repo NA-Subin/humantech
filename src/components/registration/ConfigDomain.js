@@ -7,6 +7,9 @@ import { Box, Button, Card, CardContent, Container, Divider, Grid, InputAdornmen
 import Logo from '../../img/Humantech.png';
 import theme from "../../theme/theme";
 import { useFirebase } from "../../server/ProjectFirebaseContext";
+import { useNavigate } from "react-router-dom";
+import { ShowConfirm } from "../../sweetalert/sweetalert";
+import { logout } from "../../server/logoutAuth";
 
 const AdminApproveDomainForm = () => {
     const { firebaseDB } = useFirebase();  // ✅ ดึง firebaseDB ที่ใช้งานจริง
@@ -17,8 +20,7 @@ const AdminApproveDomainForm = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [domainID, setDomainID] = useState("");
 
-    console.log("request : ", requests);
-    console.log("select Domain : ", selectedDomain);
+    const navigate = useNavigate();  // ใช้ useNavigate แทน useRouter
 
     useEffect(() => {
         const fetchRequests = async () => {
@@ -94,6 +96,7 @@ const AdminApproveDomainForm = () => {
 
             // --- POST ข้อมูล group ไปที่ backend ---
             // let backendId = null;
+
             let backendId = "";
             // try {
             //     const response = await fetch("http://upload.happysoftth.com/humantech/group", {
@@ -128,6 +131,11 @@ const AdminApproveDomainForm = () => {
                     startDate,
                     endDate,
                 },
+                company: {
+                    ...requestData.company,
+                    startDate,
+                    endDate,
+                }, // เก็บข้อมูลบริษัทที่เลือก
                 backendid: backendId,  // เก็บ backend id ที่ได้จาก response
             });
 
@@ -177,6 +185,20 @@ const AdminApproveDomainForm = () => {
             setIsSubmitting(false);
         }
     };
+
+    const handleLogout = () => {
+        ShowConfirm(
+            "ออกจากระบบ",
+            "คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?",
+            () => {
+                logout(navigate);
+            },
+            () => {
+                console.log("ยกเลิกการออกจากระบบ");
+            }
+        );
+    };
+
 
     return (
         <Container maxWidth="md" sx={{ marginTop: 3 }}>
@@ -325,6 +347,13 @@ const AdminApproveDomainForm = () => {
                                 borderRadius: 15,
                             }}>
                                 บันทึกข้อมูล
+                            </Button>
+                            <Divider sx={{ marginTop: 2 }} />
+                            <Button variant="contained" color="error" onClick={handleLogout} fullWidth sx={{
+                                marginTop: 2,
+                                borderRadius: 15,
+                            }}>
+                                ออกจากระบบ
                             </Button>
                         </CardContent>
                     </Box>

@@ -7,8 +7,11 @@ import theme from "../../theme/theme";
 import CloseIcon from '@mui/icons-material/Close';
 import { IconButtonError } from "../../theme/style";
 import ThaiAddressSelector from "../../theme/ThaiAddressSelector";
+import PlanCard from "./PlanCard";
+import { useNavigate } from "react-router-dom";
 
 const RequestDomainForm = () => {
+  const navigate = useNavigate();  // ใช้ useNavigate แทน useRouter
   const [domain, setDomain] = useState("");
   const [email, setEmail] = useState("");
   const [selectedPlan, setSelectedPlan] = useState({
@@ -22,6 +25,7 @@ const RequestDomainForm = () => {
   const [addressAll, setAddressAll] = useState("");
   const [thailand, setThailand] = useState([]);
   const [address, setAddress] = useState({});
+
   useEffect(() => {
     if (!database) return;
 
@@ -46,6 +50,8 @@ const RequestDomainForm = () => {
       name: newName,
       price: newPrice,
       users: newUsers,
+      latePaymentDays: 7, // เพิ่มจำนวนวันที่สามารถชำระล่าช้าได้
+      maincontrol: 1
     });
   };
 
@@ -57,7 +63,12 @@ const RequestDomainForm = () => {
     setOpenCompanyDialog(false);
   };
 
-  console.log("select Plan : ", selectedPlan);
+  const tambonName = address?.tambon?.split("-")[1] || "";
+  const amphureName = address?.amphure?.split("-")[1] || "";
+  const provinceName = address?.province?.split("-")[1] || "";
+  const zip = address?.zipCode || "";
+
+  const fullAddress = `${addressAll} ตำบล${tambonName} อำเภอ${amphureName} จังหวัด${provinceName} ${zip}`;
 
   const handleRequest = async () => {
     const rawInput = domain.trim().toLowerCase();
@@ -92,11 +103,12 @@ const RequestDomainForm = () => {
         id: nextId,
         Domain: fullDomain,
         DomainKey: domainName,
-        email,
-        companyName,
-        phone,
-        addressAll,
-        address,
+        company: {
+          name: companyName,
+          phone: phone,
+          addressAll: fullAddress,
+          address: address,
+        },
         selectedPlan,
         status: "pending",
         createdAt: new Date().toISOString(),
@@ -120,7 +132,8 @@ const RequestDomainForm = () => {
   return (
     <Container maxWidth="md" sx={{ marginTop: 2 }}>
       <Card sx={{
-        marginTop: 3,
+        marginTop: 1,
+        marginBottom: 2,
         boxShadow: '2px 2px 5px 6px rgba(0, 0, 0, 0.1)',
         borderRadius: 5,
       }}>
@@ -169,470 +182,107 @@ const RequestDomainForm = () => {
                 <Grid item size={12} sx={{ marginTop: -2 }}>
                   <Typography variant="subtitle2" color="error" fontWeight="bold" gutterBottom>*กรุณากรอกชื่อโดเมนโดยใช้ชื่อบริษัทภาษาอังกฤษเช่น happysofth</Typography>
                 </Grid>
-
-                {/* <Grid item size={12}>
-                  <TextField
-                    type="text"
-                    size="small"
-                    fullWidth
-                    placeholder="<ชื่ออีเมล>@gmail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    margin="normal"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                            Email :
-                          </Typography>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Grid> */}
               </Grid>
               <Divider sx={{ marginTop: 1, marginBottom: 1 }}>
                 <Typography variant="subtitle1" color="textSecondary" sx={{ textAlign: 'center' }}>
                   กรุณาเลือก package ที่ต้องการใช้งาน
                 </Typography>
               </Divider>
-              <Box sx={{ overflowX: 'auto', display: 'flex', gap: 3, mt: 2, paddingBottom: 2 }}>
-                <Box sx={{ minWidth: 300, flex: '0 0 auto' }}>
-                  <Card sx={{ height: '35vh', borderRadius: 5 }} elevation={6}>
-                    <CardActionArea
-                      onClick={() => handleSelectedPlan('free', 900, 10)}
-                      sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        justifyContent: 'flex-start',
-                        border: selectedPlan?.name === 'free' ? `2px solid ${theme.palette.primary.main}` : 'none',
-                        backgroundColor: selectedPlan?.name === 'free' ? theme.palette.action.hover : 'transparent',
-                      }}
-                    >
-                      <CardContent sx={{ backgroundColor: theme.palette.primary.main, width: '100%', height: '3vh' }}>
-                        <Grid container spacing={2}>
-                          <Grid item size={6}>
-                            <Box display="flex" alignItems="center" justifyContent="left">
-                              <Typography gutterBottom variant="h5" component="div" color="white" fontWeight="bold">
-                                Free
-                              </Typography>
-                              <Box sx={{
-                                backgroundColor: "white",
-                                width: 55,
-                                height: 20,
-                                borderRadius: 5,
-                                textAlign: "center",
-                                marginLeft: 1,
-                                marginTop: -0.5
-                              }}>
-                                <Typography
-                                  gutterBottom
-                                  variant="subtitle2"
-                                  fontSize="12px"
-                                  component="div"
-                                  color="red"
-                                  fontWeight="bold"
-                                >
-                                  *ยอดนิยม
-                                </Typography>
-                              </Box>
-                            </Box>
-                          </Grid>
-                          <Grid item size={6}>
-                            <Typography gutterBottom variant="h6" component="div" color="white" fontWeight="bold" textAlign="right" sx={{ marginRight: 3 }}>
-                              ทดสอบฟรี
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                      <CardContent>
-                        <Box
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            borderColor: 'divider',
-                            borderRadius: 2,
-                            bgcolor: 'background.paper',
-                            color: 'text.secondary',
-                            '& svg': {
-                              m: 1,
-                            },
-                          }}
-                        >
-                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                            ทุกฟังก์ชั่นพื้นฐานของระบบ <br />
-                          </Typography>
-                          <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: "center" }}>
-                            <Box>
-                              <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: "bold", color: theme.palette.primary.dark }} >
-                                ภายใน <br />
-                                ระยะเวลา
-                              </Typography>
-                              <Typography
-                                variant="h4"
-                                sx={{
-                                  color: theme.palette.primary.dark,
-                                  fontWeight: "bold",
-                                  lineHeight: 1.4,
-                                  marginLeft: 2
-                                }}
-                              >
-                                1 <br />
-                                เดือน
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-                </Box>
-
-                <Box sx={{ minWidth: 300, flex: '0 0 auto' }}>
-                  <Card sx={{ height: '35vh', borderRadius: 5 }} elevation={6}>
-                    <CardActionArea
-                      onClick={() => handleSelectedPlan('lite', 900, 10)}
-                      sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        justifyContent: 'flex-start',
-                        border: selectedPlan?.name === 'lite' ? `2px solid ${theme.palette.primary.main}` : 'none',
-                        backgroundColor: selectedPlan?.name === 'lite' ? theme.palette.action.hover : 'transparent',
-                      }}
-                    >
-                      <CardContent sx={{ backgroundColor: theme.palette.primary.main, width: '100%', height: '3vh' }}>
-                        <Grid container spacing={2}>
-                          <Grid item size={6}>
-                            <Typography gutterBottom variant="h5" component="div" color="white" fontWeight="bold">
-                              Lite
-                            </Typography>
-                          </Grid>
-                          <Grid item size={6}>
-                            <Typography gutterBottom variant="h6" component="div" color="white" fontWeight="bold" textAlign="right" sx={{ marginRight: 3 }}>
-                              ฿900/เดือน
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                      <CardContent>
-                        <Box
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            borderColor: 'divider',
-                            borderRadius: 2,
-                            bgcolor: 'background.paper',
-                            color: 'text.secondary',
-                            '& svg': {
-                              m: 1,
-                            },
-                          }}
-                        >
-                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                            - การลงเวลาเข้าออกงาน <br />
-                            - ข้อมูลประวัติพนักงาน <br />
-                            - คำนวณเงินเดือนอัตโนมัติ <br />
-                            - จัดการกะการทำงาน <br />
-                            - ยื่นเอกสาร-อนุมัติเอกสาร <br />
-                            - การฝึกอบรม(สูงสุด 1 คอร์ส) <br />
-                            - รายงาน HR และ Payroll <br />
-                            - ระบบสแกนใบหน้า <br />
-                            - ปฏิทินการทำงาน
-                          </Typography>
-                          <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: "center" }}>
-                            <Box>
-                              <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: "bold", color: theme.palette.primary.dark }} >
-                                เหมาะสำหรับ <br />
-                                พนักงาน
-                              </Typography>
-                              <Typography
-                                variant="h4"
-                                sx={{
-                                  color: theme.palette.primary.dark,
-                                  fontWeight: "bold",
-                                  lineHeight: 1.4,
-                                  marginLeft: 2
-                                }}
-                              >
-                                10 <br />
-                                คน
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-                </Box>
-
-                <Box sx={{ minWidth: 300, flex: '0 0 auto' }}>
-                  <Card sx={{ height: '35vh', borderRadius: 5 }} elevation={6}>
-                    <CardActionArea
-                      onClick={() => handleSelectedPlan('basic', 1500, 20)}
-                      sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        justifyContent: 'flex-start',
-                        border: selectedPlan?.name === 'basic' ? `2px solid ${theme.palette.primary.main}` : 'none',
-                        backgroundColor: selectedPlan?.name === 'basic' ? theme.palette.action.hover : 'transparent',
-                      }}
-                    >
-                      <CardContent sx={{ backgroundColor: theme.palette.primary.main, width: '100%', height: '3vh' }}>
-                        <Grid container spacing={2}>
-                          <Grid item size={6}>
-                            <Typography gutterBottom variant="h5" component="div" color="white" fontWeight="bold">
-                              Basic
-                            </Typography>
-                          </Grid>
-                          <Grid item size={6}>
-                            <Typography gutterBottom variant="h6" component="div" color="white" fontWeight="bold" textAlign="right" sx={{ marginRight: 3 }}>
-                              ฿1,500/เดือน
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                      <CardContent>
-                        <Box
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            borderColor: 'divider',
-                            borderRadius: 2,
-                            bgcolor: 'background.paper',
-                            color: 'text.secondary',
-                            '& svg': {
-                              m: 1,
-                            },
-                          }}
-                        >
-                          <Box>
-                            <Typography variant="body2" sx={{ color: 'red' }}>
-                              - ทุกฟีเจอร์ในLite และ
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                              - การฝึกอบรม(สูงสุด 2 คอร์ส)  <br />
-                              - รายงาน HR และ Payroll  <br />
-                              - ประกันสังคมและภาษี  <br />
-                              - กองทุนสำรองเลี้ยงชีพ  <br />
-                              - กำหนดสิทธิ์เข้าถึงข้อมูล  <br />
-                            </Typography>
-                          </Box>
-                          <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: "center" }}>
-                            <Box>
-                              <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: "bold", color: theme.palette.primary.dark }} >
-                                เหมาะสำหรับ <br />
-                                พนักงาน
-                              </Typography>
-                              <Typography
-                                variant="h4"
-                                sx={{
-                                  color: theme.palette.primary.dark,
-                                  fontWeight: "bold",
-                                  lineHeight: 1.4,
-                                  marginLeft: 2
-                                }}
-                              >
-                                20 <br />
-                                คน
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-                </Box>
-
-                <Box sx={{ minWidth: 300, flex: '0 0 auto' }}>
-                  <Card sx={{ height: '35vh', borderRadius: 5 }} elevation={6}>
-                    <CardActionArea
-                      onClick={() => handleSelectedPlan('standard', 2900, 50)}
-                      sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        justifyContent: 'flex-start',
-                        border: selectedPlan?.name === 'standard' ? `2px solid ${theme.palette.primary.main}` : 'none',
-                        backgroundColor: selectedPlan?.name === 'standard' ? theme.palette.action.hover : 'transparent',
-                      }}
-                    >
-                      <CardContent sx={{ backgroundColor: theme.palette.primary.main, width: '100%', height: '3vh' }}>
-                        <Grid container spacing={2}>
-                          <Grid item size={6}>
-                            <Typography gutterBottom variant="h5" component="div" color="white" fontWeight="bold">
-                              Standard
-                            </Typography>
-                          </Grid>
-                          <Grid item size={6}>
-                            <Typography gutterBottom variant="h6" component="div" color="white" fontWeight="bold" textAlign="right" sx={{ marginRight: 3 }}>
-                              ฿2,900/เดือน
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                      <CardContent>
-                        <Box
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            borderColor: 'divider',
-                            borderRadius: 2,
-                            bgcolor: 'background.paper',
-                            color: 'text.secondary',
-                            '& svg': {
-                              m: 1,
-                            },
-                          }}
-                        >
-                          <Box>
-                            <Typography variant="body2" sx={{ color: 'red' }}>
-                              - ทุกฟีเจอร์ในBasic และ
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                              - การฝึกอบรม(สูงสุด 3 คอร์ส) <br />
-                              - ระบบรับสมัครพนักงาน <br />
-                              - ประกาศข่าวสาร
-                            </Typography>
-                          </Box>
-                          <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: "center" }}>
-                            <Box>
-                              <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: "bold", color: theme.palette.primary.dark }} >
-                                เหมาะสำหรับ <br />
-                                พนักงาน
-                              </Typography>
-                              <Typography
-                                variant="h4"
-                                sx={{
-                                  color: theme.palette.primary.dark,
-                                  fontWeight: "bold",
-                                  lineHeight: 1.4,
-                                  marginLeft: 2
-                                }}
-                              >
-                                50 <br />
-                                คน
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-                </Box>
-
-                <Box sx={{ minWidth: 300, flex: '0 0 auto' }}>
-                  <Card sx={{ height: '35vh', borderRadius: 5 }} elevation={6}>
-                    <CardActionArea
-                      onClick={() => handleSelectedPlan('pro', 3900, 100)}
-                      sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        justifyContent: 'flex-start',
-                        border: selectedPlan?.name === 'pro' ? `2px solid ${theme.palette.primary.main}` : 'none',
-                        backgroundColor: selectedPlan?.name === 'pro' ? theme.palette.action.hover : 'transparent',
-                      }}
-                    >
-                      <CardContent sx={{ backgroundColor: theme.palette.primary.main, width: '100%', height: '3vh' }}>
-                        <Grid container spacing={2}>
-                          <Grid item size={6}>
-                            <Box display="flex" alignItems="center" justifyContent="left">
-                              <Typography gutterBottom variant="h5" component="div" color="white" fontWeight="bold">
-                                Pro
-                              </Typography>
-                              <Box sx={{
-                                backgroundColor: "white",
-                                width: 55,
-                                height: 20,
-                                borderRadius: 5,
-                                textAlign: "center",
-                                marginLeft: 1,
-                                marginTop: -0.5
-                              }}>
-                                <Typography
-                                  gutterBottom
-                                  variant="subtitle2"
-                                  fontSize="12px"
-                                  component="div"
-                                  color="red"
-                                  fontWeight="bold"
-                                >
-                                  *ยอดนิยม
-                                </Typography>
-                              </Box>
-                            </Box>
-                          </Grid>
-                          <Grid item size={6}>
-                            <Typography gutterBottom variant="h6" component="div" color="white" fontWeight="bold" textAlign="right" sx={{ marginRight: 3 }}>
-                              ฿3,900/เดือน
-                            </Typography>
-                          </Grid>
-                        </Grid>
-                      </CardContent>
-                      <CardContent>
-                        <Box
-                          sx={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            borderColor: 'divider',
-                            borderRadius: 2,
-                            bgcolor: 'background.paper',
-                            color: 'text.secondary',
-                            '& svg': {
-                              m: 1,
-                            },
-                          }}
-                        >
-                          <Box>
-                            <Typography variant="body2" sx={{ color: 'red' }}>
-                              - ทุกฟีเจอร์ในStandard และ
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                              - การฝึกอบรม(สูงสุด 4 คอร์ส) <br />
-                              - ระบบรับสมัครพนักงาน <br />
-                              - ประกาศข่าวสาร <br />
-                              - ที่ปรึกษา
-                            </Typography>
-                          </Box>
-                          <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
-                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: "center" }}>
-                            <Box>
-                              <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: "bold", color: theme.palette.primary.dark }} >
-                                เหมาะสำหรับ <br />
-                                พนักงาน
-                              </Typography>
-                              <Typography
-                                variant="h4"
-                                sx={{
-                                  color: theme.palette.primary.dark,
-                                  fontWeight: "bold",
-                                  lineHeight: 1.4,
-                                  marginLeft: 2
-                                }}
-                              >
-                                100 <br />
-                                คน
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-                </Box>
+              <Box sx={{ overflowX: "auto", display: "flex", gap: 3, mt: 2, pb: 2 }}>
+                {[
+                  {
+                    name: "Free",
+                    price: 0,
+                    employees: 100,
+                    tag: "*ยอดนิยม",
+                    highlight: true,
+                    key: "free",
+                    features: (
+                      <Typography variant="body2">
+                        <span style={{ color: "red" }}>ทุกฟังก์ชั่นพื้นฐานของระบบ</span>
+                      </Typography>
+                    ),
+                  },
+                  {
+                    name: "Lite",
+                    price: 900,
+                    employees: 10,
+                    key: "lite",
+                    features: (
+                      <Typography variant="body2">
+                        - การลงเวลาเข้าออกงาน <br />
+                        - ข้อมูลประวัติพนักงาน <br />
+                        - คำนวณเงินเดือนอัตโนมัติ <br />
+                        - จัดการกะการทำงาน <br />
+                        - ยื่นเอกสาร-อนุมัติเอกสาร <br />
+                        - การฝึกอบรม(สูงสุด 1 คอร์ส) <br />
+                        - รายงาน HR และ Payroll <br />
+                        - ระบบสแกนใบหน้า <br />
+                        - ปฏิทินการทำงาน
+                      </Typography>
+                    ),
+                  },
+                  {
+                    name: "Basic",
+                    price: 1500,
+                    employees: 20,
+                    key: "basic",
+                    features: (
+                      <Typography variant="body2">
+                        <span style={{ color: "red" }}>- ทุกฟีเจอร์ในLite และ</span> <br />
+                        - การฝึกอบรม(สูงสุด 2 คอร์ส) <br />
+                        - รายงาน HR และ Payroll <br />
+                        - ประกันสังคมและภาษี <br />
+                        - กองทุนสำรองเลี้ยงชีพ <br />
+                        - กำหนดสิทธิ์เข้าถึงข้อมูล
+                      </Typography>
+                    ),
+                  },
+                  {
+                    name: "Standard",
+                    price: 2900,
+                    employees: 50,
+                    key: "standard",
+                    features: (
+                      <Typography variant="body2">
+                        <span style={{ color: "red" }}>- ทุกฟีเจอร์ในBasic และ</span> <br />
+                        - การฝึกอบรม(สูงสุด 3 คอร์ส) <br />
+                        - ระบบรับสมัครพนักงาน <br />
+                        - ประกาศข่าวสาร
+                      </Typography>
+                    ),
+                  },
+                  {
+                    name: "Pro",
+                    price: 3900,
+                    employees: 100,
+                    key: "pro",
+                    highlight: true,
+                    features: (
+                      <Typography variant="body2">
+                        <span style={{ color: "red" }}>- ทุกฟีเจอร์ในStandard และ</span> <br />
+                        - การฝึกอบรม(สูงสุด 4 คอร์ส) <br />
+                        - ระบบรับสมัครพนักงาน <br />
+                        - ประกาศข่าวสาร <br />
+                        - ที่ปรึกษา
+                      </Typography>
+                    ),
+                  },
+                ].map((plan) => (
+                  <PlanCard
+                    key={plan.key}
+                    name={plan.name}
+                    price={plan.price}
+                    employees={plan.employees}
+                    features={plan.features}
+                    isSelected={selectedPlan?.name === plan.key}
+                    onSelect={() => handleSelectedPlan(plan.key, plan.price, plan.employees)}
+                    highlight={plan.highlight}
+                    theme={theme}
+                  />
+                ))}
               </Box>
+
 
               <Divider sx={{ marginTop: 1.5, marginBottom: 1 }} />
               <Button variant="contained" color="info" fullWidth sx={{
@@ -643,6 +293,19 @@ const RequestDomainForm = () => {
               >
                 ยืนยันแพ็คเกจ
               </Button>
+              <Button
+                variant="contained"
+                color="error"
+                fullWidth
+                sx={{
+                  marginTop: 2,
+                  borderRadius: 15,
+                }}
+                onClick={() => navigate(`/`)} // ← ถูกต้อง
+              >
+                ย้อนกลับ
+              </Button>
+
               {/* <Button variant="contained" color="info" fullWidth sx={{
                 marginTop: 2,
                 borderRadius: 15,
@@ -756,7 +419,7 @@ const RequestDomainForm = () => {
                     </Grid>
                     <Grid item size={12} display="flex" justifyContent="center" alignItems="center" >
                       <Box sx={{ width: 300, flex: '0 0 auto' }}>
-                        <Card sx={{ height: '35vh', borderRadius: 5 }} elevation={6}>
+                        <Card sx={{ height: '37vh', borderRadius: 5 }} elevation={6}>
                           <CardActionArea
                             sx={{
                               height: '100%',
@@ -977,8 +640,8 @@ const RequestDomainForm = () => {
                                             (
                                               <React.Fragment>
                                                 <Typography variant="body2" sx={{ color: 'red' }}>
-                                                    กรุณาเลือกแพ็คเกจที่ต้องการ
-                                                  </Typography>
+                                                  กรุณาเลือกแพ็คเกจที่ต้องการ
+                                                </Typography>
                                                 <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
                                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: "center" }}>
                                                   <Box>
@@ -1015,7 +678,7 @@ const RequestDomainForm = () => {
                   <Button onClick={() => setOpenCompanyDialog(false)} color="error" variant="contained">
                     ยกเลิก
                   </Button>
-                  <Button onClick={handleRequest} color="success" variant="contained">
+                  <Button onClick={handleRequest} color="info" variant="contained">
                     ส่งคำขอ
                   </Button>
                 </DialogActions>

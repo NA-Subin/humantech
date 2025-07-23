@@ -188,9 +188,6 @@ const HolidayDetail = () => {
         setNewMonth(newMonth);
     }
 
-    console.log("new month ", newMonth);
-    console.log("holiday : ", holidayList);
-
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>

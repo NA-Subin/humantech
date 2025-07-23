@@ -72,9 +72,6 @@ const DomainLogin = () => {
 
     // console.log(generateSecret());
 
-    console.log("Domain Data:", domainData);
-    console.log("Domain Key:", domainKey);
-
     const handleLogin = async () => {
         setError("");
 
@@ -103,6 +100,7 @@ const DomainLogin = () => {
 
             // Save to Secure Cookie
             saveEncryptedCookie({
+                role: "user", // 👈 เพิ่ม role
                 domainKey: domainData.domainKey,
                 companyName: domainData.companyName,
                 loginTime: Date.now(),
@@ -118,10 +116,6 @@ const DomainLogin = () => {
             console.error(e);
             setError("ล็อกอินไม่สำเร็จ กรุณาตรวจสอบรหัสผ่าน");
         }
-    };
-
-    const goRegisterDomain = () => {
-        navigate("/register-domain");  // เปลี่ยนจาก router.push เป็น navigate
     };
 
     return (
@@ -234,7 +228,7 @@ const DomainLogin = () => {
 
                             {error && <Typography variant="subtitle1" sx={{ color: "red", textAlign: "center" }}>{error}</Typography>}
 
-                            <Button variant="contained" color="error" onClick={goRegisterDomain} fullWidth sx={{
+                            <Button variant="contained" color="error" onClick={() => navigate("/register-domain")} fullWidth sx={{
                                 marginTop: 2,
                                 borderRadius: 15,
                             }}>
@@ -247,7 +241,7 @@ const DomainLogin = () => {
                     <Typography
                         variant="subtitle2"
                         sx={{ padding: 2, cursor: "pointer", color: "blue", textDecoration: "underline" }}
-                        onClick={() => navigate("/config-domain")}
+                        onClick={() => navigate("/login-admin")}
                     >
                         สำหรับ Admin
                     </Typography>

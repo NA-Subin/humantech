@@ -47,7 +47,7 @@ const SectionDetail = () => {
     const [editSection, setEditSection] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [section, setSection] = useState([{ ID: 0, sectionname: '', keyposition: ":" }]);
+    const [section, setSection] = useState([{ ID: 0, sectionname: '', keyposition: "-" }]);
     const [level, setlevel] = useState([]);
     const [department, setDepartment] = useState([]);
 
@@ -86,7 +86,7 @@ const SectionDetail = () => {
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
             if (!sectionData) {
-                setSection([{ ID: 0, sectionname: '', keyposition: ":" }]);
+                setSection([{ ID: 0, sectionname: '', keyposition: "-" }]);
             } else {
                 setSection(sectionData);
             }
@@ -103,7 +103,7 @@ const SectionDetail = () => {
             if (data) {
                 // แปลง object เป็น array ของ { value, label }
                 const opts = Object.values(data).map((item) => ({
-                    value: `${item.ID}:${item.deptname}`, // ค่าเวลาบันทึก
+                    value: `${item.ID}-${item.deptname}`, // ค่าเวลาบันทึก
                     label: item.deptname,                 // แสดงผล
                 }));
                 setDepartment(opts); // <-- ใช้ใน columns
@@ -183,7 +183,7 @@ const SectionDetail = () => {
         const sectionRef = ref(firebaseDB, `workgroup/company/${companyId}/section`);
 
         onValue(sectionRef, (snapshot) => {
-            const sectionData = snapshot.val() || [{ ID: 0, sectionname: '', keyposition: ":" }];
+            const sectionData = snapshot.val() || [{ ID: 0, sectionname: '', keyposition: "-" }];
             setSection(sectionData);
             setEditSection(false);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
@@ -257,7 +257,7 @@ const SectionDetail = () => {
                                                             <TableRow>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.sectionname}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.keyposition.split(":")[1]}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.keyposition.split("-")[1]}</TableCell>
                                                             </TableRow>
                                                         ))}
                                             </TableBody>

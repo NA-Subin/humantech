@@ -90,7 +90,7 @@ const PositionDetail = () => {
             if (data) {
                 // แปลง object เป็น array ของ { value, label }
                 const opts = Object.values(data).map((item) => ({
-                    value: `${item.ID}:${item.name}`, // ค่าเวลาบันทึก
+                    value: `${item.ID}-${item.name}`, // ค่าเวลาบันทึก
                     label: item.name,                 // แสดงผล
                 }));
                 setlevel(opts); // <-- ใช้ใน columns
@@ -106,7 +106,7 @@ const PositionDetail = () => {
             if (data) {
                 // แปลง object เป็น array ของ { value, label }
                 const opts = Object.values(data).map((item) => ({
-                    value: `${item.ID}:${item.deptname}`, // ค่าเวลาบันทึก
+                    value: `${item.ID}-${item.deptname}`, // ค่าเวลาบันทึก
                     label: item.deptname,                 // แสดงผล
                 }));
                 setDepartment(opts); // <-- ใช้ใน columns
@@ -121,18 +121,18 @@ const PositionDetail = () => {
             const data = snapshot.val();
             if (data) {
                 const opts = Object.values(data).map((item) => ({
-                    value: `${item.ID}:${item.sectionname}`,
+                    value: `${item.ID}-${item.sectionname}`,
                     label: item.sectionname,
                     keyposition: item.keyposition
                 }));
 
                 // เพิ่มตัวเลือก "ไม่มี" เข้าไปที่ด้านบน
-                opts.unshift({ value: '0:ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" });
+                opts.unshift({ value: '0-ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" });
 
                 setSection(opts);
             } else {
                 // ถ้าไม่มีข้อมูล section เลย ให้มีตัวเลือก "ไม่มี" อย่างน้อย
-                setSection([{ value: '0:ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" }]);
+                setSection([{ value: '0-ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" }]);
             }
         });
     }, [companyId]);
@@ -174,7 +174,7 @@ const PositionDetail = () => {
             if (data) {
                 const opts = Object.values(data).map((item) => ({
                     ...item, // ต้องมี item.departmentid อยู่
-                    value: `${item.ID}:${item.sectionname}`,
+                    value: `${item.ID}-${item.sectionname}`,
                     label: item.sectionname,
                 }));
                 setAllSection(opts);
@@ -186,14 +186,14 @@ const PositionDetail = () => {
 
     // 🔁 กรอง section โดยอิงจาก departmentId ที่ได้จาก keyPosition
     useEffect(() => {
-        const departmentId = keyPosition?.split(":")[0];
+        const departmentId = keyPosition?.split("-")[0];
 
         const filtered = allSection.filter(section => String(section.departmentid) === departmentId);
 
         // เพิ่มตัวเลือก "ไม่มี" ที่ด้านบน
-        filtered.unshift({ value: "0:ไม่มี", label: "ไม่มี" });
+        filtered.unshift({ value: "0-ไม่มี", label: "ไม่มี" });
 
-        setFilteredSection(filtered.length > 0 ? filtered : [{ value: "0:ไม่มี", label: "ไม่มี" }]);
+        setFilteredSection(filtered.length > 0 ? filtered : [{ value: "0-ไม่มี", label: "ไม่มี" }]);
     }, [keyPosition, allSection]);
 
     console.log("position : ", position);
@@ -233,7 +233,7 @@ const PositionDetail = () => {
     console.log("section :: ", section.map((item) => ({
         label: item.label,
         value: item.value,
-        parent: item.keyposition.split(":")[0], // 👈 ใช้เฉพาะ ID ฝ่ายงาน
+        parent: item.keyposition.split("-")[0], // 👈 ใช้เฉพาะ ID ฝ่ายงาน
     })))
 
     const handleSave = () => {
@@ -365,9 +365,9 @@ const PositionDetail = () => {
                                                             <TableRow>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.positionname}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.levelid.split(":")[1]}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.deptid.split(":")[1]}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.sectionid.split(":")[1]}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.levelid.split("-")[1]}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.deptid.split("-")[1]}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.sectionid.split("-")[1]}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.max}</TableCell>
                                                             </TableRow>
                                                         ))}

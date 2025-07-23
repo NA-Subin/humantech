@@ -29,7 +29,8 @@ import ReportWorkCertificat from "./components/company/report/WorkCertificate";
 import ReportSalaryCertificate from "./components/company/report/SalaryCertificate";
 import CalculateSalary from "./components/company/employee/CalculateSalary";
 import { loadEncryptedCookie } from "./server/cookieUtils";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import DomainLoginAdmin from "./components/login/login-admin/Login";
 
 const ProtectedRouteWrapper = ({ children }) => {
   const location = useLocation();
@@ -44,13 +45,66 @@ const ProtectedRouteWrapper = ({ children }) => {
     }
 
     const currentDomain = new URLSearchParams(location.search).get("domain");
-    if (!currentDomain || currentDomain !== cookie.domainKey) {
-      navigate(`/?domain=${encodeURIComponent(cookie.domainKey)}&page=dashboard`, { replace: true });
+
+    // 🔐 ตรวจสอบ role
+    if (cookie.role === "admin") {
+      if (location.pathname !== "/config-domain") {
+        navigate("/config-domain", { replace: true });
+      }
+    } else {
+      // default: user
+      if (!currentDomain || currentDomain !== cookie.domainKey) {
+        navigate(`/?domain=${encodeURIComponent(cookie.domainKey)}&page=dashboard`, { replace: true });
+      }
     }
   }, [location]);
 
   return children;
 };
+
+const AdminProtectedRouteWrapper = ({ children }) => {
+  const navigate = useNavigate();
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    const cookie = loadEncryptedCookie();
+    if (!cookie || cookie.role !== "admin") {
+      navigate("/login-admin", { replace: true });
+      return;
+    }
+
+    setAuthorized(true);
+  }, []);
+
+  if (!authorized) return null;
+  return children;
+};
+
+// const UserProtectedRouteWrapper = ({ children }) => {
+//   const location = useLocation();
+//   const navigate = useNavigate();
+//   const [authorized, setAuthorized] = useState(false);
+
+//   useEffect(() => {
+//     const cookie = loadEncryptedCookie();
+//     if (!cookie || cookie.role !== "user") {
+//       navigate("/", { replace: true });
+//       return;
+//     }
+
+//     const currentDomain = new URLSearchParams(location.search).get("domain");
+//     if (!currentDomain || currentDomain !== cookie.domainKey) {
+//       navigate(`/?domain=${encodeURIComponent(cookie.domainKey)}&page=dashboard`, { replace: true });
+//       return;
+//     }
+
+//     setAuthorized(true);
+//   }, []);
+
+//   if (!authorized) return null;
+//   return children;
+// };
+
 
 // รวมหน้า company routes ตาม page query param
 function CompanyRoutes({ page }: { page?: string }) {
@@ -173,19 +227,33 @@ function MainEntry() {
 export default function AppRouter() {
   return (
     <Routes>
-      {/* เส้นทางหลัก ใช้ query param */}
-      <Route path="/" element={
-        <ProtectedRouteWrapper>
-          <MainEntry />
-        </ProtectedRouteWrapper>
-      } />
-
-      {/* public routes */}
+      {/* 🌐 Public routes */}
+      <Route path="/login-admin" element={<DomainLoginAdmin />} />
       <Route path="/register-domain" element={<RequestDomainForm />} />
-      <Route path="/config-domain" element={<AdminApproveDomainForm />} />
+
+      {/* 🧑‍💼 User routes */}
+      <Route
+        path="/"
+        element={
+          <ProtectedRouteWrapper>
+            <MainEntry />
+          </ProtectedRouteWrapper>
+        }
+      />
+
+      {/* 🔐 Admin-only route */}
+      <Route
+        path="/config-domain"
+        element={
+          <AdminProtectedRouteWrapper>
+            <AdminApproveDomainForm />
+          </AdminProtectedRouteWrapper>
+        }
+      />
     </Routes>
   );
 }
+
 
 // function CompanyRoutes() {
 //   return (
