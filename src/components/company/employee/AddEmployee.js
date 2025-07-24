@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use, useMemo } from "react";
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, get, child } from "firebase/database";
 import '../../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -19,6 +19,8 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import DirectionsCarIcon from '@mui/icons-material/DirectionsCar';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import ImageIcon from '@mui/icons-material/Image';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -52,6 +54,7 @@ import { formatThaiFull, formatThaiSlash } from "../../../theme/DateTH";
 import ThaiDateSelector from "../../../theme/ThaiDateSelector";
 import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
 import { database } from "../../../server/firebase";
+import FileUploadCard from "../../../theme/FileUploadCard";
 
 // const Transition = React.forwardRef(function Transition(
 //     props: TransitionProps & { children: React.ReactElement },
@@ -80,6 +83,13 @@ const AddEmployee = () => {
     const [openBike, setOpenBike] = React.useState("");
     const [openCar, setOpenCar] = React.useState("");
     const [openTruck, setOpenTruck] = React.useState("");
+    const [fileBike, setFileBike] = React.useState("");
+    const [fileCar, setFileCar] = React.useState("");
+    const [fileTruck, setFileTruck] = React.useState("");
+    const [vehicleBike, setVehicleBike] = React.useState(null);
+    const [vehicleCar, setVehicleCar] = React.useState(null);
+    const [vehicleTruck, setVehicleTruck] = React.useState(null);
+
     const [militaryStatus, setMilitaryStatus] = React.useState("");
     const [education, setEducation] = React.useState(true);
     const [nationality, setNationality] = React.useState("");
@@ -93,6 +103,13 @@ const AddEmployee = () => {
     const [lineID, setLineID] = React.useState("");
     const [address, setAddress] = useState({});
     const [birthDate, setBirthDate] = useState(null);
+    const [vehicleFileList, setVehicleFileList] = useState([
+        {
+            vehicleFile: null,
+            vehicleType: ""
+        },
+    ]);
+
     const statuss = [
         {
             ID: 1,
@@ -159,26 +176,49 @@ const AddEmployee = () => {
                 name: "Bike",
                 status: openBike ? "ขับได้" : "ขับไม่ได้",
                 drivinglicense: "มี",
-                image: ""
+                image: vehicleBike
             },
             {
                 id: 1,
                 name: "Car",
                 status: openCar ? "ขับได้" : "ขับไม่ได้",
                 drivinglicense: "มี",
-                image: ""
+                image: vehicleCar
             },
             {
                 id: 2,
                 name: "Truck",
                 status: openTruck ? "ขับได้" : "ขับไม่ได้",
                 drivinglicense: "มี",
-                image: ""
+                image: vehicleTruck
             }
         ]
     }
 
+    const [dateStart, setDateStart] = useState(null);
+    const [dateEnd, setDateEnd] = useState(null);
+    const [internshipCompany, setInternshipCompany] = useState("");
+    const [internshipAddress, setInternshipAddress] = useState({});
+    const [internshipPosition, setInternshipPosition] = useState("");
+    const [internshipTypeP, setInternshipTypeP] = useState("");
+    const [internshipLevel, setInternshipLevel] = useState("");
+    const [internshipSalary, setInternshipSalary] = useState("");
+    const [internshipNote, setInternshipNote] = useState("");
+
+    const Internship = {
+        dateStart: dateStart,
+        dateEnd: dateEnd,
+        company: internshipCompany,
+        address: internshipAddress,
+        position: internshipPosition,
+        positionType: internshipTypeP,
+        level: internshipLevel,
+        salary: internshipSalary,
+        note: internshipNote
+    }
+
     console.log("personal : ", personal);
+    console.log("Internship : ", Internship);
 
     const [selectedDate, setSelectedDate] = useState(dayjs(new Date).format("DD/MM/YYYY"));
     const handleDateChangeDate = (newValue) => {
@@ -205,19 +245,53 @@ const AddEmployee = () => {
             writing: "",
         },
     ]);
+
+    const [trainingList, setTrainingList] = useState([
+        {
+            dateStart: "",
+            dateEnd: "",
+            institution: "",
+            course: "",
+            file: null,
+            fileType: ""
+        },
+    ]);
+
+    const [specialAbilities1, setSpecialAbilities1] = useState("");
+    const [specialAbilities2, setSpecialAbilities2] = useState("");
+    const [specialAbilities3, setSpecialAbilities3] = useState("");
+    const [printingSpeedTH, setPrintingSpeedTH] = useState("");
+    const [printingSpeedENG, setPrintingSpeedENG] = useState("");
+    const [otherProjects, setOtherProject] = useState("");
+    const [referencePerson, setReferencePerson] = useState("");
+
+    const specialAbilities = {
+        specialAbilities1: specialAbilities1,
+        specialAbilities2: specialAbilities2,
+        specialAbilities3: specialAbilities3,
+        printingSpeedTH: printingSpeedTH,
+        printingSpeedENG: printingSpeedENG,
+        otherProjects: otherProjects,
+        referencePerson: referencePerson
+    }
+
+    const [vehicleType, setVehicleType] = React.useState(true);
+    const [vehicle, setVehicle] = React.useState("");
+    const [fileType, setFileType] = React.useState(true);
     const companyId = companyName?.split(":")[0];
 
-    console.log("educationList : ",educationList);
+    console.log("educationList : ", educationList);
+    console.log("trainingList : ", trainingList);
 
     console.log("Compnay ID : ", companyId);
     const [editEmployee, setEditEmployee] = useState(false);
     const [editDepartment, setEditDepartment] = useState(false);
     const [thailand, setThailand] = useState([]);
-    const [addressTrain, setAddressTrain] = useState({});
-    const [checkPosition, setCheckPosition] = useState("0:0");
+    const [checkPosition, setCheckPosition] = useState({});
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [employee, setEmployee] = useState([{ ID: 0, position: '', }]);
+    const [employeeID, setEmployeeID] = useState(null);
     const [department, setDepartment] = useState([{ DepartmentName: '', Section: '' }]);
     const [position, setPosition] = useState([{
         ID: 0,
@@ -239,11 +313,6 @@ const AddEmployee = () => {
             options: employeeOptions,
         },
     ];
-
-    const [dateStart, setDateStart] = useState(null);
-    const [dateEnd, setDateEnd] = useState(null);
-    const [dateStartCost, setDateStartCost] = useState(null);
-    const [dateEndCost, setDateEndCost] = useState(null);
 
     // const [selectedDay, setSelectedDay] = useState("");
     // const [selectedMonth, setSelectedMonth] = useState("");
@@ -384,15 +453,16 @@ const AddEmployee = () => {
 
         const unsubscribe = onValue(positionRef, (snapshot) => {
             const employeeData = snapshot.val();
-
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
             if (!employeeData) {
                 setEmployee([{
                     ID: 0,
                     position: "",
                 }]);
+                setEmployeeID(0); // หรือจะใส่ 0 ก็ได้ ขึ้นอยู่กับ logic ของคุณ
             } else {
                 setEmployee(employeeData);
+                setEmployeeID(employeeData.length); // ใช้ได้เมื่อไม่เป็น null
             }
         });
 
@@ -400,6 +470,7 @@ const AddEmployee = () => {
     }, [firebaseDB, companyId]);
 
     console.log("Employee : ", employee);
+    console.log("EMployee ID : ", employeeID);
 
     const handleAdd = () => {
         setEducationList([
@@ -446,7 +517,64 @@ const AddEmployee = () => {
         setLanguageList(updated);
     };
 
+    const handleAddTraining = () => {
+        setTrainingList([
+            ...trainingList,
+            { dateStart: "", dateEnd: "", institution: "", course: "", file: null, fileType: "" },
+        ]);
+    };
+
+    const handleRemoveTraining = (index) => {
+        const updated = [...trainingList];
+        updated.splice(index, 1);
+        setTrainingList(updated);
+    };
+
+    const handleTrainingChange = (index, field, value) => {
+        const updated = [...trainingList];
+        updated[index][field] = value;
+        setTrainingList(updated);
+    };
+
+    const handleTrainingTypeChange = (index, value) => {
+        const updated = [...trainingList];
+        updated[index].fileType = value === true ? "image" : "pdf";
+        setTrainingList(updated);
+    };
+
+    const handleAddVehicleFileList = () => {
+        setVehicleFileList([
+            ...vehicleFileList,
+            {
+                vehicleFile: null,
+                vehicleType: ""
+            },
+        ]);
+    };
+
+    const handleRemoveVehicleFileList = (index) => {
+        const updated = [...vehicleFileList];
+        updated.splice(index, 1);
+        setVehicleFileList(updated);
+    };
+
+    const handleVehicleFileListChange = (index, field, value) => {
+        const updated = [...vehicleFileList];
+        updated[index][field] = value;
+        setVehicleFileList(updated);
+    };
+
+    const handleVehicleTypeChange = (index, value) => {
+        const updated = [...vehicleFileList];
+        updated[index].vehicleType = value === true ? "image" : "pdf";
+        setVehicleFileList(updated);
+    };
+
+
+    console.log("vehicleType : ", vehicleType);
+    console.log("vehicleList : ", vehicleFileList);
     console.log("Name : ", name);
+    console.log("checkPosition : ", checkPosition);
 
     const handleClickOpen = () => {
         setOpen(true);
@@ -554,6 +682,35 @@ const AddEmployee = () => {
         { value: "อื่นๆ", label: "อื่นๆ" },
     ];
 
+    const handleSave = async () => {
+        if (!companyName.trim() || !firebaseDB) return;
+
+        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+
+        try {
+            const snapshot = await get(employeeRef);
+            const employeeData = snapshot.exists() ? snapshot.val() : {};
+            const nextIndex = Object.keys(employeeData).length;
+
+            await set(child(employeeRef, String(nextIndex)), {
+                section: checkPosition.sectionid,
+                department: checkPosition.deptid,
+                position: `${checkPosition.ID}-${checkPosition.positionname}`,
+                employname: `${name} ${lastName}`,
+                personal: personal,
+                educationList: educationList,
+                internship: Internship,
+                languageList: languageList,
+                trainingList: trainingList,
+                specialAbilities: specialAbilities
+            });
+
+        } catch (error) {
+            console.error("Error adding company:", error);
+        }
+    };
+
+
     const steps = [
         {
             title: "เลือกตำแหน่งพนักงาน",
@@ -582,13 +739,13 @@ const AddEmployee = () => {
                                     onClick={() => {
                                         if (!isFull) {
                                             console.log(`เลือกตำแหน่ง: ${row.positionname}`);
-                                            setCheckPosition(`${row.ID}-${row.positionname}`);
+                                            setCheckPosition(row);
                                             // หรือเรียกฟังก์ชัน handleSelect(row) ที่คุณกำหนดไว้
                                         }
                                     }}
                                     sx={{
                                         height: "70px",
-                                        backgroundColor: checkPosition.split("-")[1] === row.positionname ? theme.palette.primary.main : (isFull ? "#e0e0e0" : "lightgray"),
+                                        backgroundColor: checkPosition.positionname === row.positionname ? theme.palette.primary.main : (isFull ? "#e0e0e0" : "lightgray"),
                                         borderRadius: 3,
                                         cursor: isFull ? "not-allowed" : "pointer",
                                         pointerEvents: isFull ? "none" : "auto" // ปิดการคลิกจริง
@@ -604,7 +761,7 @@ const AddEmployee = () => {
                                     }}>
                                         <Typography
                                             variant="subtitle2"
-                                            sx={{ color: checkPosition.split("-")[1] === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
+                                            sx={{ color: checkPosition.positionname === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
                                             gutterBottom
                                         >
                                             {`${row.positionname}`}
@@ -613,7 +770,7 @@ const AddEmployee = () => {
                                             <Typography
                                                 variant="h6"
                                                 fontWeight="bold"
-                                                sx={{ color: checkPosition.split("-")[1] === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
+                                                sx={{ color: checkPosition.positionname === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
                                                 gutterBottom
                                             >
                                                 {`(${currentCount}/${row.max})`}
@@ -621,7 +778,7 @@ const AddEmployee = () => {
                                         </Box>
                                     </Box>
                                     <Box sx={{ textAlign: "right", marginTop: -7.5, marginRight: 0.5 }}>
-                                        <BadgeIcon sx={{ fontSize: 40, color: checkPosition.split("-")[1] === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray") }} />
+                                        <BadgeIcon sx={{ fontSize: 40, color: checkPosition.positionname === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray") }} />
                                     </Box>
                                 </Grid>
                             );
@@ -839,7 +996,7 @@ const AddEmployee = () => {
                                 onChange={(e) => setStatusEmployee(e.target.value)}
                             >
                                 {
-                                    statuss.map((row,index) => (
+                                    statuss.map((row, index) => (
                                         <MenuItem key={index} value={`${row.label}`}>{row.label}</MenuItem>
                                     ))
                                 }
@@ -987,7 +1144,12 @@ const AddEmployee = () => {
                                         justifyContent: "center",
                                         alignItems: "center"
                                     }}
-                                    onClick={() => setOpenBike(!openBike)}
+                                    onClick={() => {
+                                        if (openBike) {
+                                            setVehicleBike(null); // reset ไฟล์เมื่อปิด
+                                        }
+                                        setOpenBike(!openBike);
+                                    }}
                                 >
                                     <Typography variant="subtitle2" color={openBike ? "white" : "textDisabled"} gutterBottom>รถจักรยานยนต์</Typography>
                                     <TwoWheelerIcon
@@ -1003,10 +1165,15 @@ const AddEmployee = () => {
                                         justifyContent: "center",
                                         alignItems: "center"
                                     }}
-                                    onClick={() => setOpenCar(!openCar)}
+                                    onClick={() => {
+                                        if (openCar) {
+                                            setVehicleCar(null); // reset ไฟล์เมื่อปิด
+                                        }
+                                        setOpenCar(!openCar);
+                                    }}
                                 >
                                     <Typography variant="subtitle2" color={openCar ? "white" : "textDisabled"} gutterBottom>รถยนต์</Typography>
-                                    <LocalShippingIcon
+                                    <DirectionsCarIcon
                                         color="disabled"
                                         sx={{ fontSize: 40, color: openCar ? "white" : "lightgray", marginLeft: 1 }} // กำหนดขนาดไอคอนเป็น 60px
                                     />
@@ -1020,16 +1187,94 @@ const AddEmployee = () => {
                                         justifyContent: "center",
                                         alignItems: "center"
                                     }}
-                                    onClick={() => setOpenTruck(!openTruck)}
+                                    onClick={() => {
+                                        if (openTruck) {
+                                            setVehicleTruck(null); // reset ไฟล์เมื่อปิด
+                                        }
+                                        setOpenTruck(!openTruck);
+                                    }}
                                 >
                                     <Typography variant="subtitle2" color={openTruck ? "white" : "textDisabled"} gutterBottom>รถบรรทุก</Typography>
-                                    <DirectionsCarIcon
+                                    <LocalShippingIcon
                                         color="disabled"
                                         sx={{ fontSize: 40, color: openTruck ? "white" : "lightgray", marginLeft: 1 }} // กำหนดขนาดไอคอนเป็น 60px
                                     />
                                 </Grid>
                             </Grid>
                         </Grid>
+                        {
+                            openBike && (
+                                <FileUploadCard
+                                    file={vehicleBike}
+                                    label="แนบไฟล์ใบขับขี่รถจักรยานยนต์"
+                                    type={fileBike}
+                                    onTypeChange={(val) => setFileBike(val)}
+                                    onFileChange={(file) => setVehicleBike(file)}
+                                />
+                            )
+                        }
+                        {
+                            openCar && (
+                                <FileUploadCard
+                                    file={vehicleCar}
+                                    label="แนบไฟล์ใบขับขี่รถยนต์"
+                                    type={fileCar}
+                                    onTypeChange={(val) => setFileCar(val)}
+                                    onFileChange={(file) => setVehicleCar(file)}
+                                />
+                            )
+                        }
+                        {
+                            openTruck && (
+                                <FileUploadCard
+                                    file={vehicleTruck}
+                                    label="แนบไฟล์ใบขับขี่รถบรรทุก"
+                                    type={fileTruck}
+                                    onTypeChange={(val) => setFileTruck(val)}
+                                    onFileChange={(file) => setVehicleTruck(file)}
+                                />
+                            )
+                        }
+                        {/* {vehicleFileList.map((train, index) => (
+                            <Grid container spacing={2} sx={{ width: "100%" }} key={index}>
+                                <Grid item size={12} textAlign="right">
+                                    {vehicleFileList.length > 1 && (
+                                        <Button
+                                            variant="outlined"
+                                            size="small"
+                                            color="error"
+                                            onClick={() => handleRemoveVehicleFileList(index)}
+                                            sx={{ marginBottom: -8 }}
+                                        >
+                                            ลบ
+                                        </Button>
+                                    )}
+                                </Grid>
+                                <FileUploadCard
+                                    file={train.vehicleFile}
+                                    label="แนบไฟล์ใบขับขี่"
+                                    type={train.vehicleType === "image" ? true : false}
+                                    onTypeChange={(val) => handleVehicleTypeChange(index, val)}
+                                    onFileChange={(file) => handleVehicleFileListChange(index, "vehicleFile", file)}
+                                />
+
+                                <Grid item size={12}><Divider sx={{ mt: 1 }} /></Grid>
+                            </Grid>
+                        ))}
+                        <Grid item size={12}>
+                            <Box textAlign="center" marginTop={1}>
+                                <Button variant="outlined" size="small" onClick={handleAddVehicleFileList}>
+                                    เพิ่มไฟล์ใบขับขี่เพิ่มเติม
+                                </Button>
+                            </Box>
+                        </Grid> */}
+                        {/* <FileUploadCard
+                            file={vehicle}
+                            label="แนบไฟล์ใบขับขี่"
+                            type={vehicleType}
+                            onTypeChange={(val) => setVehicleType(val)}
+                            onFileChange={(file) => setVehicle(file)}
+                        /> */}
                     </Grid>
                 </>
             ),
@@ -1408,6 +1653,8 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={internshipCompany}
+                                onChange={(e) => setInternshipCompany(e.target.value)}
                                 placeholder="กรุณากรอกชื่อบริษัท"
                             />
                         </Grid>
@@ -1426,9 +1673,9 @@ const AddEmployee = () => {
                             <ThaiAddressSelector
                                 label="ที่อยู่ปัจจุบัน"
                                 thailand={thailand}
-                                value={addressTrain}
+                                value={internshipAddress}
                                 placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
-                                onChange={(val) => setAddressTrain(val)}
+                                onChange={(val) => setInternshipAddress(val)}
                             />
                         </Grid>
                         <Grid item size={6}>
@@ -1436,6 +1683,8 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={internshipPosition}
+                                onChange={(e) => setInternshipPosition(e.target.value)}
                                 placeholder="กรุณากรอกตำแหน่งงาน"
                             />
                         </Grid>
@@ -1444,6 +1693,8 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={internshipTypeP}
+                                onChange={(e) => setInternshipTypeP(e.target.value)}
                                 placeholder="กรุณากรอกประเภทงาน"
                             />
                         </Grid>
@@ -1452,6 +1703,8 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={internshipLevel}
+                                onChange={(e) => setInternshipLevel(e.target.value)}
                                 placeholder="กรุณากรอกระดับ"
                             />
                         </Grid>
@@ -1460,6 +1713,8 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
+                                value={internshipSalary}
+                                onChange={(e) => setInternshipSalary(e.target.value)}
                                 placeholder="กรุณากรอกเงินเดือน"
                             />
                         </Grid>
@@ -1468,6 +1723,8 @@ const AddEmployee = () => {
                             <TextField
                                 type="text"
                                 size="small"
+                                value={internshipNote}
+                                onChange={(e) => setInternshipNote(e.target.value)}
                                 multiline
                                 rows={3}
                                 fullWidth
@@ -1482,56 +1739,88 @@ const AddEmployee = () => {
             title: "ประวัติการฝึกอบรม และประกาศนียบัตร",
             content: (
                 <>
-                    <Grid container spacing={2} marginTop={3} sx={{ width: "100%" }}>
-                        <Grid item size={12}>
-                            <ThaiDateSelector
-                                label="เริ่มตั้งแต่วันที่"
-                                value={dateStartCost}
-                                onChange={(val) => setDateStartCost(val)}
-                            />
-                            {/* <Typography variant="subtitle2" fontWeight="bold" >เริ่มตั้งแต่</Typography>
+                    {trainingList.map((train, index) => (
+                        <Grid container spacing={2} marginTop={3} sx={{ width: "100%" }} key={index}>
+                            <Grid item size={12} textAlign="right">
+                                {trainingList.length > 1 && (
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        color="error"
+                                        onClick={() => handleRemoveTraining(index)}
+                                    >
+                                        ลบ
+                                    </Button>
+                                )}
+                            </Grid>
+                            <Grid item size={12}>
+                                <ThaiDateSelector
+                                    label="เริ่มตั้งแต่วันที่"
+                                    value={train.dateStart}
+                                    onChange={(val) =>
+                                        handleTrainingChange(index, "dateStart", val)
+                                    }
+                                />
+                                {/* <Typography variant="subtitle2" fontWeight="bold" >เริ่มตั้งแต่</Typography>
                             <TextField
                                 fullWidth
                                 size="small"
                             /> */}
-                        </Grid>
-                        <Grid item size={12}>
-                            <ThaiDateSelector
-                                label="จนถึง"
-                                value={dateEndCost}
-                                onChange={(val) => setDateEndCost(val)}
-                            />
-                            {/* <Typography variant="subtitle2" fontWeight="bold" >จนถึง</Typography>
+                            </Grid>
+                            <Grid item size={12}>
+                                <ThaiDateSelector
+                                    label="จนถึง"
+                                    value={train.dateEnd}
+                                    onChange={(val) =>
+                                        handleTrainingChange(index, "dateEnd", val)
+                                    }
+                                />
+                                {/* <Typography variant="subtitle2" fontWeight="bold" >จนถึง</Typography>
                             <TextField
                                 fullWidth
                                 size="small"
                             /> */}
-                        </Grid>
-                        <Grid item size={12}>
-                            <Typography variant="subtitle2" fontWeight="bold" >สถาบัน</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                placeholder="กรุณากรอกชื่อสถาบัน"
+                            </Grid>
+                            <Grid item size={12}>
+                                <Typography variant="subtitle2" fontWeight="bold" >สถาบัน</Typography>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={train.institution}
+                                    onChange={(e) =>
+                                        handleTrainingChange(index, "institution", e.target.value)
+                                    }
+                                    placeholder="กรุณากรอกชื่อสถาบัน"
+                                />
+                            </Grid>
+                            <Grid item size={12}>
+                                <Typography variant="subtitle2" fontWeight="bold" >หลักสูตร</Typography>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={train.course}
+                                    onChange={(e) =>
+                                        handleTrainingChange(index, "course", e.target.value)
+                                    }
+                                    placeholder="กรุณากรอกหลักสูตร"
+                                />
+                            </Grid>
+                            <FileUploadCard
+                                file={train.file}
+                                label="แนบไฟล์ประกาศนียบัตร/วุฒิบัตร"
+                                type={train.fileType === "image" ? true : false}
+                                onTypeChange={(val) => handleTrainingTypeChange(index, val)}
+                                onFileChange={(file) => handleTrainingChange(index, "file", file)}
                             />
+
+                            <Grid item size={12}><Divider sx={{ mt: 1 }} /></Grid>
                         </Grid>
-                        <Grid item size={12}>
-                            <Typography variant="subtitle2" fontWeight="bold" >หลักสูตร</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                placeholder="กรุณากรอกหลักสูตร"
-                            />
-                        </Grid>
-                        <Grid item size={12}>
-                            <Typography variant="subtitle2" fontWeight="bold" >ประกาศนียบัตร/วุฒิบัตร</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                placeholder="กรุณากรอกประกาศนียบัตร/วุฒิบัตร"
-                            />
-                        </Grid>
-                    </Grid>
+                    ))}
+                    <Box textAlign="center" marginTop={3}>
+                        <Button variant="outlined" size="small" onClick={handleAddTraining}>
+                            เพิ่มประวัติ
+                        </Button>
+                    </Box>
                 </>
             ),
         },
@@ -1649,7 +1938,7 @@ const AddEmployee = () => {
                 <>
                     <Grid container spacing={2} marginTop={3} sx={{ width: "100%" }}>
                         <Grid item size={12}>
-                            <Typography variant="subtitle2" fontWeight="bold" >ความสามารถเฉพาะทาง</Typography>
+                            <Typography variant="subtitle2" fontWeight="bold" >ความสามารถพิเศษ</Typography>
                             <Grid container spacing={1}>
                                 <Grid item size={1}>
                                     <Typography variant="subtitle2" sx={{ marginTop: 1, textAlign: "right" }} fontWeight="bold" >1.</Typography>
@@ -1658,6 +1947,8 @@ const AddEmployee = () => {
                                     <TextField
                                         fullWidth
                                         size="small"
+                                        value={specialAbilities1}
+                                        onChange={(e) => setSpecialAbilities1(e.target.value)}
                                         placeholder="กรุณากรอกความสามารถเฉพาะทาง"
                                     />
                                 </Grid>
@@ -1668,6 +1959,8 @@ const AddEmployee = () => {
                                     <TextField
                                         fullWidth
                                         size="small"
+                                        value={specialAbilities2}
+                                        onChange={(e) => setSpecialAbilities2(e.target.value)}
                                         placeholder="กรุณากรอกความสามารถเฉพาะทาง"
                                     />
                                 </Grid>
@@ -1678,17 +1971,19 @@ const AddEmployee = () => {
                                     <TextField
                                         fullWidth
                                         size="small"
+                                        value={specialAbilities3}
+                                        onChange={(e) => setSpecialAbilities3(e.target.value)}
                                         placeholder="กรุณากรอกความสามารถเฉพาะทาง"
                                     />
                                 </Grid>
-                                <Grid item size={12}>
+                                {/* <Grid item size={12}>
                                     <Typography variant="subtitle2" fontWeight="bold" >ความสามารถในการขับขี่</Typography>
                                     <TextField
                                         fullWidth
                                         size="small"
                                         placeholder="กรุณากรอกความสามารถในการขับขี่"
                                     />
-                                </Grid>
+                                </Grid> */}
                                 <Grid item size={12}>
                                     <Typography variant="subtitle2" fontWeight="bold" >ความเร็วในการพิมพ์</Typography>
                                     <Grid container spacing={2}>
@@ -1697,6 +1992,8 @@ const AddEmployee = () => {
                                             <TextField
                                                 fullWidth
                                                 size="small"
+                                                value={printingSpeedTH}
+                                                onChange={(e) => setPrintingSpeedTH(e.target.value)}
                                                 placeholder="กรุณากรอกความเร็วในการพิมพ์ภาษาไทย"
                                             />
                                         </Grid>
@@ -1705,6 +2002,8 @@ const AddEmployee = () => {
                                             <TextField
                                                 fullWidth
                                                 size="small"
+                                                value={printingSpeedENG}
+                                                onChange={(e) => setPrintingSpeedENG(e.target.value)}
                                                 placeholder="กรุณากรอกความเร็วในการพิมพ์ภาษาอังกฤษ"
                                             />
                                         </Grid>
@@ -1715,6 +2014,8 @@ const AddEmployee = () => {
                                     <TextField
                                         type="text"
                                         size="small"
+                                        value={otherProjects}
+                                        onChange={(e) => setOtherProject(e.target.value)}
                                         multiline
                                         rows={3}
                                         fullWidth
@@ -1726,6 +2027,8 @@ const AddEmployee = () => {
                                     <TextField
                                         type="text"
                                         size="small"
+                                        value={referencePerson}
+                                        onChange={(e) => setReferencePerson(e.target.value)}
                                         multiline
                                         rows={3}
                                         fullWidth
@@ -1930,7 +2233,7 @@ const AddEmployee = () => {
                         {step < steps.length - 1 ? (
                             <Button color="info" onClick={handleNext}>ถัดไป →</Button>
                         ) : (
-                            <Button variant="contained" color="success">
+                            <Button variant="contained" color="success" onClick={handleSave}>
                                 บันทึก
                             </Button>
                         )}
