@@ -90,8 +90,22 @@ export default function TableExcel({
     const isCellSelected = (r, c) =>
         selectedCells.some(([row, col]) => row === r && col === c);
 
+    const hidden = columns.some(col => col.disabled === true);
+
     // เปลี่ยนค่าใน cell
+    // const handleCellChange = (val, rowIdx, colKey) => {
+    //     setData((prevData) => {
+    //         const newData = [...prevData];
+    //         if (!newData[rowIdx]) newData[rowIdx] = {};
+    //         newData[rowIdx] = { ...newData[rowIdx], [colKey]: val };
+    //         onDataChange(newData);
+    //         return newData;
+    //     });
+    // };
     const handleCellChange = (val, rowIdx, colKey) => {
+        const column = columns.find((col) => col.key === colKey);
+        if (column?.disabled) return;
+
         setData((prevData) => {
             const newData = [...prevData];
             if (!newData[rowIdx]) newData[rowIdx] = {};
@@ -100,19 +114,84 @@ export default function TableExcel({
             return newData;
         });
     };
+
     // คัดลอกข้อมูลเซลล์ที่เลือกเป็น text แบบ tab-delimited
+    // const handleCopy = async () => {
+    //     const rows = [...new Set(selectedCells.map(([r]) => r))].sort();
+    //     const cols = [...new Set(selectedCells.map(([, c]) => c))].sort();
+
+    //     const text = rows
+    //         .map((r) => cols.map((c) => data[r]?.[columns[c].key] ?? "").join("\t"))
+    //         .join("\n");
+
+    //     await navigator.clipboard.writeText(text);
+    // };
     const handleCopy = async () => {
         const rows = [...new Set(selectedCells.map(([r]) => r))].sort();
         const cols = [...new Set(selectedCells.map(([, c]) => c))].sort();
 
         const text = rows
-            .map((r) => cols.map((c) => data[r]?.[columns[c].key] ?? "").join("\t"))
+            .map((r) => cols
+                .map((c) => {
+                    const col = columns[c];
+                    if (col?.disabled) return ""; // ไม่คัดลอกค่าที่ disabled
+                    return data[r]?.[col.key] ?? "";
+                })
+                .join("\t")
+            )
             .join("\n");
 
         await navigator.clipboard.writeText(text);
     };
 
+
     // วางข้อมูลจาก clipboard ลงในตาราง
+    // const handlePaste = async () => {
+    //     const clipboard = await navigator.clipboard.readText();
+
+    //     const rowsFromClipboard = clipboard
+    //         .split(/\r?\n/)
+    //         .filter(line => line.trim() !== "")
+    //         .map((line) => line.split("\t"));
+
+    //     const newData = [...data];
+    //     const [startRow, startCol] = selectedCells[0] || [0, 0];
+
+    //     rowsFromClipboard.forEach((row, i) => {
+    //         const targetRow = startRow + i;
+
+    //         if (!newData[targetRow]) {
+    //             newData[targetRow] = columns.reduce((acc, col) => ({ ...acc, [col.key]: "" }), {});
+    //         }
+
+    //         row.forEach((val, j) => {
+    //             const targetCol = startCol + j;
+    //             const colDef = columns[targetCol];
+    //             if (colDef) {
+    //                 let parsedVal = val.trim();
+    //                 if (colDef.type === "select" && Array.isArray(colDef.options)) {
+    //                     const matched = colDef.options.find(
+    //                         opt => opt.value === parsedVal || opt.label === parsedVal
+    //                     );
+    //                     parsedVal = matched?.value || ""; // ถ้าไม่ match → ให้ค่าว่างเพื่อไม่ขึ้น error
+    //                 }
+    //                 newData[targetRow] = {
+    //                     ...newData[targetRow],
+    //                     [colDef.key]: parsedVal,
+    //                 };
+    //             }
+    //         });
+    //     });
+
+    //     // อัปเดต ID ใหม่ให้ทุกแถว
+    //     const updatedData = newData.map((row, idx) => ({
+    //         ...row,
+    //         ID: idx,
+    //     }));
+
+    //     setData(updatedData);
+    //     onDataChange(updatedData);
+    // };
     const handlePaste = async () => {
         const clipboard = await navigator.clipboard.readText();
 
@@ -127,20 +206,26 @@ export default function TableExcel({
         rowsFromClipboard.forEach((row, i) => {
             const targetRow = startRow + i;
 
-            if (!newData[targetRow]) {
+            // if (!newData[targetRow]) {
+            //     newData[targetRow] = columns.reduce((acc, col) => ({ ...acc, [col.key]: "" }), {});
+            // }
+
+            // 👇⛔ ถ้า hidden เป็น true → ไม่เพิ่มแถวใหม่
+            if (targetRow >= newData.length) {
+                if (hidden) return; // หยุดไม่ทำอะไรถ้าเลยขอบเขตและห้ามเพิ่ม
                 newData[targetRow] = columns.reduce((acc, col) => ({ ...acc, [col.key]: "" }), {});
             }
 
             row.forEach((val, j) => {
                 const targetCol = startCol + j;
                 const colDef = columns[targetCol];
-                if (colDef) {
+                if (colDef && !colDef.disabled) {
                     let parsedVal = val.trim();
                     if (colDef.type === "select" && Array.isArray(colDef.options)) {
                         const matched = colDef.options.find(
                             opt => opt.value === parsedVal || opt.label === parsedVal
                         );
-                        parsedVal = matched?.value || ""; // ถ้าไม่ match → ให้ค่าว่างเพื่อไม่ขึ้น error
+                        parsedVal = matched?.value || "";
                     }
                     newData[targetRow] = {
                         ...newData[targetRow],
@@ -150,7 +235,6 @@ export default function TableExcel({
             });
         });
 
-        // อัปเดต ID ใหม่ให้ทุกแถว
         const updatedData = newData.map((row, idx) => ({
             ...row,
             ID: idx,
@@ -159,6 +243,7 @@ export default function TableExcel({
         setData(updatedData);
         onDataChange(updatedData);
     };
+
 
 
     // เพิ่มแถวใหม่ (object ว่างตาม columns)
@@ -195,7 +280,15 @@ export default function TableExcel({
 
 
     // เปิด context menu คลิกขวา
+    // const openContextMenu = (event, row, col) => {
+    //     event.preventDefault();
+    //     setAnchorEl(event.currentTarget);
+    //     setSelectedCells([[row, col]]);
+    // };
     const openContextMenu = (event, row, col) => {
+        const colDef = columns[col];
+        if (colDef?.disabled) return; // ❌ ไม่เปิด context menu ถ้าห้ามแก้
+
         event.preventDefault();
         setAnchorEl(event.currentTarget);
         setSelectedCells([[row, col]]);
@@ -239,7 +332,7 @@ export default function TableExcel({
                     <Table size="small">
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
+                                <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
                                 {columns.map((col, idx) => (
                                     <TablecellHeader key={idx} sx={{ width: col.width ?? "auto" }} >{col.label}</TablecellHeader>
                                 ))}
@@ -249,7 +342,7 @@ export default function TableExcel({
                         <TableBody>
                             {data.map((row, rowIdx) => (
                                 <TableRow key={rowIdx}>
-                                    <TableCell sx={{ textAlign: "center" }}>{rowIdx + 1}</TableCell>
+                                    <TableCell sx={{ textAlign: "center", backgroundColor: theme.palette.primary.dark, color: "white" }}>{rowIdx + 1}</TableCell>
                                     {columns.map((col, colIdx) => (
                                         <TableCell
                                             key={colIdx}
@@ -257,16 +350,20 @@ export default function TableExcel({
                                             onMouseOver={() => handleMouseOver(rowIdx, colIdx)}
                                             onContextMenu={(e) => openContextMenu(e, rowIdx, colIdx)}
                                             style={{
-                                                backgroundColor:
-                                                    isCellSelected(rowIdx, colIdx)
+                                                backgroundColor: col.disabled === true ?
+                                                    "#e9e9e9ff"
+                                                    :
+                                                    (isCellSelected(rowIdx, colIdx)
                                                         ? theme.palette.primary.light
-                                                        : getCellBackgroundColor(data[rowIdx]?.[col.key], col),
+                                                        : getCellBackgroundColor(data[rowIdx]?.[col.key], col))
+                                                ,
                                                 textAlign: "center"
                                             }}
                                         >
                                             {(col.type === "select" || col.type === "dependent-select") ? (
                                                 <>
                                                     <select
+                                                        disabled={col.disabled}
                                                         value={
                                                             // ตรวจสอบว่า row[col.key] ตรงกับ options.value หรือ label
                                                             col.options.find(opt => opt.value === row[col.key])?.value ??
@@ -330,6 +427,7 @@ export default function TableExcel({
 
                                                 col.type === "checkbox" ? (
                                                     <Checkbox
+                                                        disabled={col.disabled}
                                                         checked={row[col.key] === 1}
                                                         onChange={(e) => handleCellChange(e.target.checked ? 1 : 0, rowIdx, col.key)}
                                                         color="primary" // ใช้สีตาม theme.palette.primary.main
@@ -338,6 +436,7 @@ export default function TableExcel({
                                                 )
                                                     : col.type === "date" ? (
                                                         <input
+                                                            disabled={col.disabled}
                                                             type="date"
                                                             value={
                                                                 row[col.key]
@@ -364,6 +463,7 @@ export default function TableExcel({
                                                     )
                                                         : col.type === "time" ? (
                                                             <input
+                                                                disabled={col.disabled}
                                                                 type="time"
                                                                 value={row[col.key] || ""}
                                                                 onChange={(e) => handleCellChange(e.target.value, rowIdx, col.key)}
@@ -383,7 +483,7 @@ export default function TableExcel({
                                                         )
                                                             : (
                                                                 <div
-                                                                    contentEditable
+                                                                    contentEditable={!col.disabled}
                                                                     suppressContentEditableWarning
                                                                     dir="ltr"
                                                                     onBlur={(e) => {
@@ -455,25 +555,31 @@ export default function TableExcel({
                         🗑 ลบแถว
                     </MenuItem>
                 </Menu>
-                <Box>
-                    <Tooltip title="เพิ่มแถว" placement="right">
-                        <IconButton variant="contained" color="info" onClick={addRow}>
-                            <AddCircleOutlineIcon />
-                        </IconButton>
-                    </Tooltip>
+                {
+                    !hidden &&
+                    (
+                        <Box>
+                            <Tooltip title="เพิ่มแถว" placement="right">
+                                <IconButton variant="contained" color="info" onClick={addRow}>
+                                    <AddCircleOutlineIcon />
+                                </IconButton>
+                            </Tooltip>
 
-                    <Tooltip title="ลบแถวที่เลือก" placement="right">
-                        <IconButton variant="contained" color="error" onClick={deleteRow}>
-                            <RemoveCircleOutlineIcon />
-                        </IconButton>
-                    </Tooltip>
-                    {/* <Button onClick={addRow} variant="contained">
+                            <Tooltip title="ลบแถวที่เลือก" placement="right">
+                                <IconButton variant="contained" color="error" onClick={deleteRow}>
+                                    <RemoveCircleOutlineIcon />
+                                </IconButton>
+                            </Tooltip>
+                            {/* <Button onClick={addRow} variant="contained">
                         ➕ เพิ่มแถว
                     </Button>
                     <Button onClick={deleteRow} variant="outlined" color="error">
                         🗑 ลบแถวที่เลือก
                     </Button> */}
-                </Box>
+                        </Box>
+                    )
+                }
+
             </Stack>
         </>
     );

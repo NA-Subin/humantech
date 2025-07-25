@@ -180,6 +180,8 @@ const TaxDeductionDetail = () => {
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
+    console.log("taxDeduction : ", taxDeduction);
+
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>

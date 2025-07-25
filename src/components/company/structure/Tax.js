@@ -51,6 +51,9 @@ const TaxDetail = () => {
         { label: "เริ่มต้น", key: "summaryStart", type: "text" },
         { label: "สิ้นสุด", key: "summaryEnd", type: "text" },
         { label: "อัตราภาษี", key: "tax", type: "text" },
+        { label: "แปลงเป็นเงิน", key: "taxRange", type: "text" },
+        { label: "ค่าลบก่อนคิดภาษี", key: "maxRange", type: "text" },
+        { label: "ค่าบวกหลังคิดภาษี", key: "avgRange", type: "text" },
         { label: "หมายเหตุ", key: "note", type: "text" }
     ];
 
@@ -194,10 +197,13 @@ const TaxDetail = () => {
                                         <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                    <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "40%" }}>เงินได้สุทธิ (บาท)</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "20%" }}>อัตราภาษี</TablecellHeader>
-                                                    <TablecellHeader>หมายเหตุ</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "25%" }}>เงินได้สุทธิ (บาท)</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "10%" }}>อัตราภาษี</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "10%" }}>แปลงเป็นเงิน</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "15%" }}>ค่าลบก่อนคิดภาษี </TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "15%" }}>ค่าบวกหลังคิดภาษี</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "20%" }}>หมายเหตุ</TablecellHeader>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
@@ -229,6 +235,9 @@ const TaxDetail = () => {
                                                                     </Grid>
                                                                 </TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.tax}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.taxRange)}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.maxRange)}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.avgRange)}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.note}</TableCell>
                                                             </TableRow>
                                                         ))}

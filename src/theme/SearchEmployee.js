@@ -86,7 +86,7 @@ export default function SelectEmployeeGroup({
         value={department}
         onChange={(e) => setDepartment(e.target.value)}
         options={departments}
-        getOptionValue={(row) => `${row.ID}:${row.deptname}`}
+        getOptionValue={(row) => `${row.ID}-${row.deptname}`}
         getOptionLabel={(row) => row.deptname}
       />
 
@@ -97,7 +97,7 @@ export default function SelectEmployeeGroup({
         onChange={(e) => setSection(e.target.value)}
         options={sections}
         filterFn={(row) => row.keyposition === department}
-        getOptionValue={(row) => `${row.ID}:${row.sectionname}`}
+        getOptionValue={(row) => `${row.ID}-${row.sectionname}`}
         getOptionLabel={(row) => row.sectionname}
         showEmptyWhenNoMatch={department !== ""}
         emptyOptionLabel="ไม่มีส่วนงาน"
@@ -111,9 +111,9 @@ export default function SelectEmployeeGroup({
         options={positions}
         filterFn={(row) =>
           row.deptid === department &&
-          (row.sectionid === section || row.sectionid === "0:ไม่มี")
+          (row.sectionid === section || row.sectionid === "0-ไม่มี")
         }
-        getOptionValue={(row) => `${row.ID}:${row.positionname}`}
+        getOptionValue={(row) => `${row.ID}-${row.positionname}`}
         getOptionLabel={(row) => row.positionname}
       />
 
@@ -126,9 +126,9 @@ export default function SelectEmployeeGroup({
         filterFn={(row) =>
           row.position === position &&
           row.department === department &&
-          (row.section === section || row.section === "0:ไม่มี")
+          (row.section === section || row.section === "0-ไม่มี")
         }
-        getOptionValue={(row) => `${row.employeeid}:${row.employname}`}
+        getOptionValue={(row) => `${row.employeeid}-${row.employname}`}
         getOptionLabel={(row) => row.employname}
       />
     </Grid>

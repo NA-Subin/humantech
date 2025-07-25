@@ -693,6 +693,7 @@ const AddEmployee = () => {
             const nextIndex = Object.keys(employeeData).length;
 
             await set(child(employeeRef, String(nextIndex)), {
+                employeeid: nextIndex,
                 section: checkPosition.sectionid,
                 department: checkPosition.deptid,
                 position: `${checkPosition.ID}-${checkPosition.positionname}`,

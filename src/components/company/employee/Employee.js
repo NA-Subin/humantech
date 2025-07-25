@@ -29,46 +29,123 @@ import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
 import { HTTP } from "../../../server/axios";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { InputAdornment } from "@mui/material";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { InputAdornment, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import 'handsontable/dist/handsontable.full.min.css';
 import MuiExcelLikeTable from "../test";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import AddEmployee from "./AddEmployee";
+import SelectEmployeeGroup from "../../../theme/SearchEmployee";
 
 const EmployeeDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
-    //const { companyName } = useParams();
-    const [editEmployee, setEditEmployee] = useState(false);
-    const [editDepartment, setEditDepartment] = useState(false);
-    const [editPosition, setEditPosition] = useState(false);
-    const [companies, setCompanies] = useState([]);
-    const [selectedCompany, setSelectedCompany] = useState(null);
-    const [employee, setEmployee] = useState([{ ID: 0, name: '', employeenumber: '' }]);
-    const [department, setDepartment] = useState([{ DepartmentName: '', Section: '' }]);
-    const [position, setPosition] = useState([{ PositionName: '', DepartmentName: '', employee: '' }]);
-    const employeeOptions = Array.from({ length: 10 }, (_, i) => ({
-        value: `${i + 1}`,
-        label: `${i + 1}`,
-    }));
-    const columns = [
-        { label: "ชื่อ", key: "name", type: "text", width: "60%" },
-        {
-            label: "ระดับ",
-            key: "employeenumber",
-            type: "select",
-            options: employeeOptions,
-        },
-    ];
-
-    console.log("employee : ", employee);
-
-    // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
+    const [companies, setCompanies] = useState([]);
+    const [selectedCompany, setSelectedCompany] = useState([]);
+    const [checkEmployee, setCheckEmployee] = useState({});
+    const [departmentDetail, setDepartmentDetail] = useState([]);
+    const [sectionDetail, setSectionDetail] = useState([]);
+    const [positionDetail, setPositionDetail] = useState([]);
+    console.log("checkEmployee : ", checkEmployee);
+
+    useEffect(() => {
+        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
+
+        onValue(optionRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // แปลง object เป็น array ของ { value, label }
+                const opts = Object.values(data).map((item) => ({
+                    value: `${item.ID}-${item.deptname}`, // ค่าเวลาบันทึก
+                    label: item.deptname,                 // แสดงผล
+                }));
+                setDepartmentDetail(opts); // <-- ใช้ใน columns
+            }
+        });
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/section`);
+
+        onValue(optionRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const opts = Object.values(data).map((item) => ({
+                    value: `${item.ID}-${item.sectionname}`,
+                    label: item.sectionname,
+                    keyposition: item.keyposition
+                }));
+
+                // เพิ่มตัวเลือก "ไม่มี" เข้าไปที่ด้านบน
+                opts.unshift({ value: '0-ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" });
+
+                setSectionDetail(opts);
+            } else {
+                // ถ้าไม่มีข้อมูล section เลย ให้มีตัวเลือก "ไม่มี" อย่างน้อย
+                setSectionDetail([{ value: '0-ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" }]);
+            }
+        });
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+
+        onValue(optionRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const opts = Object.values(data).map((item) => ({
+                    value: `${item.ID}-${item.positionname}`,
+                    label: item.positionname,
+                    keyposition: item.deptid
+                }));
+
+                // เพิ่มตัวเลือก "ไม่มี" เข้าไปที่ด้านบน
+                opts.unshift({ value: '0-ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" });
+
+                setPositionDetail(opts);
+            } else {
+                // ถ้าไม่มีข้อมูล position เลย ให้มีตัวเลือก "ไม่มี" อย่างน้อย
+                setPositionDetail([{ value: '0-ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" }]);
+            }
+        });
+    }, [firebaseDB, companyId]);
+
+    const columns = [
+        { label: "ชื่อ", key: "employname", type: "text" },
+        {
+            label: "ฝ่ายงาน",
+            key: "department",
+            type: "select",
+            width: "20%",
+            options: departmentDetail,
+        },
+        {
+            label: "ส่วนงาน",
+            key: "section",
+            type: "dependent-select",
+            dependsOn: "department",
+            options: sectionDetail.map((item) => ({
+                label: item.label,
+                value: item.value,
+                parent: item.keyposition, // 👈 ใช้เฉพาะ ID ฝ่ายงาน
+            })),
+        },
+        {
+            label: "ตำแหน่ง",
+            key: "position",
+            type: "dependent-select",
+            dependsOn: "department",
+            options: positionDetail.map((item) => ({
+                label: item.label,
+                value: item.value,
+                parent: item.keyposition, // 👈 ใช้เฉพาะ ID ฝ่ายงาน
+            })),
+        }
+    ];
 
     useEffect(() => {
         if (!firebaseDB) return;
@@ -92,6 +169,76 @@ const EmployeeDetail = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
+    const [editEmployee, setEditEmployee] = useState("");
+    const [department, setDepartment] = useState("");
+    const [section, setSection] = useState("");
+    const [position, setPosition] = useState("");
+    const [employee, setEmployee] = useState("");
+    const [departments, setDepartments] = useState([]);
+    const [sections, setSections] = useState([]);
+    const [positions, setPositions] = useState([]);
+    const [allEmployees, setAllEmployees] = useState([]);
+    const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
+
+    console.log("department : ", department);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const departmentRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
+
+        const unsubscribe = onValue(departmentRef, (snapshot) => {
+            const departmentData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!departmentData) {
+                setDepartments([{ ID: 0, name: '' }]);
+            } else {
+                setDepartments(departmentData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const sectionRef = ref(firebaseDB, `workgroup/company/${companyId}/section`);
+
+        const unsubscribe = onValue(sectionRef, (snapshot) => {
+            const sectionData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!sectionData) {
+                setSections([{ ID: 0, name: '' }]);
+            } else {
+                setSections(sectionData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const positionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+
+        const unsubscribe = onValue(positionRef, (snapshot) => {
+            const positionData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!positionData) {
+                setPositions([{ ID: 0, name: '' }]);
+            } else {
+                setPositions(positionData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
@@ -100,67 +247,38 @@ const EmployeeDetail = () => {
         const unsubscribe = onValue(employeeRef, (snapshot) => {
             const employeeData = snapshot.val();
 
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
             if (!employeeData) {
-                setEmployee([{ ID: 0, name: '', employeenumber: '' }]);
+                setAllEmployees([]);
+                setEmployees([]);
             } else {
-                setEmployee(employeeData);
+                const employeeArray = Object.values(employeeData);
+                setAllEmployees(employeeArray);
+                setEmployees(employeeArray); // default: แสดงทั้งหมด
             }
         });
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
+    console.log("employees : ",employees);
 
+    useEffect(() => {
+        const filtered = allEmployees.filter((emp) => {
+            if (department && emp.department !== department) return false;
+            if (section && emp.section !== section) return false;
+            if (position && emp.position !== position) return false;
+            return true;
+        });
 
-    // const handleChange = (setFn) => (changes, source) => {
-    //     if (source === 'loadData' || !changes) return;
-
-    //     setFn((prev) => {
-    //         const newData = [...prev];
-    //         let hasChange = false;
-
-    //         changes.forEach(([row, prop, oldVal, newVal]) => {
-    //             if (oldVal !== newVal) {
-    //                 newData[row][prop] = newVal;
-    //                 hasChange = true;
-    //             }
-    //         });
-
-    //         return hasChange ? newData : prev;
-    //     });
-    // };
-
-
-    // const handleAddRow = (type) => {
-    //     if (type === 'employee') {
-    //         const newRow = { Name: '', employee: '' };
-    //         setEmployee((prev) => [...prev, newRow]);
-    //     } else if (type === 'department') {
-    //         const newRow = { DepartmentName: '', Section: '' };
-    //         setDepartment((prev) => [...prev, newRow]);
-    //     } else if (type === 'position') {
-    //         const newRow = { PositionName: '', DepartmentName: '', employee: '' };
-    //         setPosition((prev) => [...prev, newRow]);
-    //     }
-    // };
-
-    // const handleRemoveRow = (type) => {
-    //     if (type === 'employee') {
-    //         setEmployee((prev) => prev.slice(0, -1));
-    //     } else if (type === 'department') {
-    //         setDepartment((prev) => prev.slice(0, -1));
-    //     } else if (type === 'position') {
-    //         setPosition((prev) => prev.slice(0, -1));
-    //     }
-    // };
+        setEmployees(filtered);
+    }, [department, section, position, allEmployees]);
 
     const handleSave = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
         const invalidMessages = [];
 
-        employee.forEach((row, rowIndex) => {
+        employees.forEach((row, rowIndex) => {
             columns.forEach((col) => {
                 const value = row[col.key];
 
@@ -185,7 +303,7 @@ const EmployeeDetail = () => {
         });
 
         // ✅ ตรวจสอบว่า employee.name ซ้ำหรือไม่
-        const names = employee.map(row => row.name?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        const names = employees.map(row => row.name?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
         const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
         if (duplicates.length > 0) {
             invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
@@ -198,7 +316,7 @@ const EmployeeDetail = () => {
         }
 
         // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, employee)
+        set(companiesRef, employees)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
@@ -223,152 +341,306 @@ const EmployeeDetail = () => {
 
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
-            <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
-                <Grid container spacing={2}>
-                    <Grid item size={12}>
-                        <Typography variant="h5" fontWeight="bold" gutterBottom>พนักงาน (employee)</Typography>
-                    </Grid>
-                </Grid>
-            </Box>
-            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
-                <Box>
-                    {
-                        <Grid container spacing={2} sx={{ marginBottom: 1 }}>
-                            <Grid item size={10}>
-                                <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลพนักงาน</Typography>
-                            </Grid>
-                            <Grid item size={2} sx={{ textAlign: "right" }}>
-                                <AddEmployee />
+            <Grid container spacing={2}>
+                {/* <Grid item size={1}>
+                    <Typography variant="subtitle1" fontWeight="bold" sx={{ marginTop: 8, whiteSpace: "nowrap", marginLeft: -2.5 }} gutterBottom>เลือกเมนูพนักงาน</Typography>
+                    <Divider />
+                    <Box sx={{ marginLeft: -10 }}>
+                        {[
+                            'ตำแหน่งพนักงาน',
+                            'ข้อมูลทั่วไป',
+                            'ประวัติการศึกษา',
+                            'ประวัติการทำงาน/ฝึกงาน',
+                            'ประวัติการฝึกอบรม',
+                            'ความสามารถทางภาษา',
+                            'อื่นๆ',
+                        ].map((text, index) => {
+                            return (
+                                <Button key={index} variant="contained" color="primary" sx={{ m: 1, width: "200px", textAlign: "right", justifyContent: "flex-end", fontSize: "12px" }}>
+                                    {text}
+                                </Button>
+                            );
+                        })}
+                    </Box>
+
+                </Grid> */}
+                <Grid item size={12}>
+                    <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
+                        <Grid container spacing={2}>
+                            <Grid item size={12}>
+                                <Typography variant="h5" fontWeight="bold" gutterBottom>พนักงาน (employee)</Typography>
                             </Grid>
                         </Grid>
-                    }
-                    <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
-                    <Grid container spacing={2}>
-                        <Grid item size={editEmployee ? 12 : 11}>
+                    </Box>
+                    <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
+                        <Box>
+                            <SelectEmployeeGroup
+                                department={department}
+                                setDepartment={setDepartment}
+                                departments={departments}
+                                section={section}
+                                setSection={setSection}
+                                sections={sections}
+                                position={position}
+                                setPosition={setPosition}
+                                positions={positions}
+                                employee={employee}
+                                setEmployee={setEmployee}
+                                employees={employees}
+                            />
                             {
-                                editEmployee ?
-                                    <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                                        {/* <HotTable
-                                            data={employee}
-                                            afterChange={handleChange(setEmployee)}
-                                            licenseKey="non-commercial-and-evaluation"
-                                            preventOverflow="horizontal"
-                                            colHeaders={['ชื่อ', 'ระดับ']}
-                                            rowHeaders={true}
-                                            width="100%"
-                                            height="auto"
-                                            stretchH="all"
-                                            manualColumnResize={true}
-                                            manualRowResize={true}
-                                            rowHeights={28}               // ความสูงของ td
-                                            columnHeaderHeight={45}       // ความสูงของ th (หัวตาราง)
-                                            contextMenu={true}
-                                            copyPaste={true}
-                                            className="mui-hot-table"
-                                            columns={[
-                                                { data: 'Name', className: 'htCenter htMiddle' },
-                                                { data: 'employee', className: 'htCenter htMiddle' },
-                                            ]}
-                                        /> */}
-                                        <TableExcel
-                                            columns={columns}
-                                            initialData={employee}
-                                            onDataChange={setEmployee}
-                                        />
-                                    </Paper>
-                                    :
-                                    <TableContainer component={Paper} textAlign="center">
-                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
-                                            <TableHead>
-                                                <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                    <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "60%" }}>ชื่อ</TablecellHeader>
-                                                    <TablecellHeader>ระดับ</TablecellHeader>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {
-                                                    employee.length === 0 ?
-                                                        <TableRow>
-                                                            <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                        </TableRow>
-                                                        :
-                                                        employee.map((row, index) => (
-                                                            <TableRow>
-                                                                <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.employeenumber}</TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
+                                <Grid container spacing={2} sx={{ marginBottom: 1 }}>
+                                    <Grid item size={10}>
+                                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลพนักงาน</Typography>
+                                    </Grid>
+                                    <Grid item size={2} sx={{ textAlign: "right" }}>
+                                        <AddEmployee />
+                                    </Grid>
+                                </Grid>
                             }
-                        </Grid>
-                        {
-                            !editEmployee &&
-                            <Grid item size={1} textAlign="right">
-                                <Box display="flex" justifyContent="center" alignItems="center">
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        color="warning"
-                                        fullWidth
-                                        sx={{
-                                            height: "60px",
-                                            flexDirection: "column",
-                                            justifyContent: "center",
-                                            alignItems: "center",
-                                            textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
-                                        }}
-                                        onClick={() => setEditEmployee(true)}
-                                    >
-                                        <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
-                                        แก้ไข
-                                    </Button>
-                                    {/* {
-                                    editEmployee ?
-                                        <Box textAlign="right">
-                                            <IconButton variant="contained" color="info" onClick={() => handleAddRow("employee")}>
-                                                <AddCircleOutlineIcon />
-                                            </IconButton>
-                                            <IconButton variant="contained" color="error" onClick={() => handleRemoveRow("employee")}>
-                                                <RemoveCircleOutlineIcon />
-                                            </IconButton>
+                            <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
+                            <Grid container spacing={2}>
+                                <Grid item size={editEmployee ? 12 : 11}>
+                                    {
+                                        editEmployee ?
+                                            <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
+                                                <TableExcel
+                                                    columns={columns}
+                                                    initialData={employees}
+                                                    onDataChange={setEmployees}
+                                                />
+                                            </Paper>
+                                            :
+                                            <TableContainer component={Paper} textAlign="center">
+                                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                                                    <TableHead>
+                                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                            <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
+                                                            <TablecellHeader sx={{ width: "35%" }}>ชื่อ</TablecellHeader>
+                                                            <TablecellHeader sx={{ width: "20%" }}>ฝ่ายงาน</TablecellHeader>
+                                                            <TablecellHeader sx={{ width: "20%" }}>ส่วนงาน</TablecellHeader>
+                                                            <TablecellHeader sx={{ width: "20%" }}>ตำแหน่ง</TablecellHeader>
+                                                        </TableRow>
+                                                    </TableHead>
+                                                    <TableBody>
+                                                        {
+                                                            employees.length === 0 ?
+                                                                <TableRow>
+                                                                    <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                                </TableRow>
+                                                                :
+                                                                employees.map((row, index) => (
+                                                                    <TableRow>
+                                                                        <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>{row.department.split("-")[1]}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>{row.section.split("-")[1]}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>{row.position.split("-")[1]}</TableCell>
+                                                                    </TableRow>
+                                                                ))}
+                                                    </TableBody>
+                                                </Table>
+                                            </TableContainer>
+                                    }
+                                </Grid>
+                                {
+                                    !editEmployee &&
+                                    <Grid item size={1} textAlign="right">
+                                        <Box display="flex" justifyContent="center" alignItems="center">
+                                            <Button
+                                                variant="contained"
+                                                size="small"
+                                                color="warning"
+                                                fullWidth
+                                                sx={{
+                                                    height: "60px",
+                                                    flexDirection: "column",
+                                                    justifyContent: "center",
+                                                    alignItems: "center",
+                                                    textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                                }}
+                                                onClick={() => setEditEmployee(true)}
+                                            >
+                                                <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
+                                                แก้ไข
+                                            </Button>
                                         </Box>
-                                        :
-                                        <Button
-                                            variant="contained"
-                                            size="small"
-                                            color="warning"
-                                            fullWidth
-                                            sx={{
-                                                height: "60px",
-                                                flexDirection: "column",
-                                                justifyContent: "center",
-                                                alignItems: "center",
-                                                textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
-                                            }}
-                                            onClick={() => setEditEmployee(true)}
-                                        >
-                                            <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
-                                            แก้ไข
-                                        </Button>
-                                } */}
-                                </Box>
+                                    </Grid>
+                                }
                             </Grid>
-                        }
-                    </Grid>
-                    {
-                        editEmployee &&
-                        <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
-                            <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
-                            <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
+                            {
+                                editEmployee &&
+                                <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                                    <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                                    <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
+                                </Box>
+                            }
+                            {/* <TableContainer component={Paper} textAlign="center" sx={{ height: "300px" }}>
+                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                                    <TableHead>
+                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                            <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: "35%" }}>ชื่อ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: "20%" }}>ฝ่ายงาน</TablecellHeader>
+                                            <TablecellHeader sx={{ width: "20%" }}>ส่วนงาน</TablecellHeader>
+                                            <TablecellHeader sx={{ width: "20%" }}>ตำแหน่ง</TablecellHeader>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {
+                                            employees.length === 0 ?
+                                                <TableRow>
+                                                    <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                </TableRow>
+                                                :
+                                                employees.map((row, index) => (
+                                                    <TableRow
+                                                        onClick={() => setCheckEmployee(row)}
+                                                        sx={{
+                                                            backgroundColor: row.employeeid === checkEmployee.employeeid && "#e0f2f1"
+                                                        }}
+                                                    >
+                                                        <TableCell
+                                                            sx={{
+                                                                textAlign: "center",
+                                                                // color: row.employeeid === checkEmployee.employeeid && "white",
+                                                                fontWeight: row.employeeid === checkEmployee.employeeid && "bold",
+                                                            }}
+                                                        >
+                                                            {index + 1}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            sx={{
+                                                                textAlign: "center",
+                                                                // color: row.employeeid === checkEmployee.employeeid && "white",
+                                                                fontWeight: row.employeeid === checkEmployee.employeeid && "bold",
+                                                            }}
+                                                        >
+                                                            {row.employname}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            sx={{
+                                                                textAlign: "center",
+                                                                // color: row.employeeid === checkEmployee.employeeid && "white",
+                                                                fontWeight: row.employeeid === checkEmployee.employeeid && "bold",
+                                                            }}
+                                                        >
+                                                            {row.department.split("-")[1]}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            sx={{
+                                                                textAlign: "center",
+                                                                // color: row.employeeid === checkEmployee.employeeid && "white",
+                                                                fontWeight: row.employeeid === checkEmployee.employeeid && "bold",
+                                                            }}
+                                                        >
+                                                            {row.section.split("-")[1]}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            sx={{
+                                                                textAlign: "center",
+                                                                // color: row.employeeid === checkEmployee.employeeid && "white",
+                                                                fontWeight: row.employeeid === checkEmployee.employeeid && "bold",
+                                                            }}
+                                                        >
+                                                            {row.position.split("-")[1]}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                            {
+                                employees.map((row, index) => (
+                                    row.employeeid === checkEmployee.employeeid &&
+                                    <Box>
+                                        <Typography variant="subtitle1" fontWeight="bold" sx={{ marginTop: 2, }} gutterBottom>ข้อมูลของ {checkEmployee?.employname}</Typography>
+                                        <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
+                                        <Grid container spacing={2}>
+                                            <Grid item size={editEmployee ? 12 : 11}>
+                                                {
+                                                    editEmployee ?
+                                                        <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
+                                                            <TableExcel
+                                                                columns={columns}
+                                                                initialData={employee}
+                                                                onDataChange={setEmployee}
+                                                            />
+                                                        </Paper>
+                                                        :
+                                                        <TableContainer component={Paper} textAlign="center">
+                                                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                                                                <TableHead>
+                                                                    <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                                        <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
+                                                                        <TablecellHeader sx={{ width: "35%" }}>ชื่อ</TablecellHeader>
+                                                                        <TablecellHeader sx={{ width: "20%" }}>ฝ่ายงาน</TablecellHeader>
+                                                                        <TablecellHeader sx={{ width: "20%" }}>ส่วนงาน</TablecellHeader>
+                                                                        <TablecellHeader sx={{ width: "20%" }}>ตำแหน่ง</TablecellHeader>
+                                                                    </TableRow>
+                                                                </TableHead>
+                                                                <TableBody>
+                                                                    {
+                                                                        employees.length === 0 ?
+                                                                            <TableRow>
+                                                                                <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                                            </TableRow>
+                                                                            :
+                                                                            employees.map((row, index) => (
+                                                                                <TableRow>
+                                                                                    <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                                    <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
+                                                                                    <TableCell sx={{ textAlign: "center" }}>{row.department.split("-")[1]}</TableCell>
+                                                                                    <TableCell sx={{ textAlign: "center" }}>{row.section.split("-")[1]}</TableCell>
+                                                                                    <TableCell sx={{ textAlign: "center" }}>{row.position.split("-")[1]}</TableCell>
+                                                                                </TableRow>
+                                                                            ))}
+                                                                </TableBody>
+                                                            </Table>
+                                                        </TableContainer>
+                                                }
+                                            </Grid>
+                                            {
+                                                !editEmployee &&
+                                                <Grid item size={1} textAlign="right">
+                                                    <Box display="flex" justifyContent="center" alignItems="center">
+                                                        <Button
+                                                            variant="contained"
+                                                            size="small"
+                                                            color="warning"
+                                                            fullWidth
+                                                            sx={{
+                                                                height: "60px",
+                                                                flexDirection: "column",
+                                                                justifyContent: "center",
+                                                                alignItems: "center",
+                                                                textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                                            }}
+                                                            onClick={() => setEditEmployee(true)}
+                                                        >
+                                                            <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
+                                                            แก้ไข
+                                                        </Button>
+                                                    </Box>
+                                                </Grid>
+                                            }
+                                        </Grid>
+                                        {
+                                            editEmployee &&
+                                            <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                                                <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                                                <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
+                                            </Box>
+                                        }
+                                    </Box>
+                                ))
+                            }
+                        </Box> */}
                         </Box>
-                    }
-                </Box>
-            </Paper>
-        </Container>
+                    </Paper>
+                </Grid>
+            </Grid>
+        </Container >
     )
 }
 
