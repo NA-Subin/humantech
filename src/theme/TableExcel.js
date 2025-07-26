@@ -21,13 +21,18 @@ import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import theme from "../theme/theme";
 import { TablecellHeader } from "../theme/style";
 import dayjs from "dayjs";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 export default function TableExcel({
+    styles = {},
+    stylesTable = {},
     columns = [], // [{ label, key }]
     initialData = [], // [{...}, {...}]
     onDataChange = () => { },
 }) {
     const [data, setData] = useState(initialData);
+    const [history, setHistory] = useState([]); // 👉 เพิ่มอันนี้
     const [selectedCells, setSelectedCells] = useState([]);
     const [anchorEl, setAnchorEl] = useState(null);
     const tableRef = useRef(null);
@@ -107,6 +112,7 @@ export default function TableExcel({
         if (column?.disabled) return;
 
         setData((prevData) => {
+            pushToHistory(prevData); // ✅ ก่อนเปลี่ยน
             const newData = [...prevData];
             if (!newData[rowIdx]) newData[rowIdx] = {};
             newData[rowIdx] = { ...newData[rowIdx], [colKey]: val };
@@ -114,6 +120,7 @@ export default function TableExcel({
             return newData;
         });
     };
+
 
     // คัดลอกข้อมูลเซลล์ที่เลือกเป็น text แบบ tab-delimited
     // const handleCopy = async () => {
@@ -128,16 +135,15 @@ export default function TableExcel({
     // };
     const handleCopy = async () => {
         const rows = [...new Set(selectedCells.map(([r]) => r))].sort();
-        const cols = [...new Set(selectedCells.map(([, c]) => c))].sort();
+
+        // กรองเฉพาะ column ที่ไม่ disabled และเรียงตาม columns จริง
+        const activeColumns = columns.filter(col => !col.disabled);
 
         const text = rows
-            .map((r) => cols
-                .map((c) => {
-                    const col = columns[c];
-                    if (col?.disabled) return ""; // ไม่คัดลอกค่าที่ disabled
-                    return data[r]?.[col.key] ?? "";
-                })
-                .join("\t")
+            .map(r =>
+                activeColumns
+                    .map(col => data[r]?.[col.key] ?? "")
+                    .join("\t")
             )
             .join("\n");
 
@@ -198,40 +204,44 @@ export default function TableExcel({
         const rowsFromClipboard = clipboard
             .split(/\r?\n/)
             .filter(line => line.trim() !== "")
-            .map((line) => line.split("\t"));
+            .map(line => line.split("\t"));
 
         const newData = [...data];
-        const [startRow, startCol] = selectedCells[0] || [0, 0];
 
-        rowsFromClipboard.forEach((row, i) => {
-            const targetRow = startRow + i;
+        const columnOrder = columns.filter(col => !col.disabled).map(col => col.key); // ✅ column ที่ใช้จริง
 
-            // if (!newData[targetRow]) {
-            //     newData[targetRow] = columns.reduce((acc, col) => ({ ...acc, [col.key]: "" }), {});
-            // }
+        const startRow = selectedCells.length > 0
+            ? Math.min(...selectedCells.map(([r]) => r))
+            : 0;
 
-            // 👇⛔ ถ้า hidden เป็น true → ไม่เพิ่มแถวใหม่
+        rowsFromClipboard.forEach((clipboardRow, rowIndex) => {
+            const targetRow = startRow + rowIndex;
+
+            // สร้างแถวใหม่ถ้าเกิน data เดิม
             if (targetRow >= newData.length) {
-                if (hidden) return; // หยุดไม่ทำอะไรถ้าเลยขอบเขตและห้ามเพิ่ม
+                if (hidden) return; // ถ้า hidden ห้ามเพิ่ม
                 newData[targetRow] = columns.reduce((acc, col) => ({ ...acc, [col.key]: "" }), {});
             }
 
-            row.forEach((val, j) => {
-                const targetCol = startCol + j;
-                const colDef = columns[targetCol];
-                if (colDef && !colDef.disabled) {
-                    let parsedVal = val.trim();
-                    if (colDef.type === "select" && Array.isArray(colDef.options)) {
-                        const matched = colDef.options.find(
-                            opt => opt.value === parsedVal || opt.label === parsedVal
-                        );
-                        parsedVal = matched?.value || "";
-                    }
-                    newData[targetRow] = {
-                        ...newData[targetRow],
-                        [colDef.key]: parsedVal,
-                    };
+            clipboardRow.forEach((val, colIndex) => {
+                const colKey = columnOrder[colIndex];
+                const colDef = columns.find(col => col.key === colKey);
+
+                if (!colDef || colDef.disabled) return;
+
+                let parsedVal = val.trim();
+
+                if (colDef.type === "select" && Array.isArray(colDef.options)) {
+                    const matched = colDef.options.find(
+                        opt => opt.value === parsedVal || opt.label === parsedVal
+                    );
+                    parsedVal = matched?.value || "";
                 }
+
+                newData[targetRow] = {
+                    ...newData[targetRow],
+                    [colKey]: parsedVal,
+                };
             });
         });
 
@@ -243,7 +253,6 @@ export default function TableExcel({
         setData(updatedData);
         onDataChange(updatedData);
     };
-
 
 
     // เพิ่มแถวใหม่ (object ว่างตาม columns)
@@ -294,18 +303,75 @@ export default function TableExcel({
         setSelectedCells([[row, col]]);
     };
 
+    const handleUndo = () => {
+        setHistory(prevHistory => {
+            if (prevHistory.length === 0) return prevHistory;
+            const prevData = prevHistory[prevHistory.length - 1];
+            setData(prevData);
+            onDataChange(prevData);
+            return prevHistory.slice(0, -1);
+        });
+    };
+
+
     // ปิด context menu
     const handleCloseContextMenu = () => {
         setAnchorEl(null);
+    };
+
+    const moveSelection = (direction) => {
+        setSelectedCells((prevSelected) => {
+            if (!prevSelected || prevSelected.length === 0) return prevSelected;
+            const [rowIdx, colIdx] = prevSelected[0];
+
+            let newRow = rowIdx;
+            let newCol = colIdx;
+
+            if (direction === "down") newRow++;
+            if (direction === "up") newRow--;
+            if (direction === "left") newCol--;
+            if (direction === "right") newCol++;
+
+            // ตรวจสอบว่า index ใหม่อยู่ในขอบเขตของตาราง
+            if (newRow < 0 || newCol < 0 || newRow >= data.length || newCol >= columns.length) {
+                return prevSelected;
+            }
+
+            return [[newRow, newCol]];
+        });
+    };
+
+    const clearSelectedCells = () => {
+        pushToHistory(data); // ✅ ก่อนเปลี่ยน
+        const newData = [...data];
+
+        selectedCells.forEach(([rowIdx, colIdx]) => {
+            const col = columns[colIdx];
+            if (!col || col.disabled) return;
+
+            if (!newData[rowIdx]) {
+                newData[rowIdx] = columns.reduce((acc, col) => ({ ...acc, [col.key]: "" }), {});
+            }
+
+            newData[rowIdx][col.key] = "";
+        });
+
+        setData(newData);
+        onDataChange(newData);
+    };
+
+
+    const pushToHistory = (prevData) => {
+        setHistory(prev => [...prev, JSON.parse(JSON.stringify(prevData))]);
     };
 
     // ดักจับ Ctrl+C, Ctrl+V
     const handleKeyDown = (e) => {
         const key = e.key.toLowerCase();
 
-        // รองรับทั้งภาษาอังกฤษและแป้นพิมพ์ไทย (C = คัดลอก, V = วาง)
         const isCopy = e.ctrlKey && (key === "c" || key === "แ");
         const isPaste = e.ctrlKey && (key === "v" || key === "อ");
+        const isUndo = e.ctrlKey && (key === "z" || key === "ผ");
 
         if (isCopy) {
             e.preventDefault();
@@ -313,6 +379,24 @@ export default function TableExcel({
         } else if (isPaste) {
             e.preventDefault();
             handlePaste();
+        } else if (isUndo) {
+            e.preventDefault();
+            handleUndo(); // ✅ เรียก Undo
+        } else if (key === "arrowdown") {
+            e.preventDefault();
+            moveSelection("down");
+        } else if (key === "arrowup") {
+            e.preventDefault();
+            moveSelection("up");
+        } else if (key === "arrowleft") {
+            e.preventDefault();
+            moveSelection("left");
+        } else if (key === "arrowright") {
+            e.preventDefault();
+            moveSelection("right");
+        } else if (key === "delete" || key === "backspace") {
+            e.preventDefault();
+            clearSelectedCells();
         }
     };
 
@@ -328,8 +412,8 @@ export default function TableExcel({
     return (
         <>
             <Stack direction="row" spacing={2}>
-                <TableContainer component={Paper} ref={tableRef}>
-                    <Table size="small">
+                <TableContainer component={Paper} ref={tableRef} sx={styles}>
+                    <Table size="small" sx={stylesTable} >
                         <TableHead>
                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                 <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
@@ -435,31 +519,69 @@ export default function TableExcel({
                                                     />
                                                 )
                                                     : col.type === "date" ? (
-                                                        <input
-                                                            disabled={col.disabled}
-                                                            type="date"
-                                                            value={
-                                                                row[col.key]
-                                                                    ? dayjs(row[col.key], "DD/MM/YYYY").format("YYYY-MM-DD")
-                                                                    : ""
-                                                            }
-                                                            onChange={(e) => {
-                                                                const newDate = dayjs(e.target.value).format("DD/MM/YYYY"); // 👈 แปลงกลับ
-                                                                handleCellChange(newDate, rowIdx, col.key);
-                                                            }}
-                                                            style={{
-                                                                width: "100%",
-                                                                height: "100%",
-                                                                padding: "4px",
-                                                                border: "none",
-                                                                outline: isCellSelected(rowIdx, colIdx)
-                                                                    ? `1px solid ${theme.palette.primary.dark}`
-                                                                    : "none",
-                                                                backgroundColor: getCellBackgroundColor(row[col.key], col),
-                                                                textAlign: "center",
-                                                                fontFamily: theme.typography.fontFamily,
-                                                            }}
-                                                        />
+                                                        <Box sx={{ py: 0, my: "-4px", mt: -2, mb: -3 }}>
+                                                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                                <DatePicker
+                                                                    value={row[col.key] ? dayjs(row[col.key], "DD/MM/YYYY") : null}
+                                                                    onChange={(newValue) => {
+                                                                        const newDate = newValue ? newValue.format("DD/MM/YYYY") : "";
+                                                                        handleCellChange(newDate, rowIdx, col.key);
+                                                                    }}
+                                                                    format="DD/MM/YYYY"
+                                                                    slotProps={{
+                                                                        textField: {
+                                                                            size: "small",
+                                                                            variant: "standard",
+                                                                            disabled: col.disabled,
+                                                                            inputProps: {
+                                                                                style: {
+                                                                                    padding: 0,
+                                                                                    height: "24px",
+                                                                                    fontSize: "9px",
+                                                                                    lineHeight: 1,
+                                                                                    textAlign: "center",
+                                                                                    boxSizing: "border-box",
+                                                                                }
+                                                                            },
+                                                                            sx: {
+                                                                                width: "100%",
+                                                                                height: "24px",
+                                                                                padding: 0,
+                                                                                margin: 0,
+                                                                                border: "none",
+                                                                                outline: isCellSelected(rowIdx, colIdx)
+                                                                                    ? `1px solid ${theme.palette.primary.dark}`
+                                                                                    : "none",
+                                                                                backgroundColor: getCellBackgroundColor(row[col.key], col),
+                                                                                textAlign: "center",
+                                                                                fontSize: "9px",
+                                                                                lineHeight: 1,
+                                                                                // input base
+                                                                                "& .MuiInputBase-input": {
+                                                                                    height: "24px !important",
+                                                                                    padding: 0,
+                                                                                    fontSize: "9px !important",
+                                                                                    lineHeight: 1,
+                                                                                    textAlign: "center",
+                                                                                    boxSizing: "border-box",
+                                                                                },
+                                                                                // calendar icon
+                                                                                "& .MuiSvgIcon-root": {
+                                                                                    fontSize: "14px",
+                                                                                    margin: 0,
+                                                                                    padding: 0,
+                                                                                },
+                                                                                // input adornment (icon wrapper)
+                                                                                "& .MuiInputAdornment-root": {
+                                                                                    margin: 0,
+                                                                                    padding: 0,
+                                                                                },
+                                                                            },
+                                                                        },
+                                                                    }}
+                                                                />
+                                                            </LocalizationProvider>
+                                                        </Box>
                                                     )
                                                         : col.type === "time" ? (
                                                             <input

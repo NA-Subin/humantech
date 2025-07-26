@@ -1,4 +1,4 @@
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use, useRef } from "react";
 import { getDatabase, ref, push, onValue, set } from "firebase/database";
 import '../../../App.css'
 import Box from '@mui/material/Box';
@@ -38,8 +38,14 @@ import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import AddEmployee from "./AddEmployee";
 import SelectEmployeeGroup from "../../../theme/SearchEmployee";
+import PersonalDetail from "./PersonalDetail";
+import EducationDetail from "./EducationDetail";
+import InternshipDetail from "./InternshipDetail";
+import TrainingDetail from "./TrainingDetail";
+import LanguageDetail from "./LanguageDetail";
+import OtherDetail from "./OtherDetail";
 
-const EmployeeDetail = () => {
+const Employee = () => {
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
@@ -50,7 +56,18 @@ const EmployeeDetail = () => {
     const [departmentDetail, setDepartmentDetail] = useState([]);
     const [sectionDetail, setSectionDetail] = useState([]);
     const [positionDetail, setPositionDetail] = useState([]);
+    const [menu, setMenu] = useState("");
+    const paperRef = useRef(null);
     console.log("checkEmployee : ", checkEmployee);
+
+    useEffect(() => {
+        if (paperRef.current) {
+            paperRef.current.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+        }
+    }, [menu]);
 
     useEffect(() => {
         const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
@@ -170,6 +187,8 @@ const EmployeeDetail = () => {
     }, [firebaseDB, companyId]);
 
     const [editEmployee, setEditEmployee] = useState("");
+    const [editPersonal, setEditPersonal] = useState("");
+
     const [department, setDepartment] = useState("");
     const [section, setSection] = useState("");
     const [position, setPosition] = useState("");
@@ -179,8 +198,111 @@ const EmployeeDetail = () => {
     const [positions, setPositions] = useState([]);
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
+    //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
+
+    const personal = employees.map(emp => ({
+        employname: emp.employname,
+        position: emp.position.split("-")[1],
+        country: emp.personal?.country || '',
+        homephone: emp.personal?.homephone || '',
+        lineID: emp.personal?.lineID || '',
+        nationality: emp.personal?.nationality || '',
+        phone: emp.personal?.phone || '',
+        religion: emp.personal?.religion || '',
+        sex: emp.personal?.sex || '',
+        statusEmployee: emp.personal?.statusEmployee || '',
+        militaryStatus: emp.personal?.militaryStatus || '',
+        height: emp.personal?.height || '',
+        weight: emp.personal?.weight || '',
+    }));
+
+    const personalColumns = [
+        { label: "ชื่อ", key: "employname", type: "text", disabled: true },
+        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
+        {
+            label: "เพศ",
+            key: "sex",
+            type: "select",
+            options: [
+                { value: "ชาย", label: "ชาย" },
+                { value: "หญิง", label: "หญิง" }
+            ],
+        },
+        {
+            label: "สถานภาพทางทหาร",
+            key: "militaryStatus",
+            type: "select",
+            options: [
+                { value: "ผ่านเกณฑ์แล้ว", label: "ผ่านเกณฑ์แล้ว" },
+                { value: "ได้รับการยกเว้น", label: "ได้รับการยกเว้น" },
+                { value: "ยังไม่ได้เกณฑ์ทหาร", label: "ยังไม่ได้เกณฑ์ทหาร" }
+            ],
+        },
+        { label: "สัญชาติ", key: "nationality", type: "text" },
+        { label: "ศาสนา", key: "religion", type: "text" },
+        { label: "ส่วนสูง", key: "height", type: "text" },
+        { label: "น้ำหนัก", key: "weight", type: "text" },
+        {
+            label: "สถานภาพ",
+            key: "statusEmployee",
+            type: "select",
+            options: [
+                { value: "โสด", label: "โสด" },
+                { value: "สมรส", label: "สมรส" },
+                { value: "หย่า", label: "หย่า" },
+                { value: "หม้าย", label: "หม้าย" }
+            ],
+        },
+        { label: "เบอร์โทรศัพท์", key: "phone", type: "text" },
+        { label: "โทรศัพท์บ้าน", key: "homephone", type: "text" },
+        { label: "LINE ID", key: "lineID", type: "text" },
+        { label: "ประเทศ", key: "country", type: "text" },
+    ];
+
+    const handlePersonalChange = (updatedList) => {
+        const merged = employees.map((emp, idx) => ({
+            ...emp,
+            personal: {
+                ...emp.personal,
+                sex: updatedList[idx].sex,
+                militaryStatus: updatedList[idx].militaryStatus,
+                nationality: updatedList[idx].nationality,
+                religion: updatedList[idx].religion,
+                height: updatedList[idx].height,
+                weight: updatedList[idx].weight,
+                statusEmployee: updatedList[idx].statusEmployee,
+                phone: updatedList[idx].phone,
+                homephone: updatedList[idx].homephone,
+                lineID: updatedList[idx].lineID,
+                country: updatedList[idx].country,
+            },
+        }));
+        setEmployees(merged);  // หรือ setPersonal หากแยก state
+    };
 
     console.log("department : ", department);
+    console.log("personals : ", personal);
+
+    const renderComponentByMenu = (menu, data) => {
+        const key = menu.split("-")[1];
+
+        switch (key) {
+            case 'ข้อมูลทั่วไป':
+                return <PersonalDetail data={key} />;
+            case 'ประวัติการศึกษา':
+                return <EducationDetail data={key} />;
+            case 'ประวัติการทำงาน/ฝึกงาน':
+                return <InternshipDetail data={key} />;
+            case 'ประวัติการฝึกอบรม':
+                return <TrainingDetail data={key} />;
+            case 'ความสามารถทางภาษา':
+                return <LanguageDetail data={key} />;
+            case 'อื่นๆ':
+                return <OtherDetail data={key} />;
+            default:
+                return null;
+        }
+    };
 
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -260,7 +382,7 @@ const EmployeeDetail = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-    console.log("employees : ",employees);
+    console.log("employees : ", employees);
 
     useEffect(() => {
         const filtered = allEmployees.filter((emp) => {
@@ -342,12 +464,11 @@ const EmployeeDetail = () => {
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
             <Grid container spacing={2}>
-                {/* <Grid item size={1}>
+                <Grid item size={1} sx={{ position: "sticky", top: 15, alignSelf: "flex-start" }}>
                     <Typography variant="subtitle1" fontWeight="bold" sx={{ marginTop: 8, whiteSpace: "nowrap", marginLeft: -2.5 }} gutterBottom>เลือกเมนูพนักงาน</Typography>
                     <Divider />
                     <Box sx={{ marginLeft: -10 }}>
                         {[
-                            'ตำแหน่งพนักงาน',
                             'ข้อมูลทั่วไป',
                             'ประวัติการศึกษา',
                             'ประวัติการทำงาน/ฝึกงาน',
@@ -356,15 +477,27 @@ const EmployeeDetail = () => {
                             'อื่นๆ',
                         ].map((text, index) => {
                             return (
-                                <Button key={index} variant="contained" color="primary" sx={{ m: 1, width: "200px", textAlign: "right", justifyContent: "flex-end", fontSize: "12px" }}>
+                                <Button
+                                    key={index}
+                                    variant="contained"
+                                    color="primary"
+                                    sx={{
+                                        m: 1,
+                                        width: "200px",
+                                        textAlign: "right",
+                                        justifyContent: "flex-end",
+                                        fontSize: "13px"
+                                    }}
+                                    onClick={() => setMenu(`${index}-${text}`)}
+                                >
                                     {text}
                                 </Button>
                             );
                         })}
                     </Box>
 
-                </Grid> */}
-                <Grid item size={12}>
+                </Grid>
+                <Grid item size={11}>
                     <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                         <Grid container spacing={2}>
                             <Grid item size={12}>
@@ -372,9 +505,9 @@ const EmployeeDetail = () => {
                             </Grid>
                         </Grid>
                     </Box>
-                    <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
+                    <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "70vh" }}>
                         <Box>
-                            <SelectEmployeeGroup
+                            {/* <SelectEmployeeGroup
                                 department={department}
                                 setDepartment={setDepartment}
                                 departments={departments}
@@ -387,17 +520,15 @@ const EmployeeDetail = () => {
                                 employee={employee}
                                 setEmployee={setEmployee}
                                 employees={employees}
-                            />
-                            {
-                                <Grid container spacing={2} sx={{ marginBottom: 1 }}>
-                                    <Grid item size={10}>
-                                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลพนักงาน</Typography>
-                                    </Grid>
-                                    <Grid item size={2} sx={{ textAlign: "right" }}>
-                                        <AddEmployee />
-                                    </Grid>
+                            /> */}
+                            <Grid container spacing={2} sx={{ marginBottom: 1 }}>
+                                <Grid item size={10}>
+                                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการตำแหน่งพนักงาน</Typography>
                                 </Grid>
-                            }
+                                <Grid item size={2} sx={{ textAlign: "right" }}>
+                                    <AddEmployee />
+                                </Grid>
+                            </Grid>
                             <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                             <Grid container spacing={2}>
                                 <Grid item size={editEmployee ? 12 : 11}>
@@ -405,6 +536,7 @@ const EmployeeDetail = () => {
                                         editEmployee ?
                                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                                 <TableExcel
+                                                    styles={{ height: "50vh" }} // ✅ ส่งเป็น object
                                                     columns={columns}
                                                     initialData={employees}
                                                     onDataChange={setEmployees}
@@ -638,10 +770,15 @@ const EmployeeDetail = () => {
                         </Box> */}
                         </Box>
                     </Paper>
+                    <Paper ref={paperRef} sx={{ p: 5, width: "100%", marginTop: 5, borderRadius: 4 }}>
+                        <Box sx={{ marginTop: -5 }}>
+                            {renderComponentByMenu(menu)}
+                        </Box>
+                    </Paper>
                 </Grid>
             </Grid>
         </Container >
     )
 }
 
-export default EmployeeDetail
+export default Employee

@@ -19,7 +19,7 @@ import SSODetail from "./components/company/structure/SSO";
 import HolidayDetail from "./components/company/time/Holiday";
 import TaxDetail from "./components/company/structure/Tax";
 import TaxDeductionDetail from "./components/company/structure/TaxDeduction";
-import EmployeeDetail from "./components/company/employee/Employee";
+import Employee from "./components/company/employee/Employee";
 import OTDetail from "./components/company/time/OT";
 import ReportLeave from "./components/company/report/Leave";
 import ReportOT from "./components/company/report/OT";
@@ -124,7 +124,7 @@ function CompanyRoutes({ page }: { page?: string }) {
     case "social-security":
       return <SSODetail />;
     case "employee":
-      return <EmployeeDetail />;
+      return <Employee />;
     case "calculate":
       return <CalculateSalary />;
     case "tax":
@@ -265,7 +265,7 @@ export default function AppRouter() {
 //       <Route path="position" element={<PositionDetail />} />
 
 //       <Route path="social-security" element={<SSODetail />} />
-//       <Route path="employee" element={<EmployeeDetail />} />
+//       <Route path="employee" element={<Employee />} />
 
 //       <Route path="tax" element={<TaxDetail />} />
 //       <Route path="deduction" element={<TaxDeductionDetail />} />
