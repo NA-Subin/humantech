@@ -73,6 +73,10 @@ const PersonalDetail = (props) => {
         position: emp.position.split("-")[1],
         sex: emp.personal?.sex || '',
         militaryStatus: emp.personal?.militaryStatus || '',
+        amphure: emp.personal?.address?.amphure || '',
+        province: emp.personal?.address?.province || '',
+        tambon: emp.personal?.address?.tambon || '',
+        zipCode: emp.personal?.address?.zipCode || '',
         nationality: emp.personal?.nationality || '',
         religion: emp.personal?.religion || '',
         height: emp.personal?.height || '',
@@ -116,6 +120,52 @@ const PersonalDetail = (props) => {
                 { value: "ได้รับการยกเว้น", label: "ได้รับการยกเว้น" },
                 { value: "ยังไม่ได้เกณฑ์ทหาร", label: "ยังไม่ได้เกณฑ์ทหาร" }
             ],
+        },
+        {
+            label: "จังหวัด",
+            key: "province",
+            type: "select",
+            options: thailand.map((p) => ({
+                label: p.name_th,
+                value: `${p.id}-${p.name_th}`,
+            })),
+        },
+
+        {
+            label: "อำเภอ",
+            key: "amphure",
+            type: "dependent-select",
+            dependsOn: "province",
+            options: thailand.flatMap((p) =>
+                (p.amphure || []).map((a) => ({
+                    label: a.name_th,
+                    value: `${a.id}-${a.name_th}`,
+                    parent: `${p.id}-${p.name_th}`,
+                }))
+            ),
+        },
+
+        {
+            label: "ตำบล",
+            key: "tambon",
+            type: "dependent-select",
+            dependsOn: "amphure",
+            options: thailand.flatMap((p) =>
+                (p.amphure || []).flatMap((a) =>
+                    (a.tambon || []).map((t) => ({
+                        label: t.name_th,
+                        value: `${t.id}-${t.name_th}`,
+                        parent: `${a.id}-${a.name_th}`,
+                    }))
+                )
+            ),
+        },
+
+        {
+            label: "รหัสไปรษณีย์",
+            key: "zipCode",
+            type: "text",
+            disabled: true
         },
         { label: "สัญชาติ", key: "nationality", type: "text" },
         { label: "ศาสนา", key: "religion", type: "text" },
@@ -193,23 +243,44 @@ const PersonalDetail = (props) => {
 
 
     const handlePersonalChange = (updatedList) => {
-        const merged = employees.map((emp, idx) => ({
-            ...emp,
-            personal: {
-                ...emp.personal,
-                sex: updatedList[idx].sex,
-                militaryStatus: updatedList[idx].militaryStatus,
-                nationality: updatedList[idx].nationality,
-                religion: updatedList[idx].religion,
-                height: updatedList[idx].height,
-                weight: updatedList[idx].weight,
-                statusEmployee: updatedList[idx].statusEmployee,
-                phone: updatedList[idx].phone,
-                homephone: updatedList[idx].homephone,
-                lineID: updatedList[idx].lineID,
-                country: updatedList[idx].country,
-            },
-        }));
+        const merged = employees.map((emp, idx) => {
+            const provinceKey = updatedList[idx].province;
+            const amphureKey = updatedList[idx].amphure;
+            const tambonKey = updatedList[idx].tambon;
+
+            const [pId] = (provinceKey || "").split("-");
+            const [aId] = (amphureKey || "").split("-");
+            const [tId] = (tambonKey || "").split("-");
+
+            // ค้นหา zipCode จาก thailand
+            const province = thailand.find(p => `${p.id}` === pId);
+            const amphure = province?.amphure.find(a => `${a.id}` === aId);
+            const tambon = amphure?.tambon.find(t => `${t.id}` === tId);
+
+            return {
+                ...emp,
+                personal: {
+                    ...emp.personal,
+                    sex: updatedList[idx].sex,
+                    militaryStatus: updatedList[idx].militaryStatus,
+                    address: {
+                        province: provinceKey || '',
+                        amphure: amphureKey || '',
+                        tambon: tambonKey || '',
+                        zipCode: tambon?.zip_code || '',
+                    },
+                    nationality: updatedList[idx].nationality,
+                    religion: updatedList[idx].religion,
+                    height: updatedList[idx].height,
+                    weight: updatedList[idx].weight,
+                    statusEmployee: updatedList[idx].statusEmployee,
+                    phone: updatedList[idx].phone,
+                    homephone: updatedList[idx].homephone,
+                    lineID: updatedList[idx].lineID,
+                    country: updatedList[idx].country,
+                }
+            };
+        });
         setEmployees(merged);  // หรือ setPersonal หากแยก state
     };
 
@@ -290,13 +361,13 @@ const PersonalDetail = (props) => {
                     return;
                 }
 
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
+                // if (
+                //     col.type === "select" &&
+                //     !col.options?.some(opt => opt.value === value)
+                // ) {
+                //     invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
+                //     return;
+                // }
             });
         });
 
@@ -353,7 +424,7 @@ const PersonalDetail = (props) => {
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                 <TableExcel
                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                    stylesTable={{ width: "2000px" }} // ✅ ส่งเป็น object
+                                    stylesTable={{ width: "2500px" }} // ✅ ส่งเป็น object
                                     columns={personalColumns}
                                     initialData={personal}
                                     onDataChange={handlePersonalChange}
@@ -361,7 +432,7 @@ const PersonalDetail = (props) => {
                             </Paper>
                             :
                             <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
+                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2500px" }}>
                                     <TableHead>
                                         <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                             <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
@@ -369,6 +440,10 @@ const PersonalDetail = (props) => {
                                             <TablecellHeader>ตำแหน่ง</TablecellHeader>
                                             <TablecellHeader>เพศ</TablecellHeader>
                                             <TablecellHeader>สถานภาพทางทหาร</TablecellHeader>
+                                            <TablecellHeader>ตำบล</TablecellHeader>
+                                            <TablecellHeader>อำเภอ</TablecellHeader>
+                                            <TablecellHeader>จังหวัด</TablecellHeader>
+                                            <TablecellHeader>รหัสไปรณีย์</TablecellHeader>
                                             <TablecellHeader>สัญชาติ</TablecellHeader>
                                             <TablecellHeader>ศาสนา</TablecellHeader>
                                             <TablecellHeader>ส่วนสูง</TablecellHeader>
@@ -394,6 +469,10 @@ const PersonalDetail = (props) => {
                                                         <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.sex}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.militaryStatus}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.tambon.split("-")[1]}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.amphure.split("-")[1]}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.province.split("-")[1]}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.zipCode}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.nationality}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.religion}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.height}</TableCell>
@@ -443,7 +522,7 @@ const PersonalDetail = (props) => {
                 </Box>
             }
 
-            <Grid container spacing={2} sx={{ marginBottom: 1, marginTop: 5 }}>
+            {/* <Grid container spacing={2} sx={{ marginBottom: 1, marginTop: 5 }}>
                 <Grid item size={12}>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการที่อยู่</Typography>
                 </Grid>
@@ -529,7 +608,7 @@ const PersonalDetail = (props) => {
                     <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                     <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                 </Box>
-            }
+            } */}
         </Box>
     )
 }

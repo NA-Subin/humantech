@@ -45,88 +45,89 @@ const LanguageDetail = (props) => {
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
+    const languageRows = [];
 
-    const personal = employees.map(emp => ({
-        employname: emp.employname,
-        position: emp.position.split("-")[1],
-        country: emp.personal?.country || '',
-        homephone: emp.personal?.homephone || '',
-        lineID: emp.personal?.lineID || '',
-        nationality: emp.personal?.nationality || '',
-        phone: emp.personal?.phone || '',
-        religion: emp.personal?.religion || '',
-        sex: emp.personal?.sex || '',
-        statusEmployee: emp.personal?.statusEmployee || '',
-        militaryStatus: emp.personal?.militaryStatus || '',
-        height: emp.personal?.height || '',
-        weight: emp.personal?.weight || '',
-    }));
+    // const language = employees.map(emp => ({
+    //     employname: emp.employname,
+    //     position: emp.position.split("-")[1],
+    //     languageList: emp.languageList || '',
+    // }));
 
-    const personalColumns = [
+    employees.forEach(emp => {
+        const position = emp.position.split("-")[1];
+        const langs = emp.languageList || [];
+
+        langs.forEach((lang, langIdx) => {
+            languageRows.push({
+                employname: emp.employname,
+                position,
+                language: lang.language || "",
+                speak: lang.speaking || "",
+                read: lang.reading || "",
+                write: lang.writing || "",
+                isFirst: langIdx === 0,
+                rowSpan: langs.length,
+            });
+        });
+
+        // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
+        if (langs.length === 0) {
+            languageRows.push({
+                employname: emp.employname,
+                position,
+                language: "-",
+                speak: "-",
+                read: "-",
+                write: "-",
+                isFirst: true,
+                rowSpan: 1,
+            });
+        }
+    });
+
+
+    const languageColumns = [
         { label: "ชื่อ", key: "employname", type: "text", disabled: true },
         { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
-        {
-            label: "เพศ",
-            key: "sex",
-            type: "select",
-            options: [
-                { value: "ชาย", label: "ชาย" },
-                { value: "หญิง", label: "หญิง" }
-            ],
-        },
-        {
-            label: "สถานภาพทางทหาร",
-            key: "militaryStatus",
-            type: "select",
-            options: [
-                { value: "ผ่านเกณฑ์แล้ว", label: "ผ่านเกณฑ์แล้ว" },
-                { value: "ได้รับการยกเว้น", label: "ได้รับการยกเว้น" },
-                { value: "ยังไม่ได้เกณฑ์ทหาร", label: "ยังไม่ได้เกณฑ์ทหาร" }
-            ],
-        },
-        { label: "สัญชาติ", key: "nationality", type: "text" },
-        { label: "ศาสนา", key: "religion", type: "text" },
-        { label: "ส่วนสูง", key: "height", type: "text" },
-        { label: "น้ำหนัก", key: "weight", type: "text" },
-        {
-            label: "สถานภาพ",
-            key: "statusEmployee",
-            type: "select",
-            options: [
-                { value: "โสด", label: "โสด" },
-                { value: "สมรส", label: "สมรส" },
-                { value: "หย่า", label: "หย่า" },
-                { value: "หม้าย", label: "หม้าย" }
-            ],
-        },
-        { label: "เบอร์โทรศัพท์", key: "phone", type: "text" },
-        { label: "โทรศัพท์บ้าน", key: "homephone", type: "text" },
-        { label: "LINE ID", key: "lineID", type: "text" },
-        { label: "ประเทศ", key: "country", type: "text" },
+        { label: "ภาษา", key: "language", type: "text" },
+        { label: "พูด", key: "speak", type: "text" },
+        { label: "อ่าน", key: "read", type: "text" },
+        { label: "เขียน", key: "write", type: "text" },
     ];
 
-    const handlePersonalChange = (updatedList) => {
-        const merged = employees.map((emp, idx) => ({
-            ...emp,
-            personal: {
-                ...emp.personal,
-                sex: updatedList[idx].sex,
-                militaryStatus: updatedList[idx].militaryStatus,
-                nationality: updatedList[idx].nationality,
-                religion: updatedList[idx].religion,
-                height: updatedList[idx].height,
-                weight: updatedList[idx].weight,
-                statusEmployee: updatedList[idx].statusEmployee,
-                phone: updatedList[idx].phone,
-                homephone: updatedList[idx].homephone,
-                lineID: updatedList[idx].lineID,
-                country: updatedList[idx].country,
-            },
-        }));
-        setEmployees(merged);  // หรือ setPersonal หากแยก state
+    const handleLanguageChange = (updatedList) => {
+        // สร้าง map ของ employee ชื่อ => ภาษา list ใหม่
+        const empLangMap = {};
+
+        updatedList.forEach(row => {
+            const name = row.employname;
+            if (!empLangMap[name]) {
+                empLangMap[name] = [];
+            }
+            // ถ้า language เป็น '-' หรือข้อมูลว่าง ให้ข้าม
+            if (row.language && row.language !== '-') {
+                empLangMap[name].push({
+                    language: row.language,
+                    speaking: row.speak,
+                    reading: row.read,
+                    writing: row.write,
+                });
+            }
+        });
+
+        // สร้าง employees ใหม่ โดยแทนที่ languageList ด้วยข้อมูลใหม่จาก empLangMap
+        const merged = employees.map(emp => {
+            return {
+                ...emp,
+                languageList: empLangMap[emp.employname] || [],
+            };
+        });
+
+        setEmployees(merged);
     };
 
-    console.log("personals : ", personal);
+
+    console.log("languageRows : ", languageRows);
 
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -157,7 +158,7 @@ const LanguageDetail = (props) => {
         const invalidMessages = [];
 
         employees.forEach((row, rowIndex) => {
-            personalColumns.forEach((col) => {
+            languageColumns.forEach((col) => {
                 const value = row[col.key];
 
                 if (value === "") {
@@ -232,58 +233,56 @@ const LanguageDetail = (props) => {
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                 <TableExcel
                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                    stylesTable={{ width: "2000px" }} // ✅ ส่งเป็น object
-                                    columns={personalColumns}
-                                    initialData={personal}
-                                    onDataChange={handlePersonalChange}
+                                    stylesTable={{ width: "1080px" }} // ✅ ส่งเป็น object
+                                    types="list"
+                                    columns={languageColumns}
+                                    initialData={languageRows}
+                                    onDataChange={handleLanguageChange}
                                 />
                             </Paper>
                             :
                             <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
+                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1000px" }}>
                                     <TableHead>
                                         <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อ</TablecellHeader>
-                                            <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader>เพศ</TablecellHeader>
-                                            <TablecellHeader>สถานภาพทางทหาร</TablecellHeader>
-                                            <TablecellHeader>สัญชาติ</TablecellHeader>
-                                            <TablecellHeader>ศาสนา</TablecellHeader>
-                                            <TablecellHeader>ส่วนสูง</TablecellHeader>
-                                            <TablecellHeader>น้ำหนัก</TablecellHeader>
-                                            <TablecellHeader>สถานภาพ</TablecellHeader>
-                                            <TablecellHeader>เบอร์โทรศัพท์</TablecellHeader>
-                                            <TablecellHeader>โทรศัพท์บ้าน</TablecellHeader>
-                                            <TablecellHeader>Line ID</TablecellHeader>
-                                            <TablecellHeader>ประเทศ</TablecellHeader>
+                                            <TablecellHeader rowSpan={2} sx={{ width: 50 }}>ลำดับ</TablecellHeader>
+                                            <TablecellHeader rowSpan={2}>ชื่อ</TablecellHeader>
+                                            <TablecellHeader rowSpan={2}>ตำแหน่ง</TablecellHeader>
+                                            <TablecellHeader colSpan={4}>ภาษาที่ใช้</TablecellHeader>
+                                        </TableRow>
+                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                            <TablecellHeader>ภาษา</TablecellHeader>
+                                            <TablecellHeader>พูด</TablecellHeader>
+                                            <TablecellHeader>อ่าน</TablecellHeader>
+                                            <TablecellHeader>เขียน</TablecellHeader>
                                         </TableRow>
                                     </TableHead>
+
                                     <TableBody>
                                         {
-                                            personal.length === 0 ?
+                                            languageRows.length === 0 ?
                                                 <TableRow>
                                                     <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                 </TableRow>
                                                 :
-                                                personal.map((row, index) => (
-                                                    <TableRow>
-                                                        <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.sex}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.militaryStatus}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.nationality}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.religion}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.height}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.weight}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.statusEmployee}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.phone}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.homephone}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.lineID}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.country}</TableCell>
-                                                    </TableRow>
-                                                ))}
+                                                (
+                                                    languageRows.map((row, index) => (
+                                                        <TableRow key={index}>
+                                                            {row.isFirst && (
+                                                                <>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>{row.employname}</TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>{row.position}</TableCell>
+                                                                </>
+                                                            )}
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.language}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.speak}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.read}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.write}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                )
+                                        }
                                     </TableBody>
                                 </Table>
                             </TableContainer>

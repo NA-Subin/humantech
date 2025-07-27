@@ -15,18 +15,25 @@ import {
     IconButton,
     Tooltip,
     Checkbox,
+    TextField,
+    Typography,
 } from "@mui/material";
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import AddBoxIcon from '@mui/icons-material/AddBox';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import theme from "../theme/theme";
 import { TablecellHeader } from "../theme/style";
 import dayjs from "dayjs";
-import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { DatePicker, LocalizationProvider, TimePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 export default function TableExcel({
     styles = {},
     stylesTable = {},
+    types = "",
     columns = [], // [{ label, key }]
     initialData = [], // [{...}, {...}]
     onDataChange = () => { },
@@ -39,6 +46,33 @@ export default function TableExcel({
 
     const isSelecting = useRef(false);
     const startCell = useRef(null);
+
+    // ฟังก์ชันคำนวณ rowspan สำหรับคอลัมน์ key ที่ระบุ
+    function calculateRowSpan(data, key) {
+        const rowSpans = new Array(data.length).fill(0);
+        let lastValue = null;
+        let lastIndex = 0;
+
+        for (let i = 0; i <= data.length; i++) {
+            const currentValue = i < data.length ? data[i][key] : null;
+            if (currentValue !== lastValue) {
+                const spanLength = i - lastIndex;
+                if (spanLength > 0) {
+                    rowSpans[lastIndex] = spanLength; // แถวแรกของกลุ่มเก็บจำนวน rowSpan
+                    for (let j = lastIndex + 1; j < i; j++) {
+                        rowSpans[j] = 0; // แถวอื่น ๆ ในกลุ่มไม่แสดง cell
+                    }
+                }
+                lastValue = currentValue;
+                lastIndex = i;
+            }
+        }
+        return rowSpans;
+    }
+
+
+    const employnameRowSpan = calculateRowSpan(data, "employname");
+    const positionRowSpan = calculateRowSpan(data, "position");
 
     // เริ่มลากเลือกเซลล์
     const handleMouseDown = (row, col) => {
@@ -254,6 +288,27 @@ export default function TableExcel({
         onDataChange(updatedData);
     };
 
+    const handleAddRow = (index) => {
+        const baseRow = data[index];
+
+        const newRow = columns.reduce((acc, col) => {
+            acc[col.key] = ""; // default ว่าง
+            return acc;
+        }, {});
+
+        // กรณี types === "list": copy employeename และ position
+        if (types === "list") {
+            newRow.employname = baseRow.employname;
+            newRow.position = baseRow.position;
+        }
+
+        newRow.ID = data.length;
+
+        const updatedData = [...data];
+        updatedData.splice(index + 1, 0, newRow); // แทรกแถวหลัง index ที่กด
+
+        setData(updatedData);
+    };
 
     // เพิ่มแถวใหม่ (object ว่างตาม columns)
     const addRow = () => {
@@ -409,6 +464,8 @@ export default function TableExcel({
         };
     }, [selectedCells, data]);
 
+    console.log("data : ", data)
+
     return (
         <>
             <Stack direction="row" spacing={2}>
@@ -420,33 +477,164 @@ export default function TableExcel({
                                 {columns.map((col, idx) => (
                                     <TablecellHeader key={idx} sx={{ width: col.width ?? "auto" }} >{col.label}</TablecellHeader>
                                 ))}
+                                {
+                                    types === "list" &&
+                                    <TablecellHeader sx={{ width: 50 }} />
+                                }
                             </TableRow>
                         </TableHead>
 
                         <TableBody>
                             {data.map((row, rowIdx) => (
-                                <TableRow key={rowIdx}>
-                                    <TableCell sx={{ textAlign: "center", backgroundColor: theme.palette.primary.dark, color: "white" }}>{rowIdx + 1}</TableCell>
-                                    {columns.map((col, colIdx) => (
-                                        <TableCell
-                                            key={colIdx}
-                                            onMouseDown={() => handleMouseDown(rowIdx, colIdx)}
-                                            onMouseOver={() => handleMouseOver(rowIdx, colIdx)}
-                                            onContextMenu={(e) => openContextMenu(e, rowIdx, colIdx)}
-                                            style={{
-                                                backgroundColor: col.disabled === true ?
-                                                    "#e9e9e9ff"
-                                                    :
-                                                    (isCellSelected(rowIdx, colIdx)
-                                                        ? theme.palette.primary.light
-                                                        : getCellBackgroundColor(data[rowIdx]?.[col.key], col))
-                                                ,
-                                                textAlign: "center"
-                                            }}
-                                        >
-                                            {(col.type === "select" || col.type === "dependent-select") ? (
-                                                <>
-                                                    <select
+                                <TableRow key={rowIdx}
+                                    sx={{
+                                        height: 28, // 👈 ปรับความสูงตามต้องการ เช่น 24, 28, 32
+                                    }}
+                                >
+                                    <TableCell sx={{
+                                        textAlign: "center",
+                                        backgroundColor: theme.palette.primary.dark,
+                                        color: "white",
+                                        padding: '4px', // 👈 ลด padding จากปกติ (default 16px)
+                                        height: 28,
+                                    }}>
+                                        {rowIdx + 1}
+                                    </TableCell>
+                                    {columns.map((col, colIdx) => {
+                                        // ถ้า col.key เป็น employname หรือ position ให้ใช้ rowspan
+                                        if (col.key === "employname") {
+                                            if (employnameRowSpan[rowIdx] > 0) {
+                                                return (
+                                                    <TableCell key={colIdx} rowSpan={employnameRowSpan[rowIdx]}
+                                                        sx={
+                                                            types === "list" ?
+                                                                {
+                                                                    textAlign: "center",
+                                                                    width: col.width ?? "auto",
+                                                                    position: "sticky",      // ทำให้ sticky
+                                                                    left: 0,                 // ติดซ้ายที่ 0px
+                                                                    zIndex: 20,              // ให้ลอยอยู่บนเซลล์อื่น
+                                                                    borderRight: "1px solid #ddd", // เพิ่มเส้นขอบขวาเพื่อแยกชัดเจน (ถ้าต้องการ)
+                                                                    backgroundColor: col.disabled === true
+                                                                        ? "#e9e9e9ff"
+                                                                        : (isCellSelected(rowIdx, colIdx)
+                                                                            ? theme.palette.primary.light
+                                                                            : getCellBackgroundColor(data[rowIdx]?.[col.key], col)),
+                                                                }
+                                                                :
+                                                                {
+                                                                    backgroundColor: col.disabled === true
+                                                                        ? "#e9e9e9ff"
+                                                                        : (isCellSelected(rowIdx, colIdx)
+                                                                            ? theme.palette.primary.light
+                                                                            : getCellBackgroundColor(data[rowIdx]?.[col.key], col)),
+                                                                }}>
+                                                        {row.employname}
+                                                    </TableCell>
+                                                );
+                                            }
+                                            return null; // แถวอื่น ๆ ที่ rowspan=0 ไม่แสดง cell
+                                        }
+                                        if (col.key === "position") {
+                                            if (positionRowSpan[rowIdx] > 0) {
+                                                return (
+                                                    <TableCell key={colIdx} rowSpan={positionRowSpan[rowIdx]}
+                                                        sx={{
+                                                            backgroundColor: col.disabled === true
+                                                                ? "#e9e9e9ff"
+                                                                : (isCellSelected(rowIdx, colIdx)
+                                                                    ? theme.palette.primary.light
+                                                                    : getCellBackgroundColor(data[rowIdx]?.[col.key], col)),
+                                                        }}>
+                                                        {row.position}
+                                                    </TableCell>
+                                                );
+                                            }
+                                            return null;
+                                        }
+
+                                        // สำหรับคอลัมน์อื่น ๆ แสดงปกติ
+                                        return (
+                                            <TableCell
+                                                key={colIdx}
+                                                onMouseDown={() => handleMouseDown(rowIdx, colIdx)}
+                                                onMouseOver={() => handleMouseOver(rowIdx, colIdx)}
+                                                onContextMenu={(e) => openContextMenu(e, rowIdx, colIdx)}
+                                                sx={{
+                                                    padding: '4px', // 👈 ลด padding จากปกติ (default 16px)
+                                                    height: 28,
+                                                    fontSize: '13px', // ปรับขนาดฟอนต์ให้เหมาะกับความสูง
+                                                    backgroundColor: col.disabled === true
+                                                        ? "#e9e9e9ff"
+                                                        : (isCellSelected(rowIdx, colIdx)
+                                                            ? theme.palette.primary.light
+                                                            : getCellBackgroundColor(data[rowIdx]?.[col.key], col)),
+                                                    textAlign: "center"
+                                                }}
+                                            >
+                                                {(col.type === "select" || col.type === "dependent-select") ? (
+                                                    <Paper component="form" sx={{ width: "100%", boxShadow: "none", borderRadius: 0 }}>
+                                                        <TextField
+                                                            select
+                                                            fullWidth
+                                                            size="small"
+                                                            variant="outlined"
+                                                            disabled={col.disabled}
+                                                            value={
+                                                                col.options.find(opt => opt.value === row[col.key])?.value ??
+                                                                col.options.find(opt => opt.label === row[col.key])?.value ??
+                                                                ""
+                                                            }
+                                                            onChange={(e) => handleCellChange(e.target.value, rowIdx, col.key)}
+                                                            sx={{
+                                                                '& .MuiOutlinedInput-root': {
+                                                                    height: 28,
+                                                                    borderRadius: 1,
+                                                                },
+                                                                '& .MuiInputBase-input': {
+                                                                    fontSize: '14px',
+                                                                    padding: '2px 6px',
+                                                                    textAlign: 'center',
+                                                                    fontFamily: theme.typography.fontFamily,
+                                                                },
+                                                            }}
+                                                            SelectProps={{
+                                                                MenuProps: { PaperProps: { style: { maxHeight: 150, } } },
+                                                            }}
+                                                        >
+                                                            <MenuItem value="">
+                                                                -- กรุณาเลือก{col.label} --
+                                                            </MenuItem>
+
+                                                            {(() => {
+                                                                if (col.type === "dependent-select") {
+                                                                    const parentKey = col.dependsOn;
+                                                                    const parentValue = row[parentKey];
+                                                                    const filteredOptions = col.options.filter(opt =>
+                                                                        Array.isArray(opt.parent)
+                                                                            ? opt.parent.includes(parentValue)
+                                                                            : opt.parent === parentValue
+                                                                    );
+
+                                                                    return filteredOptions.length > 0
+                                                                        ? filteredOptions.map((opt, i) => (
+                                                                            <MenuItem key={i} value={opt.value}>
+                                                                                {opt.label}
+                                                                            </MenuItem>
+                                                                        ))
+                                                                        : <MenuItem value="0-ไม่มี">ไม่มี</MenuItem>;
+                                                                }
+
+                                                                // ปกติ
+                                                                return col.options.map((opt, i) => (
+                                                                    <MenuItem key={i} value={opt.value}>
+                                                                        {opt.label}
+                                                                    </MenuItem>
+                                                                ));
+                                                            })()}
+                                                        </TextField>
+
+                                                        {/* <select
                                                         disabled={col.disabled}
                                                         value={
                                                             // ตรวจสอบว่า row[col.key] ตรงกับ options.value หรือ label
@@ -465,7 +653,6 @@ export default function TableExcel({
                                                             height: "100%",
                                                             padding: 4,
                                                             textAlign: "center",
-                                                            /** ✅ เพิ่มฟอนต์ที่ใช้ใน theme */
                                                             fontFamily: theme.typography.fontFamily
                                                         }}
                                                     >
@@ -499,144 +686,252 @@ export default function TableExcel({
                                                                 </option>
                                                             ));
                                                         })()}
-                                                    </select>
-                                                    {/* {getSelectWarningText(row[col.key], col) && (
+                                                    </select> */}
+                                                        {/* {getSelectWarningText(row[col.key], col) && (
                                                     <div style={{ color: "orange", fontSize: "0.75rem" }}>
                                                         {getSelectWarningText(row[col.key], col)}
                                                     </div>
                                                 )} */}
-                                                </>
-                                            )
-                                                :
-
-                                                col.type === "checkbox" ? (
-                                                    <Checkbox
-                                                        disabled={col.disabled}
-                                                        checked={row[col.key] === 1}
-                                                        onChange={(e) => handleCellChange(e.target.checked ? 1 : 0, rowIdx, col.key)}
-                                                        color="primary" // ใช้สีตาม theme.palette.primary.main
-                                                        sx={{ p: 0 }} // optional: ลด padding ถ้าต้องการให้พอดี cell
-                                                    />
+                                                    </Paper>
                                                 )
-                                                    : col.type === "date" ? (
-                                                        <Box sx={{ py: 0, my: "-4px", mt: -2, mb: -3 }}>
-                                                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                                                <DatePicker
-                                                                    value={row[col.key] ? dayjs(row[col.key], "DD/MM/YYYY") : null}
-                                                                    onChange={(newValue) => {
-                                                                        const newDate = newValue ? newValue.format("DD/MM/YYYY") : "";
-                                                                        handleCellChange(newDate, rowIdx, col.key);
-                                                                    }}
-                                                                    format="DD/MM/YYYY"
-                                                                    slotProps={{
-                                                                        textField: {
-                                                                            size: "small",
-                                                                            variant: "standard",
-                                                                            disabled: col.disabled,
-                                                                            inputProps: {
-                                                                                style: {
-                                                                                    padding: 0,
-                                                                                    height: "24px",
-                                                                                    fontSize: "9px",
-                                                                                    lineHeight: 1,
-                                                                                    textAlign: "center",
-                                                                                    boxSizing: "border-box",
+                                                    :
+
+                                                    col.type === "checkbox" ? (
+                                                        <Checkbox
+                                                            disabled={col.disabled}
+                                                            checked={row[col.key] === 1}
+                                                            onChange={(e) => handleCellChange(e.target.checked ? 1 : 0, rowIdx, col.key)}
+                                                            color="primary" // ใช้สีตาม theme.palette.primary.main
+                                                            sx={{ p: 0 }} // optional: ลด padding ถ้าต้องการให้พอดี cell
+                                                        />
+                                                    )
+                                                        :
+                                                        col.type === "file" ? (
+                                                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'start' }}>
+                                                                {!row[col.key] ? (
+                                                                    row.fileType ? (
+                                                                        <label>
+                                                                            <input
+                                                                                type="file"
+                                                                                hidden
+                                                                                accept={row.fileType === "pdf" ? "application/pdf" : "image/*"}
+                                                                                disabled={col.disabled}
+                                                                                onChange={(e) => {
+                                                                                    const file = e.target.files?.[0];
+                                                                                    if (file) {
+                                                                                        // เก็บไฟล์เป็น File object เลย
+                                                                                        handleCellChange(file, rowIdx, col.key);
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                            <Button
+                                                                                variant="outlined"
+                                                                                size="small"
+                                                                                component="span"
+                                                                                sx={{ fontSize: '11px', minWidth: 60, padding: "2px 4px" }}
+                                                                            >
+                                                                                เลือกไฟล์
+                                                                            </Button>
+                                                                        </label>
+                                                                    ) : (
+                                                                        <Typography variant="body2" sx={{ fontSize: 12, color: "gray" }}>
+                                                                            เลือกประเภทไฟล์ก่อน
+                                                                        </Typography>
+                                                                    )
+                                                                ) : (
+                                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                        <Typography variant="body2" sx={{ fontSize: 12 }}>
+                                                                            📄 {typeof row[col.key] === "object" && row[col.key]?.name ? row[col.key].name : row[col.key]}
+                                                                        </Typography>
+                                                                        <Button
+                                                                            variant="outlined"
+                                                                            size="small"
+                                                                            color="error"
+                                                                            onClick={() => handleCellChange(null, rowIdx, col.key)} // ลบไฟล์ กำหนดเป็น null
+                                                                            sx={{ fontSize: '11px', minWidth: 40, padding: "2px 6px" }}
+                                                                        >
+                                                                            ลบ
+                                                                        </Button>
+                                                                    </Box>
+                                                                )}
+                                                            </Box>
+                                                        )
+                                                            : col.type === "date" ? (
+                                                                <Paper sx={{ width: "100%", boxShadow: "none", borderRadius: 0 }}>
+                                                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                                        <DatePicker
+                                                                            value={row[col.key] ? dayjs(row[col.key], "DD/MM/YYYY") : null}
+                                                                            onChange={(newValue) => {
+                                                                                const newDate = newValue ? newValue.format("DD/MM/YYYY") : "";
+                                                                                handleCellChange(newDate, rowIdx, col.key);
+                                                                            }}
+                                                                            format="DD/MM/YYYY"
+                                                                            enableAccessibleFieldDOMStructure={false}
+                                                                            slotProps={{
+                                                                                textField: {
+                                                                                    size: "small",
+                                                                                    fullWidth: true,
+                                                                                    variant: "outlined",
+                                                                                    disabled: col.disabled,
+                                                                                    sx: {
+                                                                                        '& .MuiOutlinedInput-root': {
+                                                                                            height: 28,
+                                                                                            borderRadius: 1,
+                                                                                        },
+                                                                                        '& .MuiInputBase-input': {
+                                                                                            fontSize: '14px',
+                                                                                            padding: '2px 6px',
+                                                                                            textAlign: 'center',
+                                                                                            fontFamily: theme.typography.fontFamily,
+                                                                                        },
+                                                                                    },
                                                                                 }
-                                                                            },
-                                                                            sx: {
-                                                                                width: "100%",
-                                                                                height: "24px",
-                                                                                padding: 0,
-                                                                                margin: 0,
-                                                                                border: "none",
+                                                                            }}
+                                                                        />
+                                                                    </LocalizationProvider>
+                                                                </Paper>
+                                                            )
+                                                                : col.type === "time" ? (
+                                                                    <Paper component="form" sx={{ width: "100%", boxShadow: "none", borderRadius: 0 }}>
+                                                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                                            <TimePicker
+                                                                                value={row[col.key] ? dayjs(row[col.key], "HH:mm") : null}
+                                                                                onChange={(newValue) => {
+                                                                                    const newTime = newValue ? newValue.format("HH:mm") : "";
+                                                                                    handleCellChange(newTime, rowIdx, col.key);
+                                                                                }}
+                                                                                format="HH:mm"
+                                                                                ampm={false}
+                                                                                enableAccessibleFieldDOMStructure={false}
+                                                                                slotProps={{
+                                                                                    textField: {
+                                                                                        size: "small",
+                                                                                        fullWidth: true,
+                                                                                        variant: "outlined",
+                                                                                        disabled: col.disabled,
+                                                                                        sx: {
+                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                height: '24px',
+                                                                                                borderRadius: 1,
+                                                                                            },
+                                                                                            '& .MuiInputBase-input': {
+                                                                                                fontSize: '14px',
+                                                                                                padding: '2px 6px',
+                                                                                                textAlign: 'center',
+                                                                                                fontFamily: theme.typography.fontFamily,
+                                                                                            },
+                                                                                        },
+                                                                                        InputLabelProps: {
+                                                                                            sx: {
+                                                                                                fontSize: "12px"
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                                }}
+                                                                            />
+                                                                        </LocalizationProvider>
+                                                                    </Paper>
+                                                                    // <input
+                                                                    //     disabled={col.disabled}
+                                                                    //     type="time"
+                                                                    //     value={row[col.key] || ""}
+                                                                    //     onChange={(e) => handleCellChange(e.target.value, rowIdx, col.key)}
+                                                                    //     style={{
+                                                                    //         width: "100%",
+                                                                    //         height: "100%",
+                                                                    //         padding: "4px",
+                                                                    //         border: "none",
+                                                                    //         outline: isCellSelected(rowIdx, colIdx)
+                                                                    //             ? `1px solid ${theme.palette.primary.dark}`
+                                                                    //             : "none",
+                                                                    //         backgroundColor: getCellBackgroundColor(row[col.key], col),
+                                                                    //         textAlign: "center",
+                                                                    //         fontFamily: theme.typography.fontFamily,
+                                                                    //     }}
+                                                                    // />
+                                                                )
+                                                                    : (
+                                                                        <div
+                                                                            contentEditable={!col.disabled}
+                                                                            suppressContentEditableWarning
+                                                                            dir="ltr"
+                                                                            onBlur={(e) => {
+                                                                                let newValue = e.currentTarget.innerText;
+                                                                                if (col?.type === "number") {
+                                                                                    const filtered = newValue.replace(/[^\d.-]/g, "");
+                                                                                    if (filtered !== newValue) {
+                                                                                        e.currentTarget.innerText = filtered;
+                                                                                        newValue = filtered;
+                                                                                    }
+                                                                                }
+                                                                                handleCellChange(newValue, rowIdx, col.key);
+                                                                            }}
+                                                                            style={{
                                                                                 outline: isCellSelected(rowIdx, colIdx)
                                                                                     ? `1px solid ${theme.palette.primary.dark}`
                                                                                     : "none",
                                                                                 backgroundColor: getCellBackgroundColor(row[col.key], col),
-                                                                                textAlign: "center",
-                                                                                fontSize: "9px",
-                                                                                lineHeight: 1,
-                                                                                // input base
-                                                                                "& .MuiInputBase-input": {
-                                                                                    height: "24px !important",
-                                                                                    padding: 0,
-                                                                                    fontSize: "9px !important",
-                                                                                    lineHeight: 1,
-                                                                                    textAlign: "center",
-                                                                                    boxSizing: "border-box",
-                                                                                },
-                                                                                // calendar icon
-                                                                                "& .MuiSvgIcon-root": {
-                                                                                    fontSize: "14px",
-                                                                                    margin: 0,
-                                                                                    padding: 0,
-                                                                                },
-                                                                                // input adornment (icon wrapper)
-                                                                                "& .MuiInputAdornment-root": {
-                                                                                    margin: 0,
-                                                                                    padding: 0,
-                                                                                },
-                                                                            },
-                                                                        },
-                                                                    }}
-                                                                />
-                                                            </LocalizationProvider>
-                                                        </Box>
-                                                    )
-                                                        : col.type === "time" ? (
-                                                            <input
-                                                                disabled={col.disabled}
-                                                                type="time"
-                                                                value={row[col.key] || ""}
-                                                                onChange={(e) => handleCellChange(e.target.value, rowIdx, col.key)}
-                                                                style={{
-                                                                    width: "100%",
-                                                                    height: "100%",
-                                                                    padding: "4px",
-                                                                    border: "none",
-                                                                    outline: isCellSelected(rowIdx, colIdx)
-                                                                        ? `1px solid ${theme.palette.primary.dark}`
-                                                                        : "none",
-                                                                    backgroundColor: getCellBackgroundColor(row[col.key], col),
-                                                                    textAlign: "center",
-                                                                    fontFamily: theme.typography.fontFamily,
-                                                                }}
-                                                            />
-                                                        )
-                                                            : (
-                                                                <div
-                                                                    contentEditable={!col.disabled}
-                                                                    suppressContentEditableWarning
-                                                                    dir="ltr"
-                                                                    onBlur={(e) => {
-                                                                        let newValue = e.currentTarget.innerText;
-                                                                        if (col?.type === "number") {
-                                                                            const filtered = newValue.replace(/[^\d.-]/g, "");
-                                                                            if (filtered !== newValue) {
-                                                                                e.currentTarget.innerText = filtered;
-                                                                                newValue = filtered;
-                                                                            }
-                                                                        }
-                                                                        handleCellChange(newValue, rowIdx, col.key);
-                                                                    }}
-                                                                    style={{
-                                                                        outline: isCellSelected(rowIdx, colIdx)
-                                                                            ? `1px solid ${theme.palette.primary.dark}`
-                                                                            : "none",
-                                                                        backgroundColor: getCellBackgroundColor(row[col.key], col),
-                                                                        direction: "ltr",
-                                                                        unicodeBidi: "normal",
-                                                                        whiteSpace: "pre-wrap",
-                                                                        fontFamily: theme.typography.fontFamily
-                                                                    }}
-                                                                >
-                                                                    {row[col.key] ?? ""}
-                                                                </div>
+                                                                                direction: "ltr",
+                                                                                unicodeBidi: "normal",
+                                                                                whiteSpace: "pre-wrap",
+                                                                                fontFamily: theme.typography.fontFamily
+                                                                            }}
+                                                                        >
+                                                                            {row[col.key] ?? ""}
+                                                                        </div>
 
-                                                            )}
-                                        </TableCell>
+                                                                    )}
+                                            </TableCell>
 
-                                    ))}
+                                        )
+                                    }
+                                    )}
+                                    {types === "list" && (() => {
+                                        const currentName = row.employeename;
+                                        const currentPos = row.position;
+
+                                        const nextRow = data[rowIdx + 1];
+                                        const isLastOfGroup =
+                                            !nextRow || nextRow.employeename !== currentName || nextRow.position !== currentPos;
+
+                                        if (isLastOfGroup) {
+                                            return (
+                                                <TableCell
+                                                    sx={{
+                                                        textAlign: "center",
+                                                        width: 30,
+                                                        position: "sticky",      // ทำให้ sticky
+                                                        right: 0,                 // ติดซ้ายที่ 0px
+                                                        zIndex: 20,              // ให้ลอยอยู่บนเซลล์อื่น
+                                                        borderRight: "1px solid #ddd", // เพิ่มเส้นขอบขวาเพื่อแยกชัดเจน (ถ้าต้องการ)
+                                                        backgroundColor: theme.palette.background.paper || "white", // ตั้งพื้นหลังทึบไม่ให้โปร่ง
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                                                        <IconButton
+                                                            sx={{ p: 0 }}
+                                                            color="primary"
+                                                            onClick={() => handleAddRow(rowIdx)}
+                                                        >
+                                                            <NoteAddIcon />
+                                                        </IconButton>
+                                                        <IconButton
+                                                            sx={{ p: 0 }}
+                                                            color="error"
+                                                            onClick={() => {
+                                                                deleteRow();
+                                                                handleCloseContextMenu();
+                                                            }}
+                                                        >
+                                                            <DeleteForeverIcon />
+                                                        </IconButton>
+                                                    </Box>
+                                                </TableCell>
+                                            );
+                                        }
+
+                                        return <TableCell />; // ไม่แสดงปุ่ม
+                                    })()}
                                 </TableRow>
                             ))}
                         </TableBody>

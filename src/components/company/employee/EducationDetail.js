@@ -246,17 +246,15 @@ const EducationDetail = (props) => {
                                             <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
                                             <TablecellHeader>ชื่อ</TablecellHeader>
                                             <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader>เพศ</TablecellHeader>
-                                            <TablecellHeader>สถานภาพทางทหาร</TablecellHeader>
-                                            <TablecellHeader>สัญชาติ</TablecellHeader>
-                                            <TablecellHeader>ศาสนา</TablecellHeader>
-                                            <TablecellHeader>ส่วนสูง</TablecellHeader>
-                                            <TablecellHeader>น้ำหนัก</TablecellHeader>
-                                            <TablecellHeader>สถานภาพ</TablecellHeader>
-                                            <TablecellHeader>เบอร์โทรศัพท์</TablecellHeader>
-                                            <TablecellHeader>โทรศัพท์บ้าน</TablecellHeader>
-                                            <TablecellHeader>Line ID</TablecellHeader>
-                                            <TablecellHeader>ประเทศ</TablecellHeader>
+                                            <TablecellHeader>สถานภาพการศึกษา</TablecellHeader>
+                                            <TablecellHeader>ระดับการศึกษา</TablecellHeader>
+                                            <TablecellHeader>สถานศึกษา</TablecellHeader>
+                                            <TablecellHeader>หมวดการศึกษา</TablecellHeader>
+                                            <TablecellHeader>คณะ</TablecellHeader>
+                                            <TablecellHeader>สาขา</TablecellHeader>
+                                            <TablecellHeader>ชื่อปริญญา</TablecellHeader>
+                                            <TablecellHeader>ปีที่สำเร็จการศึกษา</TablecellHeader>
+                                            <TablecellHeader>เกรดเฉลี่ย</TablecellHeader>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -271,17 +269,6 @@ const EducationDetail = (props) => {
                                                         <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.sex}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.militaryStatus}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.nationality}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.religion}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.height}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.weight}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.statusEmployee}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.phone}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.homephone}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.lineID}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.country}</TableCell>
                                                     </TableRow>
                                                 ))}
                                     </TableBody>

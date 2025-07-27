@@ -32,6 +32,7 @@ import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
+import dayjs from "dayjs";
 
 const TrainingDetail = (props) => {
     const { menu, data } = props;
@@ -46,88 +47,120 @@ const TrainingDetail = (props) => {
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
-    const internship = employees.map(emp => ({
-        employname: emp.employname,
-        position: emp.position.split("-")[1],
-        DateStart: emp.internship?.DateStart || '',
-        DateEnd: emp.internship?.DateEnd || '',
-        company: emp.internship?.company || '',
-        province: emp.internship?.address?.province || '',
-        amphure: emp.internship?.address?.amphure || '',
-        tambon: emp.internship?.address?.tambon || '',
-        zipCode: emp.internship?.address?.zipCode || '',
-        position: emp.internship?.position || '',
-        positionType: emp.internship?.positionType || '',
-        level: emp.internship?.level || '',
-        salary: emp.internship?.salary || '',
-        note: emp.internship?.note || '',
-    }));
+    const toDateString = (dateObj) => {
+        if (!dateObj || !dateObj.day || !dateObj.month || !dateObj.year) return '';
 
-    const internshipColumns = [
-        { label: "ชื่อ", key: "employname", type: "text", disabled: true },
-        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
-        {
-            label: "เพศ",
-            key: "sex",
-            type: "select",
-            options: [
-                { value: "ชาย", label: "ชาย" },
-                { value: "หญิง", label: "หญิง" }
-            ],
-        },
-        {
-            label: "สถานภาพทางทหาร",
-            key: "militaryStatus",
-            type: "select",
-            options: [
-                { value: "ผ่านเกณฑ์แล้ว", label: "ผ่านเกณฑ์แล้ว" },
-                { value: "ได้รับการยกเว้น", label: "ได้รับการยกเว้น" },
-                { value: "ยังไม่ได้เกณฑ์ทหาร", label: "ยังไม่ได้เกณฑ์ทหาร" }
-            ],
-        },
-        { label: "สัญชาติ", key: "nationality", type: "text" },
-        { label: "ศาสนา", key: "religion", type: "text" },
-        { label: "ส่วนสูง", key: "height", type: "text" },
-        { label: "น้ำหนัก", key: "weight", type: "text" },
-        {
-            label: "สถานภาพ",
-            key: "statusEmployee",
-            type: "select",
-            options: [
-                { value: "โสด", label: "โสด" },
-                { value: "สมรส", label: "สมรส" },
-                { value: "หย่า", label: "หย่า" },
-                { value: "หม้าย", label: "หม้าย" }
-            ],
-        },
-        { label: "เบอร์โทรศัพท์", key: "phone", type: "text" },
-        { label: "โทรศัพท์บ้าน", key: "homephone", type: "text" },
-        { label: "LINE ID", key: "lineID", type: "text" },
-        { label: "ประเทศ", key: "country", type: "text" },
-    ];
-
-    const handleInternshipChange = (updatedList) => {
-        const merged = employees.map((emp, idx) => ({
-            ...emp,
-            internship: {
-                ...emp.internship,
-                sex: updatedList[idx].sex,
-                militaryStatus: updatedList[idx].militaryStatus,
-                nationality: updatedList[idx].nationality,
-                religion: updatedList[idx].religion,
-                height: updatedList[idx].height,
-                weight: updatedList[idx].weight,
-                statusEmployee: updatedList[idx].statusEmployee,
-                phone: updatedList[idx].phone,
-                homephone: updatedList[idx].homephone,
-                lineID: updatedList[idx].lineID,
-                country: updatedList[idx].country,
-            },
-        }));
-        setEmployees(merged);  // หรือ setPersonal หากแยก state
+        const { day, month, year } = dateObj;
+        const gregorianYear = Number(year) - 543;
+        const date = dayjs(`${gregorianYear}-${month}-${day}`, "YYYY-M-D");
+        return date.format("DD/MM/YYYY"); // 👉 "01/03/2025"
     };
 
-    console.log("internships : ", internship);
+    const toDateObject = (dateStr) => {
+        if (!dateStr) return { day: '', month: '', year: '' };
+
+        const date = dayjs(dateStr, "DD/MM/YYYY");
+        return {
+            day: date.date(),
+            month: date.month() + 1,
+            year: String(date.year() + 543),
+        };
+    };
+
+    const trainingRows = [];
+
+    // const language = employees.map(emp => ({
+    //     employname: emp.employname,
+    //     position: emp.position.split("-")[1],
+    //     languageList: emp.languageList || '',
+    // }));
+
+    employees.forEach(emp => {
+        const position = emp.position.split("-")[1];
+        const trains = emp.trainingList || [];
+
+        trains.forEach((train, trainIdx) => {
+            trainingRows.push({
+                employname: emp.employname,
+                position,
+                course: train.course || "",
+                dateEnd: toDateString(train.dateEnd) || "",
+                dateStart: toDateString(train.dateStart) || "",
+                file: train.file || null,
+                fileType: train.fileType || "",
+                institution: train.institution || "",
+                isFirst: trainIdx === 0,
+                rowSpan: trains.length,
+            });
+        });
+
+        // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
+        if (trains.length === 0) {
+            trainingRows.push({
+                employname: emp.employname,
+                position,
+                course: "-",
+                dateEnd: "-",
+                dateStart: "-",
+                file: null,
+                fileType: "",
+                institution: "-",
+                isFirst: true,
+                rowSpan: 1,
+            });
+        }
+    });
+
+    const trainingColumns = [
+        { label: "ชื่อ", key: "employname", type: "text", disabled: true },
+        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
+        { label: "วันที่", key: "dateStart", type: "date" },
+        { label: "จนถึง", key: "dateEnd", type: "date" },
+        { label: "สถาบัน", key: "institution", type: "text" },
+        { label: "หลักสูตร", key: "course", type: "text" },
+        {
+            label: "ประเภทไฟล์",
+            key: "fileType",
+            type: "select",
+            options: [
+                { value: "pdf", label: "pdf" },
+                { value: "image", label: "image" }
+            ],
+        },
+        { label: "ไฟล์", key: "file", type: "file" },
+    ];
+
+    const handleTraningChange = (updatedList) => {
+        const empTrainingMap = {};
+
+        updatedList.forEach(row => {
+            const name = row.employname;
+            if (!empTrainingMap[name]) {
+                empTrainingMap[name] = [];
+            }
+
+            const institution = (row.institution || '').trim();
+            if (institution && institution !== '-') {
+                empTrainingMap[name].push({
+                    course: (row.course || '').trim(),
+                    dateStart: row.dateStart ? toDateObject(row.dateStart) : { day: '', month: '', year: '' },
+                    dateEnd: row.dateEnd ? toDateObject(row.dateEnd) : { day: '', month: '', year: '' },
+                    file: row.file || null,
+                    fileType: row.fileType, // ทำให้แน่ใจว่าเป็น boolean
+                    institution,
+                });
+            }
+        });
+
+        const merged = employees.map(emp => ({
+            ...emp,
+            trainingList: empTrainingMap[emp.employname] || [],
+        }));
+
+        setEmployees(merged);
+    };
+
+    console.log("trainingRows : ", trainingRows);
 
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -158,7 +191,7 @@ const TrainingDetail = (props) => {
         const invalidMessages = [];
 
         employees.forEach((row, rowIndex) => {
-        internshipColumns.forEach((col) => {
+            trainingColumns.forEach((col) => {
                 const value = row[col.key];
 
                 if (value === "") {
@@ -170,32 +203,31 @@ const TrainingDetail = (props) => {
                     invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
                     return;
                 }
-
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
             });
         });
 
-        // ✅ ตรวจสอบว่า employee.name ซ้ำหรือไม่
-        const names = employees.map(row => row.name?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        // แก้เป็น employname แทน name
+        const names = employees.map(row => row.employname?.trim()).filter(Boolean);
         const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
         if (duplicates.length > 0) {
             invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
         }
 
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
         if (invalidMessages.length > 0) {
             ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
             return;
         }
 
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, employees)
+        // แปลงข้อมูลก่อนบันทึก
+        const employeesToSave = employees.map(emp => ({
+            ...emp,
+            trainingList: (emp.trainingList || []).map(train => ({
+                ...train,
+                file: typeof train.file === "object" && train.file !== null ? train.file.name || null : train.file || null,
+            })),
+        }));
+
+        set(companiesRef, employeesToSave)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
@@ -234,9 +266,10 @@ const TrainingDetail = (props) => {
                                 <TableExcel
                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
                                     stylesTable={{ width: "2000px" }} // ✅ ส่งเป็น object
-                                    columns={internshipColumns}
-                                    initialData={internship}
-                                    onDataChange={handleInternshipChange}
+                                    types="list"
+                                    columns={trainingColumns}
+                                    initialData={trainingRows}
+                                    onDataChange={handleTraningChange}
                                 />
                             </Paper>
                             :
@@ -244,47 +277,64 @@ const TrainingDetail = (props) => {
                                 <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
                                     <TableHead>
                                         <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อ</TablecellHeader>
-                                            <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader>วันที่เริ่มต้น</TablecellHeader>
-                                            <TablecellHeader>จนถึงวันที่</TablecellHeader>
-                                            <TablecellHeader>ชื่อบริษัท</TablecellHeader>
-                                            <TablecellHeader>ตำบล</TablecellHeader>
-                                            <TablecellHeader>อำเภอ</TablecellHeader>
-                                            <TablecellHeader>จังหวัด</TablecellHeader>
-                                            <TablecellHeader>รหัสไปรณีย์</TablecellHeader>
-                                            <TablecellHeader>ตำแหน่งงาน</TablecellHeader>
-                                            <TablecellHeader>ประเภทงาน</TablecellHeader>
-                                            <TablecellHeader>ระดับ</TablecellHeader>
-                                            <TablecellHeader>เงินเดือน</TablecellHeader>
-                                            <TablecellHeader>รายละเอียดเพิ่มเติม</TablecellHeader>
+                                            <TablecellHeader rowSpan={2} sx={{ width: 50 }}>ลำดับ</TablecellHeader>
+                                            <TablecellHeader rowSpan={2}>ชื่อ</TablecellHeader>
+                                            <TablecellHeader rowSpan={2}>ตำแหน่ง</TablecellHeader>
+                                            <TablecellHeader rowSpan={2}>วันที่เริ่มต้น</TablecellHeader>
+                                            <TablecellHeader rowSpan={2}>จนถึงวันที่</TablecellHeader>
+                                            <TablecellHeader rowSpan={2}>สถานบัน</TablecellHeader>
+                                            <TablecellHeader rowSpan={2}>หลักสูตร</TablecellHeader>
+                                            <TablecellHeader colSpan={2}>file</TablecellHeader>
+                                        </TableRow>
+                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                            <TablecellHeader>เอกสาร</TablecellHeader>
+                                            <TablecellHeader>รูปภาพ</TablecellHeader>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
                                         {
-                                            internship.length === 0 ?
+                                            trainingRows.length === 0 ?
                                                 <TableRow>
                                                     <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                 </TableRow>
                                                 :
-                                                internship.map((row, index) => (
+                                                trainingRows.map((row, index) => (
                                                     <TableRow>
-                                                        <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.DateStart}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.DateEnd}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.company}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.province}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.amphure}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.tambon}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.zipCode}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.positionType}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.level}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.salary}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.note}</TableCell>
+                                                        {row.isFirst && (
+                                                            <>
+                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>{row.employname}</TableCell>
+                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>{row.position}</TableCell>
+                                                            </>
+                                                        )}
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.dateStart}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.dateEnd}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.institution}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.course}</TableCell>
+                                                        {
+                                                            row.fileType === "pdf" ?
+                                                                (
+                                                                    <React.Fragment>
+                                                                        <TableCell sx={{ textAlign: "center" }}>{row.file}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>-</TableCell>
+                                                                    </React.Fragment>
+                                                                )
+                                                                :
+                                                                row.fileType === "image" ?
+                                                                    (
+                                                                        <React.Fragment>
+                                                                            <TableCell sx={{ textAlign: "center" }}>-</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>{row.file}</TableCell>
+                                                                        </React.Fragment>
+                                                                    )
+                                                                    :
+                                                                    (
+                                                                        <React.Fragment>
+                                                                            <TableCell sx={{ textAlign: "center" }}>-</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>-</TableCell>
+                                                                        </React.Fragment>
+                                                                    )
+                                                        }
                                                     </TableRow>
                                                 ))}
                                     </TableBody>

@@ -107,8 +107,8 @@ const InternshipDetail = (props) => {
 
 
     const internshipColumns = [
-        { label: "ชื่อ", key: "employname", type: "text", disabled: true },
-        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
+        { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: "10%" },
+        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true, width: "10%" },
         { label: "วันที่", key: "dateStart", type: "date" },
         { label: "จนถึง", key: "dateEnd", type: "date" },
         { label: "บริษัท", key: "company", type: "text" },
@@ -230,6 +230,8 @@ const InternshipDetail = (props) => {
 
     console.log("employees : ", employees);
 
+
+
     const handleSave = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
@@ -249,13 +251,6 @@ const InternshipDetail = (props) => {
                     return;
                 }
 
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
             });
         });
 
