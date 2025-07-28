@@ -29,7 +29,7 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
 
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { InputAdornment } from "@mui/material";
+import { Checkbox, InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
@@ -37,27 +37,22 @@ import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 
-const TaxDetail = () => {
+const DeductionsDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     //const { companyName } = useParams();
-    const [editTax, setEditTax] = useState(false);
+    const [editDeductions, setEditDeductions] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [tax, setTax] = useState([{ ID: 0, summaryStart: 0, summaryEnd: 0, tax: 0, note: '' }]);
+    const [deductions, setDeductions] = useState([{ ID: 0, name: "", status: 0 }]);
 
     const columns = [
-        { label: "เริ่มต้น", key: "summaryStart", type: "text" },
-        { label: "สิ้นสุด", key: "summaryEnd", type: "text" },
-        { label: "อัตราภาษี", key: "tax", type: "text" },
-        { label: "แปลงเป็นเงิน", key: "taxRange", type: "text" },
-        { label: "ค่าลบก่อนคิดภาษี", key: "maxRange", type: "text" },
-        { label: "ค่าบวกหลังคิดภาษี", key: "avgRange", type: "text" },
-        { label: "หมายเหตุ", key: "note", type: "text" }
+        { label: "ชื่อ", key: "name", type: "text", width: "75%" },
+        { label: "สถานะ", key: "status", type: "checkbox", width: "25%" },
     ];
 
-    console.log("tax : ", tax);
+    console.log("deductions : ", deductions);
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
 
@@ -86,16 +81,16 @@ const TaxDetail = () => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const taxRef = ref(firebaseDB, `workgroup/company/${companyId}/tax`);
+        const deductionsRef = ref(firebaseDB, `workgroup/company/${companyId}/deductions`);
 
-        const unsubscribe = onValue(taxRef, (snapshot) => {
-            const taxData = snapshot.val();
+        const unsubscribe = onValue(deductionsRef, (snapshot) => {
+            const deductionsData = snapshot.val();
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!taxData) {
-                setTax([{ ID: 0, summaryStart: '', summaryEnd: '', tax: '', note: '' }]);
+            if (!deductionsData) {
+                setDeductions([{ ID: 0, name: "", status: 0 }]);
             } else {
-                setTax(taxData);
+                setDeductions(deductionsData);
             }
         });
 
@@ -103,11 +98,11 @@ const TaxDetail = () => {
     }, [firebaseDB, companyId]);
 
     const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/tax`);
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/deductions`);
 
         const invalidMessages = [];
 
-        tax.forEach((row, rowIndex) => {
+        deductions.forEach((row, rowIndex) => {
             columns.forEach((col) => {
                 const value = row[col.key];
 
@@ -121,18 +116,18 @@ const TaxDetail = () => {
                     return;
                 }
 
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
+                // if (
+                //     col.type === "select" &&
+                //     !col.options?.some(opt => opt.value === value)
+                // ) {
+                //     invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
+                //     return;
+                // }
             });
         });
 
         // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        const names = tax.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        const names = deductions.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
         const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
         if (duplicates.length > 0) {
             invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
@@ -145,11 +140,11 @@ const TaxDetail = () => {
         }
 
         // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, tax)
+        set(companiesRef, deductions)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
-                setEditTax(false);
+                setEditDeductions(false);
             })
             .catch((error) => {
                 ShowError("เกิดข้อผิดพลาดในการบันทึก");
@@ -158,12 +153,12 @@ const TaxDetail = () => {
     };
 
     const handleCancel = () => {
-        const taxRef = ref(firebaseDB, `workgroup/company/${companyId}/tax`);
+        const taxRef = ref(firebaseDB, `workgroup/company/${companyId}/deductions`);
 
         onValue(taxRef, (snapshot) => {
             const taxData = snapshot.val() || [{ ID: 0, summaryStart: '', summaryEnd: '', tax: '', note: '' }];
-            setTax(taxData);
-            setEditTax(false);
+            setDeductions(taxData);
+            setEditDeductions(false);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
@@ -172,23 +167,23 @@ const TaxDetail = () => {
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
-                        <Typography variant="h5" fontWeight="bold" gutterBottom>ภาษี (Tax)</Typography>
+                        <Typography variant="h5" fontWeight="bold" gutterBottom>รายหัก (deductions)</Typography>
                     </Grid>
                 </Grid>
             </Box>
             <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
                 <Box>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลภาษี</Typography>
+                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลรายหักเพิ่มเติม</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
-                        <Grid item size={editTax ? 12 : 11}>
+                        <Grid item size={editDeductions ? 12 : 11}>
                             {
-                                editTax ?
+                                editDeductions ?
                                     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                         <TableExcel
                                             columns={columns}
-                                            initialData={tax}
-                                            onDataChange={setTax}
+                                            initialData={deductions}
+                                            onDataChange={setDeductions}
                                         />
                                     </Paper>
 
@@ -198,47 +193,29 @@ const TaxDetail = () => {
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "25%" }}>เงินได้สุทธิ (บาท)</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "10%" }}>อัตราภาษี</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "10%" }}>แปลงเป็นเงิน</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "15%" }}>ค่าลบก่อนคิดภาษี </TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "15%" }}>ค่าบวกหลังคิดภาษี</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: "20%" }}>หมายเหตุ</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "75%" }}>ชื่อ</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: "20%" }}>สถานะ</TablecellHeader>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
                                                 {
-                                                    tax.length === 0 ?
+                                                    deductions.length === 0 ?
                                                         <TableRow>
                                                             <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                         </TableRow>
                                                         :
-                                                        tax.map((row, index) => (
+                                                        deductions.map((row, index) => (
                                                             <TableRow>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>
-                                                                    <Grid container sx={{ marginLeft: -5 }}>
-                                                                        <Grid item size={5.5} sx={{ textAlign: "right" }}>
-                                                                            {
-                                                                                new Intl.NumberFormat("en-US").format(row.summaryStart)
-                                                                            }
-                                                                        </Grid>
-                                                                        <Grid item size={1} sx={{ textAlign: "center", fontWeight: "bold" }}>
-                                                                            {row.summaryEnd === "-" ? "" : "-"}
-                                                                        </Grid>
-                                                                        <Grid item size={5.5} sx={{ textAlign: "left" }}>
-                                                                            {
-                                                                                row.summaryEnd === "-" ? "ขึ้นไป" :
-                                                                                    new Intl.NumberFormat("en-US").format(row.summaryEnd)
-                                                                            }
-                                                                        </Grid>
-                                                                    </Grid>
+                                                                    <Checkbox
+                                                                        disabled
+                                                                        checked={row.status === 1}
+                                                                        color="primary" // ใช้สีตาม theme.palette.primary.main
+                                                                        sx={{ p: 0 }} // optional: ลด padding ถ้าต้องการให้พอดี cell
+                                                                    />
                                                                 </TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.tax}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.taxRange)}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.maxRange)}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.avgRange)}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.note}</TableCell>
                                                             </TableRow>
                                                         ))}
                                             </TableBody>
@@ -247,7 +224,7 @@ const TaxDetail = () => {
                             }
                         </Grid>
                         {
-                            !editTax &&
+                            !editDeductions &&
                             <Grid item size={1} textAlign="right">
                                 <Box display="flex" justifyContent="center" alignItems="center">
                                     <Button
@@ -262,7 +239,7 @@ const TaxDetail = () => {
                                             alignItems: "center",
                                             textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
                                         }}
-                                        onClick={() => setEditTax(true)}
+                                        onClick={() => setEditDeductions(true)}
                                     >
                                         <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                         แก้ไข
@@ -272,7 +249,7 @@ const TaxDetail = () => {
                         }
                     </Grid>
                     {
-                        editTax &&
+                        editDeductions &&
                         <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                             <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                             <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
@@ -284,4 +261,4 @@ const TaxDetail = () => {
     )
 }
 
-export default TaxDetail
+export default DeductionsDetail

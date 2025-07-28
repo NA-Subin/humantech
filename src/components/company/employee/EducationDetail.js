@@ -46,87 +46,128 @@ const EducationDetail = (props) => {
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
-    const personal = employees.map(emp => ({
-        employname: emp.employname,
-        position: emp.position.split("-")[1],
-        country: emp.personal?.country || '',
-        homephone: emp.personal?.homephone || '',
-        lineID: emp.personal?.lineID || '',
-        nationality: emp.personal?.nationality || '',
-        phone: emp.personal?.phone || '',
-        religion: emp.personal?.religion || '',
-        sex: emp.personal?.sex || '',
-        statusEmployee: emp.personal?.statusEmployee || '',
-        militaryStatus: emp.personal?.militaryStatus || '',
-        height: emp.personal?.height || '',
-        weight: emp.personal?.weight || '',
-    }));
+    const educationRows = [];
 
-    const personalColumns = [
+    // const language = employees.map(emp => ({
+    //     employname: emp.employname,
+    //     position: emp.position.split("-")[1],
+    //     languageList: emp.languageList || '',
+    // }));
+
+    employees.forEach(emp => {
+        const position = emp.position.split("-")[1];
+        const educations = emp.educationList || [];
+
+        educations.forEach((education, educationIdx) => {
+            educationRows.push({
+                employname: emp.employname,
+                position,
+                education: education.education || "",
+                educationLevel: education.educationLevel || "",
+                institution: education.institution || "",
+                educationCategory: education.educationCategory || "",
+                faculty: education.faculty || "",
+                branch: education.branch || "",
+                degree: education.degree || "",
+                graduateYear: education.graduateYear || "",
+                gpa: education.gpa || "",
+                isFirst: educationIdx === 0,
+                rowSpan: educations.length,
+            });
+        });
+
+        // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
+        if (educations.length === 0) {
+            educationRows.push({
+                employname: emp.employname,
+                position,
+                education: "",
+                educationLevel: "",
+                institution: "",
+                educationCategory: "",
+                faculty: "",
+                branch: "",
+                degree: "",
+                graduateYear: "",
+                gpa: "",
+                isFirst: true,
+                rowSpan: 1,
+            });
+        }
+    });
+
+    const educationColumns = [
         { label: "ชื่อ", key: "employname", type: "text", disabled: true },
         { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
         {
-            label: "เพศ",
-            key: "sex",
+            label: "สถานภาพการศึกษา",
+            key: "education",
             type: "select",
             options: [
-                { value: "ชาย", label: "ชาย" },
-                { value: "หญิง", label: "หญิง" }
+                { value: "จบการศึกษา", label: "จบการศึกษา" },
+                { value: "กำลังศึกษา", label: "กำลังศึกษา" }
             ],
         },
         {
-            label: "สถานภาพทางทหาร",
-            key: "militaryStatus",
+            label: "ระดับการศึกษา",
+            key: "educationLevel",
             type: "select",
             options: [
-                { value: "ผ่านเกณฑ์แล้ว", label: "ผ่านเกณฑ์แล้ว" },
-                { value: "ได้รับการยกเว้น", label: "ได้รับการยกเว้น" },
-                { value: "ยังไม่ได้เกณฑ์ทหาร", label: "ยังไม่ได้เกณฑ์ทหาร" }
+                { value: "ประถมศึกษา", label: "ประถมศึกษา" },
+                { value: "มัธยมศึกษา", label: "มัธยมศึกษา" },
+                { value: "ปวส.", label: "ปวส." },
+                { value: "ปวช.", label: "ปวช." },
+                { value: "ปริญญาตรี", label: "ปริญญาตรี" },
+                { value: "ปริญญาโท", label: "ปริญญาโท" },
+                { value: "ปริญญาเอก", label: "ปริญญาเอก" },
             ],
         },
-        { label: "สัญชาติ", key: "nationality", type: "text" },
-        { label: "ศาสนา", key: "religion", type: "text" },
-        { label: "ส่วนสูง", key: "height", type: "text" },
-        { label: "น้ำหนัก", key: "weight", type: "text" },
-        {
-            label: "สถานภาพ",
-            key: "statusEmployee",
-            type: "select",
-            options: [
-                { value: "โสด", label: "โสด" },
-                { value: "สมรส", label: "สมรส" },
-                { value: "หย่า", label: "หย่า" },
-                { value: "หม้าย", label: "หม้าย" }
-            ],
-        },
-        { label: "เบอร์โทรศัพท์", key: "phone", type: "text" },
-        { label: "โทรศัพท์บ้าน", key: "homephone", type: "text" },
-        { label: "LINE ID", key: "lineID", type: "text" },
-        { label: "ประเทศ", key: "country", type: "text" },
+        { label: "สถานศึกษา", key: "institution", type: "text" },
+        { label: "หมวดการศึกษา", key: "educationCategory", type: "text" },
+        { label: "คณะ", key: "faculty", type: "text" },
+        { label: "สาขา", key: "branch", type: "text" },
+        { label: "ชื่อปริญญา", key: "degree", type: "text" },
+        { label: "ปีที่สำเร็จการศึกษา", key: "graduateYear", type: "text" },
+        { label: "เกรดเฉลี่ย", key: "gpa", type: "text" },
     ];
 
-    const handlePersonalChange = (updatedList) => {
-        const merged = employees.map((emp, idx) => ({
-            ...emp,
-            personal: {
-                ...emp.personal,
-                sex: updatedList[idx].sex,
-                militaryStatus: updatedList[idx].militaryStatus,
-                nationality: updatedList[idx].nationality,
-                religion: updatedList[idx].religion,
-                height: updatedList[idx].height,
-                weight: updatedList[idx].weight,
-                statusEmployee: updatedList[idx].statusEmployee,
-                phone: updatedList[idx].phone,
-                homephone: updatedList[idx].homephone,
-                lineID: updatedList[idx].lineID,
-                country: updatedList[idx].country,
-            },
-        }));
-        setEmployees(merged);  // หรือ setPersonal หากแยก state
+    const handleEducationChange = (updatedList) => {
+        // สร้าง map ของ employee ชื่อ => ภาษา list ใหม่
+        const empLangMap = {};
+
+        updatedList.forEach(row => {
+            const name = row.employname;
+            if (!empLangMap[name]) {
+                empLangMap[name] = [];
+            }
+            // ถ้า language เป็น '-' หรือข้อมูลว่าง ให้ข้าม
+            if (row.education && row.education !== '-') {
+                empLangMap[name].push({
+                    education: row.education,
+                    educationLevel: row.educationLevel,
+                    institution: row.institution,
+                    educationCategory: row.educationCategory,
+                    faculty: row.faculty,
+                    branch: row.branch,
+                    degree: row.degree,
+                    graduateYear: row.graduateYear,
+                    gpa: row.gpa,
+                });
+            }
+        });
+
+        // สร้าง employees ใหม่ โดยแทนที่ languageList ด้วยข้อมูลใหม่จาก empLangMap
+        const merged = employees.map(emp => {
+            return {
+                ...emp,
+                educationList: empLangMap[emp.employname] || [],
+            };
+        });
+
+        setEmployees(merged);
     };
 
-    console.log("personals : ", personal);
+    console.log("educationRows : ", educationRows);
 
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -157,7 +198,7 @@ const EducationDetail = (props) => {
         const invalidMessages = [];
 
         employees.forEach((row, rowIndex) => {
-            personalColumns.forEach((col) => {
+            educationColumns.forEach((col) => {
                 const value = row[col.key];
 
                 if (value === "") {
@@ -169,32 +210,31 @@ const EducationDetail = (props) => {
                     invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
                     return;
                 }
-
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
             });
         });
 
-        // ✅ ตรวจสอบว่า employee.name ซ้ำหรือไม่
-        const names = employees.map(row => row.name?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        // แก้เป็น employname แทน name
+        const names = employees.map(row => row.employname?.trim()).filter(Boolean);
         const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
         if (duplicates.length > 0) {
             invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
         }
 
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
         if (invalidMessages.length > 0) {
             ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
             return;
         }
 
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, employees)
+        // แปลงข้อมูลก่อนบันทึก
+        const employeesToSave = employees.map(emp => ({
+            ...emp,
+            educationList: (emp.educationList || []).map(train => ({
+                ...train,
+                file: typeof train.file === "object" && train.file !== null ? train.file.name || null : train.file || null,
+            })),
+        }));
+
+        set(companiesRef, employeesToSave)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
@@ -233,9 +273,10 @@ const EducationDetail = (props) => {
                                 <TableExcel
                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
                                     stylesTable={{ width: "2000px" }} // ✅ ส่งเป็น object
-                                    columns={personalColumns}
-                                    initialData={personal}
-                                    onDataChange={handlePersonalChange}
+                                    types="list"
+                                    columns={educationColumns}
+                                    initialData={educationRows}
+                                    onDataChange={handleEducationChange}
                                 />
                             </Paper>
                             :
@@ -259,16 +300,25 @@ const EducationDetail = (props) => {
                                     </TableHead>
                                     <TableBody>
                                         {
-                                            personal.length === 0 ?
+                                            educationRows.length === 0 ?
                                                 <TableRow>
                                                     <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                 </TableRow>
                                                 :
-                                                personal.map((row, index) => (
+                                                educationRows.map((row, index) => (
                                                     <TableRow>
                                                         <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.education}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.educationLevel}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.institution}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.educationCategory}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.faculty}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.branch}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.degree}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.graduateYear}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>{row.gpa}</TableCell>
                                                     </TableRow>
                                                 ))}
                                     </TableBody>

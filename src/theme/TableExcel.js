@@ -449,7 +449,7 @@ export default function TableExcel({
         } else if (key === "arrowright") {
             e.preventDefault();
             moveSelection("right");
-        } else if (key === "delete" || key === "backspace") {
+        } else if (key === "delete") {
             e.preventDefault();
             clearSelectedCells();
         }
@@ -516,7 +516,7 @@ export default function TableExcel({
                                                                     zIndex: 20,              // ให้ลอยอยู่บนเซลล์อื่น
                                                                     borderRight: "1px solid #ddd", // เพิ่มเส้นขอบขวาเพื่อแยกชัดเจน (ถ้าต้องการ)
                                                                     backgroundColor: col.disabled === true
-                                                                        ? "#e9e9e9ff"
+                                                                        ? theme.palette.primary.light
                                                                         : (isCellSelected(rowIdx, colIdx)
                                                                             ? theme.palette.primary.light
                                                                             : getCellBackgroundColor(data[rowIdx]?.[col.key], col)),
@@ -524,10 +524,13 @@ export default function TableExcel({
                                                                 :
                                                                 {
                                                                     backgroundColor: col.disabled === true
-                                                                        ? "#e9e9e9ff"
+                                                                        ? theme.palette.primary.light
                                                                         : (isCellSelected(rowIdx, colIdx)
                                                                             ? theme.palette.primary.light
                                                                             : getCellBackgroundColor(data[rowIdx]?.[col.key], col)),
+                                                                            position: "sticky",      // ทำให้ sticky
+                                                                    left: 0,                 // ติดซ้ายที่ 0px
+                                                                    zIndex: 20,              // ให้ลอยอยู่บนเซลล์อื่น
                                                                 }}>
                                                         {row.employname}
                                                     </TableCell>
@@ -541,7 +544,7 @@ export default function TableExcel({
                                                     <TableCell key={colIdx} rowSpan={positionRowSpan[rowIdx]}
                                                         sx={{
                                                             backgroundColor: col.disabled === true
-                                                                ? "#e9e9e9ff"
+                                                                ? theme.palette.primary.light
                                                                 : (isCellSelected(rowIdx, colIdx)
                                                                     ? theme.palette.primary.light
                                                                     : getCellBackgroundColor(data[rowIdx]?.[col.key], col)),
@@ -565,7 +568,7 @@ export default function TableExcel({
                                                     height: 28,
                                                     fontSize: '13px', // ปรับขนาดฟอนต์ให้เหมาะกับความสูง
                                                     backgroundColor: col.disabled === true
-                                                        ? "#e9e9e9ff"
+                                                        ? theme.palette.primary.light
                                                         : (isCellSelected(rowIdx, colIdx)
                                                             ? theme.palette.primary.light
                                                             : getCellBackgroundColor(data[rowIdx]?.[col.key], col)),

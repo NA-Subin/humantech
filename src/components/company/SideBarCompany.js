@@ -911,10 +911,10 @@ export default function SideBarCompany() {
                             )}
                             {!openData && <Divider />}
                             {open && <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1, marginBottom: -0.5 }}>
-                                โครงสร้างภาษี
+                                โครงสร้างเงินเดือน
                             </Typography>}
 
-                            {['ประกันสังคม', 'ภาษี', 'ค่าลดหย่อนภาษี'].map((text, index) => {
+                            {['ประกันสังคม', 'ภาษี', 'ค่าลดหย่อนภาษี', 'รายได้เพิ่มเติม', 'รายหักเพิ่มเติม'].map((text, index) => {
                                 const isSelected = selectedMenu === text;
 
                                 return (
@@ -938,10 +938,14 @@ export default function SideBarCompany() {
                                             // }
                                             to={
                                                 index === 0
-                                                    ? `/?domain=${domain}&company=${companyName}&vat=social-security`
+                                                    ? `/?domain=${domain}&company=${companyName}&salary=social-security`
                                                     : index === 1
-                                                        ? `/?domain=${domain}&company=${companyName}&vat=tax`
-                                                        : `/?domain=${domain}&company=${companyName}&vat=deduction`
+                                                        ? `/?domain=${domain}&company=${companyName}&salary=tax`
+                                                        : index === 2
+                                                            ? `/?domain=${domain}&company=${companyName}&salary=deduction`
+                                                            : index === 3
+                                                                ? `/?domain=${domain}&company=${companyName}&salary=income`
+                                                                : `/?domain=${domain}&company=${companyName}&salary=deductions`
                                             }
                                             onClick={() => setSelectedMenu(text)}
                                             sx={{
@@ -1192,9 +1196,7 @@ export default function SideBarCompany() {
                                 'ขอลา',
                                 'ขอโอที',
                                 'ขอแก้ไขเวลา',
-                                'ขอทำงานนอกสถานที่',
-                                'ขอหนังสือรับรองการทำงาน',
-                                'ขอหนังสือรับรองเงินเดือน',
+                                'ขอทำงานนอกสถานที่'
                             ].map((text, index) => {
                                 const isSelected = selectedMenu === text;
 
@@ -1218,11 +1220,11 @@ export default function SideBarCompany() {
                                             // }
                                             to={
                                                 index === 0 ? `/?domain=${domain}&company=${companyName}&report=leave`
-                                                : index === 1 ? `/?domain=${domain}&company=${companyName}&report=ot`
-                                                : index === 2 ? `/?domain=${domain}&company=${companyName}&report=time`
-                                                : index === 3 ? `/?domain=${domain}&company=${companyName}&report=working-outside`
-                                                : index === 4 ? `/?domain=${domain}&company=${companyName}&report=work-certificate`
-                                                    : `/?domain=${domain}&company=${companyName}&report=salary-certificate`
+                                                    : index === 1 ? `/?domain=${domain}&company=${companyName}&report=ot`
+                                                        : index === 2 ? `/?domain=${domain}&company=${companyName}&report=time`
+                                                            : index === 3 ? `/?domain=${domain}&company=${companyName}&report=working-outside`
+                                                                : index === 4 ? `/?domain=${domain}&company=${companyName}&report=work-certificate`
+                                                                    : `/?domain=${domain}&company=${companyName}&report=salary-certificate`
                                             }
                                             sx={{
                                                 minHeight: 32,

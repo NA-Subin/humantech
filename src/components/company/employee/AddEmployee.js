@@ -664,11 +664,11 @@ const AddEmployee = () => {
     ];
 
     const educationLevels = [
-        { value: "primary", label: "ประถมศึกษา" },
-        { value: "secondary", label: "มัธยมศึกษา" },
-        { value: "bachelor", label: "ปริญญาตรี" },
-        { value: "master", label: "ปริญญาโท" },
-        { value: "doctorate", label: "ปริญญาเอก" }
+        { value: "ประถมศึกษา", label: "ประถมศึกษา" },
+        { value: "มัธยมศึกษา", label: "มัธยมศึกษา" },
+        { value: "ปริญญาตรี", label: "ปริญญาตรี" },
+        { value: "ปริญญาโท", label: "ปริญญาโท" },
+        { value: "ปริญญาเอก", label: "ปริญญาเอก" }
     ];
 
     const bachelorCategories = [
@@ -1318,7 +1318,8 @@ const AddEmployee = () => {
                                             justifyContent: "center",
                                             alignItems: "center"
                                         }}
-                                        onClick={() => setEducation(true)}
+                                        onClick={() => (handleChange(index, "education", "จบการศึกษา"), setEducation(true))}
+                                    //onClick={() => setEducation(true)}
                                     >
                                         <Typography variant="h6" fontWeight="bold" color={education ? "white" : "textDisabled"} gutterBottom>จบการศึกษา</Typography>
                                         <MilitaryTechIcon
@@ -1334,7 +1335,7 @@ const AddEmployee = () => {
                                             justifyContent: "center",
                                             alignItems: "center"
                                         }}
-                                        onClick={() => setEducation(false)}
+                                        onClick={() => (handleChange(index, "education", "กำลังศึกษาอยู่"), setEducation(false))}
                                     >
                                         <Typography variant="h6" fontWeight="bold" color={education ? "textDisabled" : "white"} gutterBottom>กำลังศึกษาอยู่</Typography>
                                         <MenuBookIcon
@@ -1368,7 +1369,7 @@ const AddEmployee = () => {
                             </Grid>
 
                             {
-                                (item.educationLevel === "primary" || item.educationLevel === "secondary" || item.educationLevel === "") ?
+                                (item.educationLevel === "ประถมศึกษา" || item.educationLevel === "มัธยมศึกษา" || item.educationLevel === "") ?
                                     <React.Fragment>
                                         <Grid item size={12}>
                                             <Typography variant="subtitle2" fontWeight="bold">
@@ -1378,7 +1379,7 @@ const AddEmployee = () => {
                                                 fullWidth
                                                 size="small"
                                                 value={item.institution}
-                                                placeholder="กรถุณากรอกสถานศึกษา"
+                                                placeholder="กรุณากรอกสถานศึกษา"
                                                 onChange={(e) =>
                                                     handleChange(index, "institution", e.target.value)
                                                 }
@@ -1408,10 +1409,10 @@ const AddEmployee = () => {
                                                 fullWidth
                                                 size="small"
                                                 placeholder="เช่น 2568"
-                                                value={item.educationLevel}
+                                                value={item.educationCategory}
                                                 SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
                                                 onChange={(e) =>
-                                                    handleChange(index, "majorCategory", e.target.value)
+                                                    handleChange(index, "educationCategory", e.target.value)
                                                 }
                                             >
                                                 {bachelorCategories.map((option) => (
@@ -1426,6 +1427,10 @@ const AddEmployee = () => {
                                             <TextField
                                                 fullWidth
                                                 size="small"
+                                                value={item.faculty}
+                                                onChange={(e) =>
+                                                    handleChange(index, "faculty", e.target.value)
+                                                }
                                                 placeholder="กรุณากรอกคณะ"
                                             />
                                         </Grid>
@@ -1434,6 +1439,10 @@ const AddEmployee = () => {
                                             <TextField
                                                 fullWidth
                                                 size="small"
+                                                value={item.branch}
+                                                onChange={(e) =>
+                                                    handleChange(index, "branch", e.target.value)
+                                                }
                                                 placeholder="กรุณากรอกสาขา"
                                             />
                                         </Grid>
@@ -1442,6 +1451,10 @@ const AddEmployee = () => {
                                             <TextField
                                                 fullWidth
                                                 size="small"
+                                                value={item.degree}
+                                                onChange={(e) =>
+                                                    handleChange(index, "degree", e.target.value)
+                                                }
                                                 placeholder="กรุณากรอกชื่อปริญญา"
                                             />
                                         </Grid>

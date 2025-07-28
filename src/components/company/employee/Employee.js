@@ -289,13 +289,13 @@ const Employee = () => {
         switch (key) {
             case 'ข้อมูลทั่วไป':
                 return <PersonalDetail data={key} />;
-            case 'ประวัติการศึกษา':
+            case 'การศึกษา':
                 return <EducationDetail data={key} />;
-            case 'ประวัติการทำงาน/ฝึกงาน':
+            case 'การทำงาน/ฝึกงาน':
                 return <InternshipDetail data={key} />;
-            case 'ประวัติการฝึกอบรม':
+            case 'การฝึกอบรม':
                 return <TrainingDetail data={key} />;
-            case 'ความสามารถทางภาษา':
+            case 'ภาษา':
                 return <LanguageDetail data={key} />;
             case 'อื่นๆ':
                 return <OtherDetail data={key} />;
@@ -463,48 +463,57 @@ const Employee = () => {
 
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
+            <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
+                <Grid container spacing={2}>
+                    <Grid item size={12}>
+                        <Typography variant="h5" fontWeight="bold" gutterBottom>พนักงาน (employee)</Typography>
+                    </Grid>
+                    <Grid item size={12}>
+                        <Divider />
+                    </Grid>
+                </Grid>
+            </Box>
             <Grid container spacing={2}>
-                <Grid item size={1} sx={{ position: "sticky", top: 15, alignSelf: "flex-start" }}>
-                    <Typography variant="subtitle1" fontWeight="bold" sx={{ marginTop: 8, whiteSpace: "nowrap", marginLeft: -2.5 }} gutterBottom>เลือกเมนูพนักงาน</Typography>
+                <Grid item size={1} sx={{ position: "sticky", top: 100, alignSelf: "flex-start" }}>
+                    <Typography variant="subtitle1" fontWeight="bold" sx={{ whiteSpace: "nowrap", marginLeft: -2.5 }} gutterBottom>เลือกเมนู</Typography>
                     <Divider />
-                    <Box sx={{ marginLeft: -10 }}>
+                    <Box sx={{ marginLeft: -14 }}>
+                        {/* <Paper > */}
                         {[
                             'ข้อมูลทั่วไป',
-                            'ประวัติการศึกษา',
-                            'ประวัติการทำงาน/ฝึกงาน',
-                            'ประวัติการฝึกอบรม',
-                            'ความสามารถทางภาษา',
+                            'การศึกษา',
+                            'การทำงาน/ฝึกงาน',
+                            'การฝึกอบรม',
+                            'ภาษา',
                             'อื่นๆ',
                         ].map((text, index) => {
+                            const value = `${index}-${text}`;
+                            const isSelected = menu === value;
+
                             return (
                                 <Button
                                     key={index}
                                     variant="contained"
-                                    color="primary"
+                                    color={isSelected ? "primary" : "secondary"}
                                     sx={{
                                         m: 1,
                                         width: "200px",
                                         textAlign: "right",
                                         justifyContent: "flex-end",
-                                        fontSize: "13px"
+                                        fontSize: "13px",
+                                        marginLeft: isSelected && 1
                                     }}
-                                    onClick={() => setMenu(`${index}-${text}`)}
+                                    onClick={() => setMenu(value)}
                                 >
                                     {text}
                                 </Button>
                             );
                         })}
+                        {/* </Paper> */}
                     </Box>
 
                 </Grid>
                 <Grid item size={11}>
-                    <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
-                        <Grid container spacing={2}>
-                            <Grid item size={12}>
-                                <Typography variant="h5" fontWeight="bold" gutterBottom>พนักงาน (employee)</Typography>
-                            </Grid>
-                        </Grid>
-                    </Box>
                     <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "70vh" }}>
                         <Box>
                             {/* <SelectEmployeeGroup

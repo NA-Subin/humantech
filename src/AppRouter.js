@@ -15,10 +15,10 @@ import SectionDetail from "./components/company/structure/Section";
 import PositionDetail from "./components/company/structure/Position";
 import LeaveDetail from "./components/company/time/Leave";
 import WorkShiftDetail from "./components/company/time/Workshift";
-import SSODetail from "./components/company/structure/SSO";
+import SSODetail from "./components/company/salary/SSO";
 import HolidayDetail from "./components/company/time/Holiday";
-import TaxDetail from "./components/company/structure/Tax";
-import TaxDeductionDetail from "./components/company/structure/TaxDeduction";
+import TaxDetail from "./components/company/salary/Tax";
+import TaxDeductionDetail from "./components/company/salary/TaxDeduction";
 import Employee from "./components/company/employee/Employee";
 import OTDetail from "./components/company/time/OT";
 import ReportLeave from "./components/company/report/Leave";
@@ -27,10 +27,12 @@ import ReportTime from "./components/company/report/Time";
 import ReportWorkingOutside from "./components/company/report/WorkingOutside";
 import ReportWorkCertificat from "./components/company/report/WorkCertificate";
 import ReportSalaryCertificate from "./components/company/report/SalaryCertificate";
-import CalculateSalary from "./components/company/employee/CalculateSalary";
+import CalculateSalary from "./components/company/calculate/CalculateSalary";
 import { loadEncryptedCookie } from "./server/cookieUtils";
 import { useEffect, useState } from "react";
 import DomainLoginAdmin from "./components/login/login-admin/Login";
+import IncomeDetail from "./components/company/salary/Income";
+import DeductionsDetail from "./components/company/salary/Deductions";
 
 const ProtectedRouteWrapper = ({ children }) => {
   const location = useLocation();
@@ -139,6 +141,10 @@ function CompanyRoutes({ page }: { page?: string }) {
       return <WorkShiftDetail />;
     case "dayoff":
       return <HolidayDetail />;
+    case "income":
+      return <IncomeDetail />;
+    case "deductions":
+      return <DeductionsDetail />;
     case "report-leave":
       return <ReportLeave />;
     case "report-ot":
@@ -169,7 +175,7 @@ function MainEntry() {
   if (!page) {
     page =
       searchParams.get("operation") ||
-      searchParams.get("vat") ||
+      searchParams.get("salary") ||
       searchParams.get("time") ||
       searchParams.get("employee") ||
       searchParams.get("calculate") ||
