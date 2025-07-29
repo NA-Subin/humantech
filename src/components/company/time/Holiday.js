@@ -56,12 +56,16 @@ const HolidayDetail = () => {
     const [editLeave, setEditLeave] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
+    const [holidays, setHolidays] = useState(true);
     const [holidayList, setHolidayList] = useState([{ ID: 0, date: '', holiday: '' }]);
     const [holiday, setHoliday] = useState([{ ID: 0, date: '', holiday: '' }]);
     const columns = [
         { label: "วันที่", key: "date", type: "date", width: "50%" },
         { label: "ชื่อวันหยุด", key: "holiday", type: "text", width: "50%" }
     ];
+
+    console.log("holiday : ", holiday);
+    console.log("holidays : ", holidays);
 
     const [openPopup, setOpenPopup] = useState(false);
 
@@ -91,6 +95,33 @@ const HolidayDetail = () => {
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
 
+    const handleHolidayChange = (updatedList) => {
+        const updated = updatedList.map(shift => {
+            const rawDate = (shift.date || "").trim();
+            const parsed = dayjs(rawDate, "DD/MM/YYYY", true); // ใช้ strict parsing
+
+            // ตรวจสอบว่า valid จริงหรือไม่
+            if (!parsed.isValid()) {
+                console.warn("❌ Invalid date format for:", rawDate);
+                return {
+                    ...shift,
+                    DD: "",
+                    MM: "",
+                    YYYY: "",
+                };
+            }
+
+            return {
+                ...shift,
+                DD: parsed.format("DD"),
+                MM: parsed.format("MM"),
+                YYYY: parsed.format("YYYY"),
+            };
+        });
+
+        setHoliday(updated);
+    };
+
     useEffect(() => {
         if (!firebaseDB) return;
 
@@ -116,7 +147,7 @@ const HolidayDetail = () => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const dayOffRef = ref(firebaseDB, `workgroup/company/${companyId}/dayoff`);
+        const dayOffRef = ref(firebaseDB, `workgroup/company/${companyId}/holiday`);
 
         const unsubscribe = onValue(dayOffRef, (snapshot) => {
             const dayOffData = snapshot.val();
@@ -133,6 +164,7 @@ const HolidayDetail = () => {
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
+
 
     const handleSave = (monthHolidays, allHolidayList) => {
         console.log("monthHolidays : ", monthHolidays);
@@ -165,21 +197,88 @@ const HolidayDetail = () => {
         console.log("📌 Final updatedHolidayList:", updatedHolidayList);
 
         // 🔄 บันทึกลง Firebase (uncomment เมื่อใช้งานจริง)
-        // const holidayRef = ref(firebaseDB, "holiday");
-        // set(holidayRef, updatedHolidayList)
-        //     .then(() => console.log("✅ บันทึกวันหยุดสำเร็จ"))
-        //     .catch((err) => console.error("❌ เกิดข้อผิดพลาด:", err));
+        const holidayRef = ref(firebaseDB, `workgroup/company/${companyId}/holiday`);
+        set(holidayRef, updatedHolidayList)
+            .then(() => {
+                console.log("✅ บันทึกวันหยุดสำเร็จ");
+            })
+            .catch((err) => console.error("❌ เกิดข้อผิดพลาด:", err));
+
     };
 
 
     const handleCancel = () => {
-        const dayoffRef = ref(firebaseDB, `workgroup/company/${companyId}/dayoff`);
+        const dayoffRef = ref(firebaseDB, `workgroup/company/${companyId}/holiday`);
 
         onValue(dayoffRef, (snapshot) => {
             const dayoffData = snapshot.val() || [{ ID: 0, name: '' }];
             setHolidayList(dayoffData);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
+
+    const handleSaveHolidays = () => {
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/holiday`);
+
+        const invalidMessages = [];
+
+        holiday.forEach((row, rowIndex) => {
+            columns.forEach((col) => {
+                const value = row[col.key];
+
+                if (value === "") {
+                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
+                    return;
+                }
+
+                if (col.type === "number" && isNaN(Number(value))) {
+                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
+                    return;
+                }
+
+                if (
+                    col.type === "select" &&
+                    !col.options?.some(opt => opt.value === value)
+                ) {
+                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
+                    return;
+                }
+            });
+        });
+
+        // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
+        const names = holiday.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
+        if (duplicates.length > 0) {
+            invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
+        }
+
+        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
+        if (invalidMessages.length > 0) {
+            ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
+            return;
+        }
+
+        // ✅ บันทึกเมื่อผ่านเงื่อนไข
+        set(companiesRef, holiday)
+            .then(() => {
+                console.log("บันทึกสำเร็จ");
+                setHolidays(true);
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+            });
+    };
+
+    const handleCancelHolidays = () => {
+        const dayoffRef = ref(firebaseDB, `workgroup/company/${companyId}/holiday`);
+
+        onValue(dayoffRef, (snapshot) => {
+            const dayoffData = snapshot.val() || [];
+            setHoliday(dayoffData);
+        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
+        setHolidays(true);
+    }
 
     const [newMonth, setNewMonth] = useState("");
 
@@ -192,8 +291,16 @@ const HolidayDetail = () => {
         <Container maxWidth="xl" sx={{ p: 5 }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
-                    <Grid item size={12}>
+                    <Grid item size={10}>
                         <Typography variant="h5" fontWeight="bold" gutterBottom>วันหยุดบริษัท (Holiday)</Typography>
+                    </Grid>
+                    <Grid item size={2} textAlign="right">
+                        {
+                            holidays ?
+                                <Button variant="contained" onClick={() => setHolidays(false)} >เพิ่มวันหยุดบริษัท</Button>
+                                :
+                                <Button variant="contained" color="error" onClick={() => setHolidays(true)} >ยกเลิก</Button>
+                        }
                     </Grid>
                 </Grid>
             </Box>
@@ -201,84 +308,100 @@ const HolidayDetail = () => {
                 <Box>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลวันหยุดบริษัท</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
-                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
-                        <div
-                            style={{
-                                display: "grid",
-                                gridTemplateColumns: "repeat(3, 1fr)", // ปรับเป็น 4 ได้ตามขนาดหน้าจอ
-                                gap: "20px",
-                            }}
-                        >
-                            {months.map((month, index) => (
-                                <div key={index}>
-                                    <h3 style={{ textAlign: "center", marginBottom: "8px" }}>
-                                        {formatThaiMonth(month)}
-                                    </h3>
-                                    <Box onClick={() => UpdateDayOff(formatThaiMonth(month))}>
-                                        <DateCalendar
-                                            defaultValue={month}
-                                            referenceDate={month}
-                                            disableHighlightToday
-                                            readOnly
-                                            showDaysOutsideCurrentMonth
-                                            sx={{
-                                                borderRadius: 2,
-                                                boxShadow: "2px 6px 12px rgba(0,0,0,0.15)",
-                                                backgroundColor: theme.palette.primary.light,
-                                            }}
-                                            slots={{
-                                                day: (props) => {
-                                                    const date = dayjs(props.day);
-                                                    const dateStr = date.format("YYYY-MM-DD");
-                                                    const isToday = date.isSame(dayjs(), "day");
-                                                    const isHoliday = holidayDates.includes(dateStr);
-                                                    const isSunday = date.day() === 0;
-                                                    const isOtherMonth = !date.isSame(month, "month");
+                    {
+                        holidays ?
+                            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
+                                <div
+                                    style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "repeat(3, 1fr)", // ปรับเป็น 4 ได้ตามขนาดหน้าจอ
+                                        gap: "20px",
+                                    }}
+                                >
+                                    {months.map((month, index) => (
+                                        <div key={index}>
+                                            <h3 style={{ textAlign: "center", marginBottom: "8px" }}>
+                                                {formatThaiMonth(month)}
+                                            </h3>
+                                            <Box onClick={() => UpdateDayOff(formatThaiMonth(month))}>
+                                                <DateCalendar
+                                                    defaultValue={month}
+                                                    referenceDate={month}
+                                                    disableHighlightToday
+                                                    readOnly
+                                                    showDaysOutsideCurrentMonth
+                                                    sx={{
+                                                        borderRadius: 2,
+                                                        boxShadow: "2px 6px 12px rgba(0,0,0,0.15)",
+                                                        backgroundColor: theme.palette.primary.light,
+                                                    }}
+                                                    slots={{
+                                                        day: (props) => {
+                                                            const date = dayjs(props.day);
+                                                            const dateStr = date.format("YYYY-MM-DD");
+                                                            const isToday = date.isSame(dayjs(), "day");
+                                                            const isHoliday = holidayDates.includes(dateStr);
+                                                            const isSunday = date.day() === 0;
+                                                            const isOtherMonth = !date.isSame(month, "month");
 
-                                                    // ใช้ชื่อวันหยุดถ้ามี
-                                                    const holidayName = getHolidayName(dateStr);
+                                                            // ใช้ชื่อวันหยุดถ้ามี
+                                                            const holidayName = getHolidayName(dateStr);
 
-                                                    return (
-                                                        <PickersDay
-                                                            {...props}
-                                                            title={isHoliday ? holidayName : undefined} // Tooltip ที่แสดงชื่อวันหยุด
-                                                            sx={{
-                                                                bgcolor: isHoliday ? "#ffebee" : "transparent",
-                                                                color: isHoliday
-                                                                    ? "red"
-                                                                    : isOtherMonth
-                                                                        ? "#ccc"
-                                                                        : isSunday
+                                                            return (
+                                                                <PickersDay
+                                                                    {...props}
+                                                                    title={isHoliday ? holidayName : undefined} // Tooltip ที่แสดงชื่อวันหยุด
+                                                                    sx={{
+                                                                        bgcolor: isHoliday ? "#ffebee" : "transparent",
+                                                                        color: isHoliday
                                                                             ? "red"
-                                                                            : "inherit",
-                                                                fontWeight: "normal",
-                                                                border: isToday ? "none" : undefined,
-                                                                "&.Mui-selected": {
-                                                                    backgroundColor: "transparent !important",
-                                                                    color: isHoliday
-                                                                        ? "red"
-                                                                        : isOtherMonth
-                                                                            ? "#ccc"
-                                                                            : isSunday
+                                                                            : isOtherMonth
+                                                                                ? "#ccc"
+                                                                                : isSunday
+                                                                                    ? "red"
+                                                                                    : "inherit",
+                                                                        fontWeight: "normal",
+                                                                        border: isToday ? "none" : undefined,
+                                                                        "&.Mui-selected": {
+                                                                            backgroundColor: "transparent !important",
+                                                                            color: isHoliday
                                                                                 ? "red"
-                                                                                : "inherit",
-                                                                    fontWeight: "normal",
-                                                                },
-                                                                "&.MuiPickersDay-today": {
-                                                                    border: "none",
-                                                                },
-                                                            }}
-                                                        />
-                                                    );
-                                                },
-                                            }}
-                                        />
-                                    </Box>
+                                                                                : isOtherMonth
+                                                                                    ? "#ccc"
+                                                                                    : isSunday
+                                                                                        ? "red"
+                                                                                        : "inherit",
+                                                                            fontWeight: "normal",
+                                                                        },
+                                                                        "&.MuiPickersDay-today": {
+                                                                            border: "none",
+                                                                        },
+                                                                    }}
+                                                                />
+                                                            );
+                                                        },
+                                                    }}
+                                                />
+                                            </Box>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </LocalizationProvider>
+                            </LocalizationProvider>
+                            :
+                            <TableExcel
+                                columns={columns}
+                                initialData={holiday}
+                                onDataChange={handleHolidayChange}
+                            />
+                    }
                 </Box>
+                {
+                    !holidays &&
+                    <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                        <Button variant="contained" size="small" color="error" onClick={handleCancelHolidays} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                        <Button variant="contained" size="small" color="success" onClick={handleSaveHolidays} >บันทึก</Button>
+                    </Box>
+                }
             </Paper>
             <Dialog
                 open={openPopup}

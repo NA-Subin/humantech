@@ -60,7 +60,7 @@ const EducationDetail = (props) => {
 
         educations.forEach((education, educationIdx) => {
             educationRows.push({
-                employname: emp.employname,
+                employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 education: education.education || "",
                 educationLevel: education.educationLevel || "",
@@ -79,7 +79,7 @@ const EducationDetail = (props) => {
         // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
         if (educations.length === 0) {
             educationRows.push({
-                employname: emp.employname,
+                employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 education: "",
                 educationLevel: "",

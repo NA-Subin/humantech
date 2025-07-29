@@ -29,7 +29,7 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
 
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { InputAdornment } from "@mui/material";
+import { Checkbox, InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
@@ -46,14 +46,91 @@ const WorkShiftDetail = () => {
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [workshift, setWorkshift] = useState([{ ID: 0, name: '' }]);
+
+    const daysMap = {
+        monday: "จันทร์",
+        tuesday: "อังคาร",
+        wednesday: "พุธ",
+        thursday: "พฤหัสบดี",
+        friday: "ศุกร์",
+        saturday: "เสาร์",
+        sunday: "อาทิตย์",
+    };
+
     const columns = [
         { label: "กะการทำงาน", key: "name", type: "text" },
         { label: "เข้า", key: "start", type: "time" },
         { label: "ออก", key: "stop", type: "time" },
-        { label: "เวลาพัก (นาที)", key: "breakMinutes", type: "number" },
-        { label: "จำนวนชั่วโมง", key: "totalWorkHours", type: "number" }
+        { label: "จำนวนชั่วโมง", key: "totalWorkHours", type: "number" },
+        ...Object.entries(daysMap).map(([key, label]) => ({
+            label,
+            key,
+            type: "checkbox",
+        })),
     ];
 
+    const reverseWorkshift = (list) => {
+        // สร้าง reverse map จากภาษาไทย -> key
+        const reverseDaysMap = Object.fromEntries(
+            Object.entries(daysMap).map(([key, value]) => [value, key])
+        );
+
+        return list.map(shift => {
+            const newShift = {
+                ID: shift.ID,
+                name: shift.name,
+                start: shift.start,
+                stop: shift.stop,
+                status: shift.status,
+                totalWorkHours: shift.totalWorkHours,
+            };
+
+            // กำหนดค่าเริ่มต้นเป็น 0 สำหรับทุกวัน
+            Object.keys(daysMap).forEach(dayKey => {
+                newShift[dayKey] = 0;
+            });
+
+            // แปลง holiday -> ใส่ค่ากลับไปที่ key
+            shift.holiday?.forEach(h => {
+                const dayKey = reverseDaysMap[h.name];
+                if (dayKey) {
+                    newShift[dayKey] = 1;
+                }
+            });
+
+            return newShift;
+        });
+    };
+
+    const restored = reverseWorkshift(workshift);
+    console.log("✅ แปลงกลับ:", restored);
+
+    const handleWorkshiftChange = (updatedList) => {
+        const updated = updatedList.map(shift => {
+            const holidays = Object.keys(daysMap)
+                .filter(dayKey => shift[dayKey] === 1)
+                .map((dayKey, index) => ({
+                    ID: index,
+                    name: daysMap[dayKey],
+                    zeller: 1,
+                }));
+
+            return {
+                ID: shift.ID,
+                name: shift.name,
+                start: shift.start,
+                stop: shift.stop,
+                status: shift.status,
+                totalWorkHours: shift.totalWorkHours,
+                holiday: holidays,
+            };
+        });
+
+        setWorkshift(updated);
+    };
+
+
+    console.log("workshift : ", workshift);
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
 
@@ -172,7 +249,7 @@ const WorkShiftDetail = () => {
                     </Grid>
                 </Grid>
             </Box>
-            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
+            <Paper sx={{ p: 5, width: "1250px", marginTop: -3, borderRadius: 4 }}>
                 <Box>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลกะการทำงาน</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
@@ -203,9 +280,11 @@ const WorkShiftDetail = () => {
                                             ]}
                                         /> */}
                                         <TableExcel
+                                            styles={{ height: "50vh" }} // ✅ ส่งเป็น object
+                                            stylesTable={{ width: "1300px" }} // ✅ ส่งเป็น object
                                             columns={columns}
-                                            initialData={workshift}
-                                            onDataChange={setWorkshift}
+                                            initialData={restored}
+                                            onDataChange={handleWorkshiftChange}
                                         />
                                     </Paper>
 
@@ -217,31 +296,49 @@ const WorkShiftDetail = () => {
                                                     <TablecellHeader rowSpan={2} sx={{ width: 80 }}>ลำดับ</TablecellHeader>
                                                     <TablecellHeader rowSpan={2}>กะการทำงาน</TablecellHeader>
                                                     <TablecellHeader colSpan={2}>ช่วงเวลา</TablecellHeader>
-                                                    <TablecellHeader rowSpan={2}>เวลาพัก</TablecellHeader>
                                                     <TablecellHeader rowSpan={2}>จำนวนชั่วโมง</TablecellHeader>
+                                                    <TablecellHeader colSpan={7}>กำหนดวันหยุด</TablecellHeader>
                                                 </TableRow>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader>เข้า</TablecellHeader>
                                                     <TablecellHeader>ออก</TablecellHeader>
+                                                    <TablecellHeader>จันทร์</TablecellHeader>
+                                                    <TablecellHeader>อังคาร</TablecellHeader>
+                                                    <TablecellHeader>พุธ</TablecellHeader>
+                                                    <TablecellHeader>พฤหัสบดี</TablecellHeader>
+                                                    <TablecellHeader>ศุกร์</TablecellHeader>
+                                                    <TablecellHeader>เสาร์</TablecellHeader>
+                                                    <TablecellHeader>อาทิตย์</TablecellHeader>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
                                                 {
-                                                    workshift.length === 0 ?
+                                                    restored.length === 0 ?
                                                         <TableRow>
                                                             <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                         </TableRow>
                                                         :
-                                                        workshift.map((row, index) => (
-                                                            <TableRow>
+                                                        restored.map((row, index) => (
+                                                            <TableRow key={row.ID ?? index}>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.start}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.stop}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.breakMinutes}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.totalWorkHours	}</TableCell>
+
+                                                                {Object.keys(daysMap).map((dayKey) => (
+                                                                    <TableCell key={dayKey} sx={{ textAlign: "center" }}>
+                                                                        <Checkbox
+                                                                            sx={{ marginTop: -1, marginBottom: -1 }}
+                                                                            checked={row[dayKey] === 1}
+                                                                            disabled
+                                                                            color="primary"
+                                                                        />
+                                                                    </TableCell>
+                                                                ))}
                                                             </TableRow>
-                                                        ))}
+                                                        ))
+                                                }
                                             </TableBody>
                                         </Table>
                                     </TableContainer>

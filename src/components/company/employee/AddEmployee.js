@@ -77,6 +77,7 @@ const AddEmployee = () => {
     const companyName = searchParams.get("company");
     const [open, setOpen] = React.useState(false);
 
+    const [nickname, setNickname] = React.useState("");
     const [name, setName] = React.useState("");
     const [lastName, setLastName] = React.useState("");
     const [openSex, setOpenSex] = React.useState(true);
@@ -155,6 +156,7 @@ const AddEmployee = () => {
 
 
     const personal = {
+        nickname: nickname,
         name: name,
         lastname: lastName,
         sex: openSex ? "ชาย" : "หญิง",
@@ -288,6 +290,7 @@ const AddEmployee = () => {
     const [editDepartment, setEditDepartment] = useState(false);
     const [thailand, setThailand] = useState([]);
     const [checkPosition, setCheckPosition] = useState({});
+    const [employeeCode, setEmployeeCode] = useState("");
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [employee, setEmployee] = useState([{ ID: 0, position: '', }]);
@@ -693,6 +696,9 @@ const AddEmployee = () => {
             const nextIndex = Object.keys(employeeData).length;
 
             await set(child(employeeRef, String(nextIndex)), {
+                employeecode: employeeCode,
+                password: "1234567",
+                nickname: nickname,
                 employeeid: nextIndex,
                 section: checkPosition.sectionid,
                 department: checkPosition.deptid,
@@ -752,32 +758,89 @@ const AddEmployee = () => {
                                         pointerEvents: isFull ? "none" : "auto" // ปิดการคลิกจริง
                                     }}
                                 >
-                                    <Box sx={{
-                                        display: "flex",
-                                        justifyContent: "right",
-                                        alignItems: "center",
-                                        p: 2,
-                                        paddingRight: 5.5,
-                                        marginTop: 0.5
-                                    }}>
-                                        <Typography
-                                            variant="subtitle2"
-                                            sx={{ color: checkPosition.positionname === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
-                                            gutterBottom
-                                        >
-                                            {`${row.positionname}`}
-                                        </Typography>
-                                        <Box sx={{ textAlign: "right" }}>
-                                            <Typography
-                                                variant="h6"
-                                                fontWeight="bold"
-                                                sx={{ color: checkPosition.positionname === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
-                                                gutterBottom
-                                            >
-                                                {`(${currentCount}/${row.max})`}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
+                                    {
+                                        checkPosition.positionname === row.positionname ?
+                                            <Box sx={{
+                                                p: 2,
+                                                paddingRight: 5.5,
+                                                textAlign: "center"
+                                            }}>
+                                                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: -2, marginBottom: -1 }}>
+                                                    <Typography
+                                                        variant="subtitle2"
+                                                        sx={{ color: "white", marginRight: 1, }}
+                                                        gutterBottom
+                                                    >
+                                                        {`${row.positionname}`}
+                                                    </Typography>
+                                                    <Box sx={{ textAlign: "right" }}>
+                                                        <Typography
+                                                            variant="subtitle1"
+                                                            fontWeight="bold"
+                                                            sx={{ color: checkPosition.positionname === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
+                                                            gutterBottom
+                                                        >
+                                                            {`(${currentCount}/${row.max})`}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
+                                                <Paper sx={{ height: "37px", borderRadius: 2 }}>
+                                                    <TextField
+                                                        size="small"
+                                                        fullWidth
+                                                        value={checkPosition.employeeCode || ""}
+                                                        onChange={(e) => {
+                                                            const newCode = e.target.value;
+                                                            setEmployeeCode(newCode);
+                                                            setCheckPosition(prev => ({
+                                                                ...prev,
+                                                                employeeCode: newCode
+                                                            }));
+                                                        }}
+                                                        InputProps={{
+                                                            startAdornment: (
+                                                                <InputAdornment position="start" sx={{ display: "flex", alignItems: "center", marginLeft: -1 }}>
+                                                                    <Typography
+                                                                        variant="body1"
+                                                                        fontWeight="bold"
+                                                                        sx={{ whiteSpace: "nowrap" }}
+                                                                    >
+                                                                        รหัสพนักงาน :
+                                                                    </Typography>
+                                                                </InputAdornment>
+                                                            ),
+                                                        }}
+                                                    />
+                                                </Paper>
+                                            </Box>
+                                            :
+                                            <Box sx={{
+                                                display: "flex",
+                                                justifyContent: "right",
+                                                alignItems: "center",
+                                                p: 2,
+                                                paddingRight: 5.5,
+                                                marginTop: 0.5
+                                            }}>
+                                                <Typography
+                                                    variant="subtitle2"
+                                                    sx={{ color: checkPosition.positionname === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
+                                                    gutterBottom
+                                                >
+                                                    {`${row.positionname}`}
+                                                </Typography>
+                                                <Box sx={{ textAlign: "right" }}>
+                                                    <Typography
+                                                        variant="h6"
+                                                        fontWeight="bold"
+                                                        sx={{ color: checkPosition.positionname === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray"), marginRight: 1 }}
+                                                        gutterBottom
+                                                    >
+                                                        {`(${currentCount}/${row.max})`}
+                                                    </Typography>
+                                                </Box>
+                                            </Box>
+                                    }
                                     <Box sx={{ textAlign: "right", marginTop: -7.5, marginRight: 0.5 }}>
                                         <BadgeIcon sx={{ fontSize: 40, color: checkPosition.positionname === row.positionname ? "white" : (isFull ? "#9e9e9e" : "gray") }} />
                                     </Box>
@@ -793,7 +856,17 @@ const AddEmployee = () => {
             content: (
                 <>
                     <Grid container spacing={2} marginTop={3} sx={{ width: "100%" }}>
-                        <Grid item size={6}>
+                        <Grid item size={3}>
+                            <Typography variant="subtitle2" fontWeight="bold" >ชื่อเล่น</Typography>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={nickname}
+                                placeholder="ชื่อเล่น"
+                                onChange={(e) => setNickname(e.target.value)}
+                            />
+                        </Grid>
+                        <Grid item size={4.5}>
                             <Typography variant="subtitle2" fontWeight="bold" >ชื่อ</Typography>
                             <TextField
                                 fullWidth
@@ -803,7 +876,7 @@ const AddEmployee = () => {
                                 onChange={(e) => setName(e.target.value)}
                             />
                         </Grid>
-                        <Grid item size={6}>
+                        <Grid item size={4.5}>
                             <Typography variant="subtitle2" fontWeight="bold" >นามสกุล</Typography>
                             <TextField
                                 fullWidth

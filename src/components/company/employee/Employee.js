@@ -132,6 +132,8 @@ const Employee = () => {
     }, [firebaseDB, companyId]);
 
     const columns = [
+        { label: "รหัสพนักงาน", key: "employeecode", type: "text" },
+        { label: "ชื่อเล่น", key: "nickname", type: "text" },
         { label: "ชื่อ", key: "employname", type: "text" },
         {
             label: "ฝ่ายงาน",
@@ -201,6 +203,7 @@ const Employee = () => {
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
     const personal = employees.map(emp => ({
+        nickname: emp.nickname ,
         employname: emp.employname,
         position: emp.position.split("-")[1],
         country: emp.personal?.country || '',
@@ -557,7 +560,8 @@ const Employee = () => {
                                                     <TableHead>
                                                         <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                             <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
-                                                            <TablecellHeader sx={{ width: "35%" }}>ชื่อ</TablecellHeader>
+                                                            <TablecellHeader sx={{ width: "10%" }}>รหัสพนักงาน</TablecellHeader>
+                                                            <TablecellHeader sx={{ width: "25%" }}>ชื่อ</TablecellHeader>
                                                             <TablecellHeader sx={{ width: "20%" }}>ฝ่ายงาน</TablecellHeader>
                                                             <TablecellHeader sx={{ width: "20%" }}>ส่วนงาน</TablecellHeader>
                                                             <TablecellHeader sx={{ width: "20%" }}>ตำแหน่ง</TablecellHeader>
@@ -573,7 +577,8 @@ const Employee = () => {
                                                                 employees.map((row, index) => (
                                                                     <TableRow>
                                                                         <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>{row.employeecode}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>{`${row.employname} ${row.nickname === undefined ? "" : `(${row.nickname})`}`}</TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>{row.department.split("-")[1]}</TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>{row.section.split("-")[1]}</TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>{row.position.split("-")[1]}</TableCell>

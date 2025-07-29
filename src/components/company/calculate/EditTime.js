@@ -37,6 +37,8 @@ import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../theme/SearchEmployee";
+import dayjs from "dayjs";
+dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.format("dddd")
 
 const EditTimeDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
@@ -47,6 +49,7 @@ const EditTimeDetail = () => {
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [leave, setLeave] = useState([{ ID: 0, name: '' }]);
+    const [workshift, setWorkshift] = useState([]);
     const columns = [
         { label: "ประเภทการลา", key: "name", type: "text" },
         { label: "จำนวนวัน", key: "max", type: "text" }
@@ -60,6 +63,8 @@ const EditTimeDetail = () => {
 
     console.log("Menu : ", menu);
 
+    console.log("workshift : ", workshift);
+
     // ทุกครั้งที่ department, section หรือ position เปลี่ยน จะ reset employee
 
     const [departments, setDepartments] = useState([]);
@@ -67,8 +72,91 @@ const EditTimeDetail = () => {
     const [positions, setPositions] = useState([]);
     const [employees, setEmployees] = useState([]);
 
+    const attendantRows = [];
+
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
+
+    employees.forEach(emp => {
+        const position = emp.position.split("-")[1];
+        const department = emp.department.split("-")[1];
+        const section = emp.section.split("-")[1];
+        const year = dayjs().format("YYYY");
+        const month = dayjs().month() + 1; // ใช้เลขเดือนตรงกับ key
+
+        const attendantList = emp.attendant?.[year]?.[month] || [];
+
+        attendantList.forEach((entry, idx) => {
+            attendantRows.push({
+                employname: `${emp.employname} (${emp.nickname})`,
+                position,
+                department,
+                section,
+                checkin: entry.checkin,
+                checkout: entry.checkout,
+                datein: entry.datein,
+                dateout: entry.dateout,
+                workshift: entry.shift,
+                isFirst: idx === 0,
+                rowSpan: attendantList.length,
+            });
+        });
+
+        // ถ้าไม่มีข้อมูลการเข้างาน
+        if (attendantList.length === 0) {
+            attendantRows.push({
+                employname: `${emp.employname} (${emp.nickname})`,
+                position,
+                department,
+                section,
+                checkin: "",
+                checkout: "",
+                datein: "",
+                dateout: "",
+                workshift: "",
+                isFirst: true,
+                rowSpan: 1,
+            });
+        }
+    });
+
+    // ฟังก์ชัน map วันที่อังกฤษ → ไทย
+    const dayNameMap = {
+        Sunday: "อาทิตย์",
+        Monday: "จันทร์",
+        Tuesday: "อังคาร",
+        Wednesday: "พุธ",
+        Thursday: "พฤหัสบดี",
+        Friday: "ศุกร์",
+        Saturday: "เสาร์",
+    };
+
+    // ฟังก์ชันหลัก
+    const generateFilteredDates = (shift) => {
+        console.log("shift : ", shift);
+        if (!shift || !shift.holiday) return [];
+
+        const holidays = shift.holiday.map(h => h.name);
+        console.log("holidays : ", holidays);
+        const daysInMonth = dayjs().daysInMonth();
+
+        return Array.from({ length: daysInMonth }, (_, i) => {
+            const date = dayjs().date(i + 1);
+            const dayName = dayNameMap[date.format("dddd")];
+            return holidays.includes(dayName) ? null : date.format("DD/MM/YYYY");
+        }).filter(Boolean);
+    };
+
+    const test = dayjs("2025-04-12").format("dddd");
+    console.log(dayNameMap[test]); // ควรเป็น "เสาร์"
+
+    // ตัวอย่างเรียกใช้:
+    const dateArray = generateFilteredDates(workshift[1]); // หรือ [1]
+
+    console.log("dateArray : ", dateArray);
+
+    console.log("attendantRows : ", attendantRows);
+    console.log("employees : ", employees);
 
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -188,6 +276,25 @@ const EditTimeDetail = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const workshiftRef = ref(firebaseDB, `workgroup/company/${companyId}/workshift`);
+
+        const unsubscribe = onValue(workshiftRef, (snapshot) => {
+            const workshiftData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!workshiftData) {
+                setWorkshift([{ ID: 0, name: '' }]);
+            } else {
+                setWorkshift(workshiftData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
     const handleSave = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
 
@@ -255,109 +362,108 @@ const EditTimeDetail = () => {
 
     return (
         <React.Fragment>
-            <Grid container spacing={2}>
-                <Grid item size={4}>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>แก้ไขเวลา</Typography>
-                </Grid>
-                <Grid item size={8}>
-                    <FormGroup
-                        row
-                        sx={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                        }}
-                    >
-                        {/* <FormControlLabel control={<Checkbox defaultChecked />} label="ทั้งหมด" /> */}
-                        <FormControlLabel control={<Checkbox checked/>} label="โอที" />
-                        <FormControlLabel control={<Checkbox checked/>} label="ลางาน" />
-                        <FormControlLabel control={<Checkbox checked/>} label="เพิ่มเวลา" />
-                        <FormControlLabel control={<Checkbox checked/>} label="วันหยุด" />
-                        <FormControlLabel control={<Checkbox checked/>} label="กะการทำงาน" />
-                    </FormGroup>
-                </Grid>
-                <Grid item size={12}>
-                    <Divider sx={{ marginTop: -1 }} />
-                </Grid>
-                <Grid item size={editLeave ? 12 : 11}>
-                    {
-                        editLeave ?
-                            <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                                <TableExcel
-                                    columns={columns}
-                                    initialData={department}
-                                    onDataChange={setDepartment}
-                                />
-                            </Paper>
-                            :
-                            <TableContainer component={Paper} textAlign="center">
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อ</TablecellHeader>
-                                            <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader>ประเภท</TablecellHeader>
-                                            <TablecellHeader>รายละเอียด</TablecellHeader>
-                                            <TablecellHeader>สถานะ</TablecellHeader>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {employees
-                                            .filter(emp => {
-                                                if (!department) return false;
-                                                if (section === "" && position === "" && employee === "") {
-                                                    return emp.department === department;
-                                                }
-                                                if (section !== "" && position === "" && employee === "") {
-                                                    return emp.department === department && emp.section === section;
-                                                }
-                                                if (section !== "" && position !== "" && employee === "") {
-                                                    return emp.department === department && emp.section === section && emp.position === position;
-                                                }
-                                                return false;
-                                            })
-                                            .map((emp, index) => (
-                                                <TableRow key={emp.ID ?? index}>
-                                                    <TableCell align="center">{index + 1}</TableCell>
-                                                    <TableCell align="center">{emp.name}</TableCell>
-                                                    <TableCell align="center">{emp.position}</TableCell>
-                                                    <TableCell align="center">{emp.salary}</TableCell>
-                                                    <TableCell align="center">{emp.earningsDeductions}</TableCell>
-                                                    <TableCell align="center">{emp.tax}</TableCell>
-                                                    <TableCell align="center">{emp.socialSecurity}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                    </TableBody>
+            <Box sx={{ marginTop: 5, width: "1080px" }}>
+                <Grid container spacing={2}>
+                    <Grid item size={12}>
+                        <FormGroup
+                            row
+                            sx={{
+                                marginTop: -5
+                            }}
+                        // sx={{
+                        //     display: "flex",
+                        //     justifyContent: "flex-end",
+                        // }}
+                        >
+                            {/* <FormControlLabel control={<Checkbox defaultChecked />} label="ทั้งหมด" /> */}
+                            <FormControlLabel control={<Checkbox checked />} label="วันทำงาน/ไม่มาทำงาน" />
+                            <FormControlLabel control={<Checkbox />} label="ลงเวลาไม่ครบคู่" />
+                            <FormControlLabel control={<Checkbox />} label="สาย" />
+                            <FormControlLabel control={<Checkbox />} label="กลับก่อน" />
+                            <FormControlLabel control={<Checkbox />} label="พักเกิน" />
+                            <FormControlLabel control={<Checkbox />} label="โอที" />
+                            <FormControlLabel control={<Checkbox />} label="ขาดงาน/ลางาน" />
+                            <FormControlLabel control={<Checkbox />} label="ทำงานในวันหยุด" />
+                        </FormGroup>
+                    </Grid>
+                    <Grid item size={12}>
+                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>แก้ไขเวลา</Typography>
+                    </Grid>
+                    <Grid item size={12}>
+                        <Divider sx={{ marginTop: -1 }} />
+                    </Grid>
+                    <Grid item size={editLeave ? 12 : 11}>
+                        {
+                            editLeave ?
+                                <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
+                                    <TableExcel
+                                        columns={columns}
+                                        initialData={department}
+                                        onDataChange={setDepartment}
+                                    />
+                                </Paper>
+                                :
+                                <TableContainer component={Paper} textAlign="center">
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
+                                        <TableHead>
+                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
+                                                <TablecellHeader>ชื่อ</TablecellHeader>
+                                                <TablecellHeader>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader>วันที่</TablecellHeader>
+                                                <TablecellHeader>กะการทำงาน</TablecellHeader>
+                                                <TablecellHeader>เวลาทำงาน</TablecellHeader>
+                                                <TablecellHeader>มาเช้า/สาย/พักไว/พักเกิน/กลับก่อน/กลับช้า</TablecellHeader>
+                                                <TablecellHeader>โอที</TablecellHeader>
+                                                <TablecellHeader>ลา</TablecellHeader>
+                                                <TablecellHeader>หมายเหตุ</TablecellHeader>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {attendantRows
+                                                .map((emp, index) => (
+                                                    <TableRow key={emp.ID ?? index}>
+                                                        <TableCell align="center">{index + 1}</TableCell>
+                                                        <TableCell align="center">{emp.employname}</TableCell>
+                                                        <TableCell align="center">{emp.position}</TableCell>
+                                                        <TableCell align="center">{`${emp.datein} - ${emp.dateout}`}</TableCell>
+                                                        <TableCell align="center">{emp.workshift}</TableCell>
+                                                        <TableCell align="center">{`${emp.checkin} - ${emp.checkout}`}</TableCell>
+                                                        <TableCell align="center">{emp.socialSecurity}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                        </TableBody>
 
-                                </Table>
-                            </TableContainer>
+                                    </Table>
+                                </TableContainer>
+                        }
+                    </Grid>
+                    {
+                        !editLeave &&
+                        <Grid item size={1} textAlign="right">
+                            <Box display="flex" justifyContent="center" alignItems="center">
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    color="warning"
+                                    fullWidth
+                                    sx={{
+                                        height: "60px",
+                                        flexDirection: "column",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        textTransform: "none",
+                                    }}
+                                    onClick={() => setEditLeave(true)}
+                                >
+                                    <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
+                                    แก้ไข
+                                </Button>
+                            </Box>
+                        </Grid>
                     }
                 </Grid>
-                {
-                    !editLeave &&
-                    <Grid item size={1} textAlign="right">
-                        <Box display="flex" justifyContent="center" alignItems="center">
-                            <Button
-                                variant="contained"
-                                size="small"
-                                color="warning"
-                                fullWidth
-                                sx={{
-                                    height: "60px",
-                                    flexDirection: "column",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    textTransform: "none",
-                                }}
-                                onClick={() => setEditLeave(true)}
-                            >
-                                <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
-                                แก้ไข
-                            </Button>
-                        </Box>
-                    </Grid>
-                }
-            </Grid>
+            </Box>
         </React.Fragment>
     )
 }

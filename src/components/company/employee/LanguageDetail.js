@@ -59,7 +59,7 @@ const LanguageDetail = (props) => {
 
         langs.forEach((lang, langIdx) => {
             languageRows.push({
-                employname: emp.employname,
+                employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 language: lang.language || "",
                 speak: lang.speaking || "",
@@ -73,7 +73,7 @@ const LanguageDetail = (props) => {
         // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
         if (langs.length === 0) {
             languageRows.push({
-                employname: emp.employname,
+                employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 language: "-",
                 speak: "-",

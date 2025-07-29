@@ -69,7 +69,7 @@ const PersonalDetail = (props) => {
     }, [database]);
 
     const personal = employees.map(emp => ({
-        employname: emp.employname,
+        employname: `${emp.employname} (${emp.nickname})`,
         position: emp.position.split("-")[1],
         sex: emp.personal?.sex || '',
         militaryStatus: emp.personal?.militaryStatus || '',
@@ -89,7 +89,7 @@ const PersonalDetail = (props) => {
     }));
 
     const address = employees.map(emp => ({
-        employname: emp.employname,
+        employname: `${emp.employname} (${emp.nickname})`,
         position: emp.position.split("-")[1],
         amphure: emp.personal?.address?.amphure || '',
         province: emp.personal?.address?.province || '',

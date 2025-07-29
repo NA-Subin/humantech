@@ -37,6 +37,7 @@ import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../theme/SearchEmployee";
+import dayjs from "dayjs";
 
 const IncomeDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
@@ -44,11 +45,141 @@ const IncomeDetail = () => {
     const companyName = searchParams.get("company");
     //const { companyName } = useParams();
     const [editIncome, setEditIncome] = useState(false);
+    const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
     const [income, setIncome] = useState([{ ID: 0, name: '' }]);
-    const columns = [
-        { label: "ประเภทการลา", key: "name", type: "text" },
-        { label: "จำนวนวัน", key: "max", type: "text" }
+    const [document, setDocument] = useState([])
+    const [documents, setDocuments] = useState([])
+
+    console.log("DOCUMENT : ", document);
+    console.log("DOCUMENTs : ", documents);
+
+    const incomeActive = income.filter(row => row.status === 1);
+
+    let IncomesRows = [];
+
+    if (!document || document.length === 0) {
+        // กรณี document ว่าง
+        employees.forEach((emp, index) => {
+            const position = emp.position.split("-")[1];
+
+            const row = {
+                employid: emp.ID,
+                employname: `${emp.employname} (${emp.nickname})`,
+                position
+            };
+
+            incomeActive.forEach(inc => {
+                row[`income${inc.ID}`] = 0;
+            });
+
+            IncomesRows.push(row);
+        });
+    } else {
+        // กรณี document มีข้อมูล
+        IncomesRows = document.map(emp => {
+            const row = {
+                employid: emp.employid,
+                employname: emp.employname,
+                position: emp.position
+            };
+
+            incomeActive.forEach(inc => {
+                const found = Array.isArray(emp.income)
+                    ? emp.income.find(i => i.incomeID === inc.ID)
+                    : null;
+                row[`income${inc.ID}`] = found ? Number(found.income) : 0;
+            });
+
+            return row;
+        });
+    }
+
+    // const IncomesRows = [];
+
+    // employees.forEach(emp => {
+    //     const position = emp.position.split("-")[1];
+    //     const incomes = income.filter((row) => row.status === 1)
+
+    //     // สร้าง object สำหรับแถวนี้
+    //     const row = {
+    //         employid: emp.ID,
+    //         employname: `${emp.employname} (${emp.nickname})`,
+    //         position
+    //     };
+
+    //     // ถ้ามี IncomesList
+    //     if (incomes.length > 0) {
+    //         incomes.forEach((inc, index) => {
+    //             row[`income${inc.ID}`] = 0;
+    //         });
+    //     }
+
+    //     IncomesRows.push(row);
+    // });
+
+    // const incomeActive = income.filter(row => row.status === 1); // หรือส่งจากภายนอก
+
+    // const IncomesRowss = document.map(emp => {
+    //     const row = {
+    //         employid: emp.employid,
+    //         employname: `${emp.employname} (${emp.nickname})`,
+    //         position: emp.position
+    //     };
+
+    //     incomeActive.forEach(inc => {
+    //         // income[inc.ID] อาจไม่มีอยู่ (ไม่ได้เลือก)
+    //         row[`income${inc.ID}`] = Number(emp.income?.[inc.ID]?.income) ?? 0;
+    //     });
+
+    //     return row;
+    // });
+
+
+    console.log("IncomesRows : ", IncomesRows);
+    //console.log("IncomesRowss : ", IncomesRowss);
+
+    // สร้าง columns จาก incomeActive
+    const IncomesColumns = [
+        { label: "ชื่อ", key: "employname", type: "text", disabled: true },
+        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
+        ...incomeActive.map(inc => ({
+            label: inc.name,
+            key: `income${inc.ID}`,
+            type: "text"
+        }))
     ];
+
+    console.log("Column : ", IncomesColumns);
+
+    const handleIncomeChange = (updatedList) => {
+        const newIncome = updatedList.map(row => {
+            const { employid, employname, position, ...incomes } = row;
+
+            const incomeArr = [];
+
+            // สร้าง array ตามลำดับ index
+            incomeActive.forEach((inc, idx) => {
+                const key = `income${inc.ID}`;
+                const value = incomes[key] ?? 0;
+
+                incomeArr.push({
+                    ID: idx,           // กำหนด ID ใหม่ เรียง 0,1,2,...
+                    incomeID: inc.ID,  // เก็บ ID เดิมไว้
+                    name: inc.name,
+                    income: Number(value)
+                });
+            });
+
+            return {
+                employid,
+                employname,
+                position,
+                income: incomeArr
+            };
+        });
+
+        setDocuments(newIncome);
+    };
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
@@ -72,8 +203,6 @@ const IncomeDetail = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-    const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
-
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
@@ -93,16 +222,38 @@ const IncomeDetail = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(new Date).format("YYYY/MM")}`);
+
+        const unsubscribe = onValue(documentRef, (snapshot) => {
+            const documentData = snapshot.val();
+
+            if (!documentData) {
+                setDocument([]);
+            } else {
+                const documentArray = Object.values(documentData);
+                setDocument(documentArray); // default: แสดงทั้งหมด
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
     const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/income`);
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(new Date).format("YYYY/MM")}`);
 
         const invalidMessages = [];
 
-        income.forEach((row, rowIndex) => {
-            columns.forEach((col) => {
+        // ตรวจสอบ IncomesRows (ที่กรอกจากตาราง)
+        IncomesRows.forEach((row, rowIndex) => {
+            IncomesColumns.forEach((col) => {
                 const value = row[col.key];
 
-                if (value === "") {
+                if (col.disabled) return; // ข้าม column ที่ disabled เช่น ชื่อ, ตำแหน่ง
+
+                if (value === "" || value === undefined) {
                     invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
                     return;
                 }
@@ -122,21 +273,20 @@ const IncomeDetail = () => {
             });
         });
 
-        // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        const names = income.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        // ตรวจสอบซ้ำเฉพาะ field ที่ต้องการ เช่น employname หรือ deptname
+        const names = IncomesRows.map(row => row.employname?.trim()).filter(Boolean);
         const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
         if (duplicates.length > 0) {
             invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
         }
 
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
         if (invalidMessages.length > 0) {
             ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
             return;
         }
 
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, income)
+        // ✅ บันทึกเข้า Firebase
+        set(companiesRef, documents)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
@@ -149,11 +299,11 @@ const IncomeDetail = () => {
     };
 
     const handleCancel = () => {
-        const incomeRef = ref(firebaseDB, `workgroup/company/${companyId}/income`);
+        const incomeRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(new Date).format("YYYY/MM")}`);
 
         onValue(incomeRef, (snapshot) => {
-            const incomeData = snapshot.val() || [{ ID: 0, name: '' }];
-            setIncome(incomeData);
+            const incomeData = snapshot.val() || [];
+            setDocument(incomeData);
             setEditIncome(false);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
@@ -171,11 +321,13 @@ const IncomeDetail = () => {
                     {
                         editIncome ?
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                                {/* <TableExcel
-                                    columns={columns}
-                                    initialData={department}
-                                    onDataChange={setDepartment}
-                                /> */}
+                                <TableExcel
+                                    styles={{ height: "50vh" }} // ✅ ส่งเป็น object
+                                    stylesTable={{ width: "1080px" }} // ✅ ส่งเป็น object
+                                    columns={IncomesColumns}
+                                    initialData={IncomesRows}
+                                    onDataChange={handleIncomeChange}
+                                />
                             </Paper>
                             :
                             <TableContainer component={Paper} textAlign="center">
@@ -187,23 +339,28 @@ const IncomeDetail = () => {
                                             <TablecellHeader>ตำแหน่ง</TablecellHeader>
                                             {
                                                 income.map((row, index) => (
+                                                    row.status === 1 &&
                                                     <TablecellHeader>{row.name}</TablecellHeader>
                                                 ))
                                             }
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {
-                                            employees.map((row, index) => (
-                                                <TableRow>
-                                                    <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>{row.position.split("-")[1]}</TableCell>
-                                                </TableRow>
-                                            ))
-                                        }
+                                        {IncomesRows.map((row, index) => (
+                                            <TableRow key={row.employid}>
+                                                <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
+                                                <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
+                                                {income
+                                                    .filter(inc => inc.status === 1)
+                                                    .map(inc => (
+                                                        <TableCell key={inc.ID} sx={{ textAlign: "center" }}>
+                                                            {row[`income${inc.ID}`] ?? 0}
+                                                        </TableCell>
+                                                    ))}
+                                            </TableRow>
+                                        ))}
                                     </TableBody>
-
                                 </Table>
                             </TableContainer>
                     }
@@ -233,6 +390,13 @@ const IncomeDetail = () => {
                     </Grid>
                 }
             </Grid>
+            {
+                editIncome &&
+                <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                    <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                    <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
+                </Box>
+            }
         </React.Fragment>
     )
 }

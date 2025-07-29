@@ -89,7 +89,7 @@ const InternshipDetail = (props) => {
 
 
     const internship = employees.map(emp => ({
-        employname: emp.employname || '',
+        employname: `${emp.employname} (${emp.nickname})` || '',
         position: emp.position ? emp.position.split("-")[1] ?? emp.position : '',
         dateStart: emp.internship?.dateStart ? toDateString(emp.internship.dateStart) : '',
         dateEnd: emp.internship?.dateEnd ? toDateString(emp.internship.dateEnd) : '',

@@ -81,7 +81,7 @@ const TrainingDetail = (props) => {
 
         trains.forEach((train, trainIdx) => {
             trainingRows.push({
-                employname: emp.employname,
+                employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 course: train.course || "",
                 dateEnd: toDateString(train.dateEnd) || "",
@@ -97,7 +97,7 @@ const TrainingDetail = (props) => {
         // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
         if (trains.length === 0) {
             trainingRows.push({
-                employname: emp.employname,
+                employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 course: "-",
                 dateEnd: "-",

@@ -47,7 +47,7 @@ const OtherDetail = (props) => {
     //const [other, setother] = useState([]); // จะถูกกรองจาก allEmployees
 
     const other = employees.map(emp => ({
-        employname: emp.employname,
+        employname: `${emp.employname} (${emp.nickname})`,
         position: emp.position.split("-")[1],
         specialAbilities1: emp.specialAbilities?.specialAbilities1 || '',
         specialAbilities2: emp.specialAbilities?.specialAbilities2 || '',
