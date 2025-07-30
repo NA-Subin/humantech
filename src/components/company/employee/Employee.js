@@ -21,16 +21,17 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
+import CloseIcon from '@mui/icons-material/Close';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import theme from "../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
-import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
+import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany, IconButtonError } from "../../../theme/style"
 import { HTTP } from "../../../server/axios";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { InputAdornment, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle, InputAdornment, ListItem, ListItemButton, ListItemIcon, ListItemText, MenuItem } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import 'handsontable/dist/handsontable.full.min.css';
 import MuiExcelLikeTable from "../test";
@@ -44,6 +45,8 @@ import InternshipDetail from "./InternshipDetail";
 import TrainingDetail from "./TrainingDetail";
 import LanguageDetail from "./LanguageDetail";
 import OtherDetail from "./OtherDetail";
+import dayjs from "dayjs";
+import ThaiDateSelector from "../../../theme/ThaiDateSelector";
 
 const Employee = () => {
     const { firebaseDB, domainKey } = useFirebase();
@@ -56,6 +59,10 @@ const Employee = () => {
     const [departmentDetail, setDepartmentDetail] = useState([]);
     const [sectionDetail, setSectionDetail] = useState([]);
     const [positionDetail, setPositionDetail] = useState([]);
+    const [workshift, setWorkshift] = useState([]);
+    const [workshifts, setWorkshifts] = useState([]);
+    const [editWorkshift, setEditWorkshift] = useState(false);
+    const [workshiftDate, setWorkshiftDate] = useState(dayjs(new Date).format("DD/MM/YYYY"));
     const [menu, setMenu] = useState("");
     const paperRef = useRef(null);
     console.log("checkEmployee : ", checkEmployee);
@@ -131,6 +138,8 @@ const Employee = () => {
         });
     }, [firebaseDB, companyId]);
 
+    console.log("position Detail : ", positionDetail);
+
     const columns = [
         { label: "รหัสพนักงาน", key: "employeecode", type: "text" },
         { label: "ชื่อเล่น", key: "nickname", type: "text" },
@@ -139,7 +148,6 @@ const Employee = () => {
             label: "ฝ่ายงาน",
             key: "department",
             type: "select",
-            width: "20%",
             options: departmentDetail,
         },
         {
@@ -163,7 +171,13 @@ const Employee = () => {
                 value: item.value,
                 parent: item.keyposition, // 👈 ใช้เฉพาะ ID ฝ่ายงาน
             })),
-        }
+        },
+        {
+            label: "กะการทำงาน",
+            key: "workshift",
+            type: "select",
+            options: workshift,
+        },
     ];
 
     useEffect(() => {
@@ -200,10 +214,11 @@ const Employee = () => {
     const [positions, setPositions] = useState([]);
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
+    const [opendetail, setOpenDetail] = useState({});
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
     const personal = employees.map(emp => ({
-        nickname: emp.nickname ,
+        nickname: emp.nickname,
         employname: emp.employname,
         position: emp.position.split("-")[1],
         country: emp.personal?.country || '',
@@ -285,6 +300,7 @@ const Employee = () => {
 
     console.log("department : ", department);
     console.log("personals : ", personal);
+    console.log("workshift s : ", workshifts);
 
     const renderComponentByMenu = (menu, data) => {
         const key = menu.split("-")[1];
@@ -385,6 +401,24 @@ const Employee = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
+    useEffect(() => {
+        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/workshift`);
+
+        onValue(optionRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // แปลง object เป็น array ของ { value, label }
+                const opts = Object.values(data).map((item) => ({
+                    value: `${item.ID}-${item.name}`, // ค่าเวลาบันทึก
+                    label: item.name,                 // แสดงผล
+                }));
+                const workshiftArray = Object.values(data);
+                setWorkshift(opts); // <-- ใช้ใน columns
+                setWorkshifts(workshiftArray);
+            }
+        });
+    }, [firebaseDB, companyId]);
+
     console.log("employees : ", employees);
 
     useEffect(() => {
@@ -398,8 +432,34 @@ const Employee = () => {
         setEmployees(filtered);
     }, [department, section, position, allEmployees]);
 
+    const handleEmployeesChange = (newEmployees) => {
+        const enrichedEmployees = newEmployees.map(emp => {
+            const shiftID = Number(emp.workshift?.split("-")[0]);
+            const shiftData = workshifts.find(row => row.ID === shiftID);
+
+            return {
+                ...emp,
+                workshiftHistory: {
+                    start: shiftData.start,
+                    stop: shiftData.stop,
+                    holiday: shiftData.holiday,
+                    DDstart: dayjs(new Date).format("DD"),
+                    DDend: "now",
+                    MMstart: dayjs(new Date).format("MM"),
+                    MMend: "now",
+                    YYYYstart: dayjs(new Date).format("YY"),
+                    YYYYend: "now",
+                }
+            };
+        });
+
+        setEmployees(enrichedEmployees);
+    };
+
     const handleSave = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+
+        // const workshifthistory = workshifts.find((row) => row.ID === Number(workshift.split("-")[0]))
 
         const invalidMessages = [];
 
@@ -440,8 +500,74 @@ const Employee = () => {
             return;
         }
 
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, employees)
+        // ✅ เติม workshifthistory ก่อนบันทึก
+        const enrichedEmployees = employees.map(emp => {
+            const shiftID = Number(emp.workshift?.split("-")[0]);
+            const shiftData = workshifts.find(row => row.ID === shiftID);
+
+            const currentHistory = Array.isArray(emp.workshifthistory) ? [...emp.workshifthistory] : [];
+
+            // หา history ล่าสุด
+            const lastIndex = currentHistory.length - 1;
+            const lastHistory = currentHistory[lastIndex] || null;
+
+            const isSameWorkshift = (historyEntry, shift) => {
+                if (!historyEntry || !shift) return false;
+                return (
+                    historyEntry.start === shift.start &&
+                    historyEntry.stop === shift.stop
+                );
+            };
+
+            if (isSameWorkshift(lastHistory, shiftData)) {
+                // workshift เดิม ไม่เพิ่ม history ใหม่
+                return { ...emp, workshifthistory: currentHistory };
+            } else {
+                // workshift เปลี่ยน เพิ่ม entry ใหม่
+
+                // คำนวณวันที่เริ่มใหม่ = lastHistory.DDend + 1 วัน หรือวันนี้ถ้าไม่มี lastHistory
+                let newStartDate = dayjs();
+                if (lastHistory && lastHistory.DDend !== "now") {
+                    const dateString = `${lastHistory.DDend}/${lastHistory.MMend}/${lastHistory.YYYYend}`;
+                    newStartDate = dayjs(dateString, "DD/MM/YYYY").add(1, "day");
+                }
+
+                // อัพเดตวันที่ end ของ entry ก่อนหน้าเป็น วันก่อน newStartDate (newStartDate - 1 วัน)
+                if (lastHistory) {
+                    const newEndDate = newStartDate.subtract(1, "day");
+                    currentHistory[lastIndex] = {
+                        ...lastHistory,
+                        DDend: newEndDate.format("DD"),
+                        MMend: newEndDate.format("MM"),
+                        YYYYend: newEndDate.format("YYYY"),
+                        dateend: newEndDate.format("DD/MM/YYYY"),
+                    };
+                }
+
+                const newHistoryEntry = {
+                    start: shiftData?.start || "",
+                    stop: shiftData?.stop || "",
+                    holiday: shiftData?.holiday || [],
+                    DDstart: newStartDate.format("DD"),
+                    DDend: "now",
+                    MMstart: newStartDate.format("MM"),
+                    MMend: "now",
+                    YYYYstart: newStartDate.format("YYYY"),
+                    YYYYend: "now",
+                    datestart: newStartDate.format("DD/MM/YYYY"),
+                    dateend: "now",
+                };
+
+                return {
+                    ...emp,
+                    workshifthistory: [...currentHistory, newHistoryEntry],
+                };
+            }
+        });
+
+
+        // ✅ บันทึก enrichedEmployees แทน
+        set(companiesRef, enrichedEmployees)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
@@ -518,7 +644,7 @@ const Employee = () => {
                 </Grid>
                 <Grid item size={11}>
                     <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "70vh" }}>
-                        <Box>
+                        <Box sx={{ width: "1080px" }}>
                             {/* <SelectEmployeeGroup
                                 department={department}
                                 setDepartment={setDepartment}
@@ -552,19 +678,21 @@ const Employee = () => {
                                                     columns={columns}
                                                     initialData={employees}
                                                     onDataChange={setEmployees}
+                                                // onDataChange={handleEmployeesChange}
                                                 />
                                             </Paper>
                                             :
                                             <TableContainer component={Paper} textAlign="center">
-                                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}>
                                                     <TableHead>
                                                         <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                             <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
                                                             <TablecellHeader sx={{ width: "10%" }}>รหัสพนักงาน</TablecellHeader>
                                                             <TablecellHeader sx={{ width: "25%" }}>ชื่อ</TablecellHeader>
-                                                            <TablecellHeader sx={{ width: "20%" }}>ฝ่ายงาน</TablecellHeader>
-                                                            <TablecellHeader sx={{ width: "20%" }}>ส่วนงาน</TablecellHeader>
-                                                            <TablecellHeader sx={{ width: "20%" }}>ตำแหน่ง</TablecellHeader>
+                                                            <TablecellHeader sx={{ width: "15%" }}>ฝ่ายงาน</TablecellHeader>
+                                                            <TablecellHeader sx={{ width: "15%" }}>ส่วนงาน</TablecellHeader>
+                                                            <TablecellHeader sx={{ width: "15%" }}>ตำแหน่ง</TablecellHeader>
+                                                            <TablecellHeader sx={{ width: "15%" }}>กะการทำงาน</TablecellHeader>
                                                         </TableRow>
                                                     </TableHead>
                                                     <TableBody>
@@ -575,13 +703,14 @@ const Employee = () => {
                                                                 </TableRow>
                                                                 :
                                                                 employees.map((row, index) => (
-                                                                    <TableRow>
+                                                                    <TableRow onClick={() => setOpenDetail(row)}>
                                                                         <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>{row.employeecode}</TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>{`${row.employname} ${row.nickname === undefined ? "" : `(${row.nickname})`}`}</TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>{row.department.split("-")[1]}</TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>{row.section.split("-")[1]}</TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>{row.position.split("-")[1]}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>{row.workshift.split("-")[1]}</TableCell>
                                                                     </TableRow>
                                                                 ))}
                                                     </TableBody>
@@ -620,6 +749,192 @@ const Employee = () => {
                                     <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                                     <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                                 </Box>
+                            }
+                            {
+                                employees.map((row, index) => (
+                                    <Dialog
+                                        open={opendetail.ID === row.ID ? true : false}
+                                        onClose={() => setOpenDetail({})}
+                                        PaperProps={{
+                                            sx: {
+                                                borderRadius: 4, // ค่าตรงนี้คือความมน ยิ่งมากยิ่งมน (ค่า default คือ 1 หรือ 4px)
+                                                width: "600px",
+                                                height: "90vh", // <<< เท่ากับ Dialog หลัก
+                                                position: "absolute",
+                                            },
+                                        }}
+                                    >
+                                        <DialogTitle
+                                            sx={{
+                                                textAlign: "center",
+                                                fontWeight: "bold"
+                                            }}
+                                        >
+                                            <Grid container spacing={2}>
+                                                <Grid item size={10}>
+                                                    <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลพนักงาน</Typography>
+                                                </Grid>
+                                                <Grid item size={2} sx={{ textAlign: "right" }}>
+                                                    <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpenDetail({})}>
+                                                        <CloseIcon />
+                                                    </IconButtonError>
+                                                </Grid>
+                                            </Grid>
+                                            <Divider sx={{ marginTop: 2, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                                        </DialogTitle>
+                                        <DialogContent
+                                            sx={{
+                                                position: "relative",
+                                                overflow: "hidden",
+                                                overflowY: 'auto',
+                                                height: "300px", // หรือความสูง fixed ที่คุณใช้
+                                            }}
+                                        >
+                                            <Grid container spacing={2} marginTop={2}>
+                                                <Grid item size={3}>
+                                                    <Typography variant="subtitle2" fontWeight="bold" >รหัสพนักงาน</Typography>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={opendetail.employeecode}
+                                                        disabled
+                                                    //onChange={(e) => setNickname(e.target.value)}
+                                                    />
+                                                </Grid>
+                                                <Grid item size={3}>
+                                                    <Typography variant="subtitle2" fontWeight="bold" >ชื่อเล่น</Typography>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={opendetail.nickname}
+                                                        disabled
+                                                    //onChange={(e) => setName(e.target.value)}
+                                                    />
+                                                </Grid>
+                                                <Grid item size={6}>
+                                                    <Typography variant="subtitle2" fontWeight="bold" >ชื่อ</Typography>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={opendetail.employname}
+                                                        disabled
+                                                    //onChange={(e) => setLastName(e.target.value)}
+                                                    />
+                                                </Grid>
+                                                <Grid item size={6}>
+                                                    <Typography variant="subtitle2" fontWeight="bold">ฝ่ายงาน</Typography>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={
+                                                            opendetail?.department?.includes("-")
+                                                                ? opendetail.department.split("-")[1]
+                                                                : ""
+                                                        }
+                                                        disabled
+                                                    />
+                                                </Grid>
+
+                                                <Grid item size={6}>
+                                                    <Typography variant="subtitle2" fontWeight="bold">ส่วนงาน</Typography>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={
+                                                            opendetail?.section?.includes("-")
+                                                                ? opendetail.section.split("-")[1]
+                                                                : ""
+                                                        }
+                                                        disabled
+                                                    />
+                                                </Grid>
+
+                                                <Grid item size={6}>
+                                                    <Typography variant="subtitle2" fontWeight="bold">ตำแหน่ง</Typography>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={
+                                                            opendetail?.position?.includes("-")
+                                                                ? opendetail.position.split("-")[1]
+                                                                : ""
+                                                        }
+                                                        disabled
+                                                    />
+                                                </Grid>
+
+                                                <Grid item size={6}>
+                                                    <Typography variant="subtitle2" fontWeight="bold">กะการทำงาน</Typography>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={
+                                                            opendetail?.workshift?.includes("-")
+                                                                ? opendetail.workshift.split("-")[1]
+                                                                : ""
+                                                        }
+                                                        disabled
+                                                    />
+                                                </Grid>
+
+                                                {
+                                                    editWorkshift &&
+                                                    <React.Fragment>
+                                                        <Grid item size={12}>
+                                                            <Typography variant="subtitle2" fontWeight="bold" >กะการทำงาน</Typography>
+                                                            <TextField
+                                                                select
+                                                                fullWidth
+                                                                size="small"
+                                                                value={workshift}
+                                                                SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+                                                                onChange={(e) => setWorkshift(e.target.value)}
+                                                            >
+                                                                {
+                                                                    workshifts.map((row) => (
+                                                                        <MenuItem value={row}>{row.name}</MenuItem>
+                                                                    ))
+                                                                }
+                                                            </TextField>
+                                                        </Grid>
+                                                        <Grid item size={12}>
+                                                            <ThaiDateSelector
+                                                                label="วันที่เริ่มกะ"
+                                                                value={workshiftDate}
+                                                                onChange={(val) => setWorkshiftDate(val)}
+                                                            />
+                                                        </Grid>
+                                                    </React.Fragment>
+                                                }
+                                                <Grid item size={12} textAlign="center" marginTop={2} >
+                                                    {
+                                                        editWorkshift ?
+                                                            <Box display="flex" alignItems="center" justifyContent="center" >
+                                                                <Button variant="contained" color="error" onClick={() => setEditWorkshift(false)} sx={{ marginRight: 2 }}>
+                                                                    ยกเลิก
+                                                                </Button>
+                                                                <Button variant="contained" color="success" onClick={() => setEditWorkshift(false)}>
+                                                                    บันทึก
+                                                                </Button>
+                                                            </Box>
+                                                            :
+                                                            <Button variant="contained" color="warning" onClick={() => setEditWorkshift(true)}>
+                                                                เปลี่ยนกะการทำงาน
+                                                            </Button>
+                                                    }
+                                                </Grid>
+                                            </Grid>
+                                        </DialogContent>
+                                        <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
+                                            <Button variant="contained" color="error" onClick={() => setOpenDetail({})}>
+                                                ยกเลิก
+                                            </Button>
+                                            <Button variant="contained" color="success" onClick={() => setOpenDetail({})}>
+                                                บันทึก
+                                            </Button>
+                                        </DialogActions>
+                                    </Dialog>
+                                ))
                             }
                             {/* <TableContainer component={Paper} textAlign="center" sx={{ height: "300px" }}>
                                 <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>

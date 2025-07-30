@@ -296,6 +296,8 @@ const AddEmployee = () => {
     const [employee, setEmployee] = useState([{ ID: 0, position: '', }]);
     const [employeeID, setEmployeeID] = useState(null);
     const [department, setDepartment] = useState([{ DepartmentName: '', Section: '' }]);
+    const [workshifts, setWorkshifts] = useState([]);
+    const [workshift, setWorkshift] = useState("");
     const [position, setPosition] = useState([{
         ID: 0,
         deptid: "",
@@ -316,6 +318,22 @@ const AddEmployee = () => {
             options: employeeOptions,
         },
     ];
+
+    const workshiftName = `${workshift.ID}-${workshift.name}`
+    const workshifthistory = {
+        start: workshift.start,
+        stop: workshift.stop,
+        holiday: workshift.holiday,
+        DDstart: dayjs(new Date).format("DD"),
+        DDend: "now",
+        MMstart: dayjs(new Date).format("MM"),
+        MMend: "now",
+        YYYYstart: dayjs(new Date).format("YY"),
+        YYYYend: "now",
+    }
+
+    console.log("workshiftName : ", workshiftName);
+    console.log("workshifthistory : ", workshifthistory);
 
     // const [selectedDay, setSelectedDay] = useState("");
     // const [selectedMonth, setSelectedMonth] = useState("");
@@ -466,6 +484,24 @@ const AddEmployee = () => {
             } else {
                 setEmployee(employeeData);
                 setEmployeeID(employeeData.length); // ใช้ได้เมื่อไม่เป็น null
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const workshiftRef = ref(firebaseDB, `workgroup/company/${companyId}/workshift`);
+
+        const unsubscribe = onValue(workshiftRef, (snapshot) => {
+            const workshiftData = snapshot.val();
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!workshiftData) {
+                setWorkshifts([]);
+            } else {
+                setWorkshifts(workshiftData);
             }
         });
 
@@ -709,7 +745,9 @@ const AddEmployee = () => {
                 internship: Internship,
                 languageList: languageList,
                 trainingList: trainingList,
-                specialAbilities: specialAbilities
+                specialAbilities: specialAbilities,
+                workshift: workshiftName,
+                workshifthistory: workshifthistory
             });
 
         } catch (error) {
@@ -724,6 +762,26 @@ const AddEmployee = () => {
             content: (
                 <>
                     <Grid container spacing={2} marginTop={2}>
+                        <Grid item size={12}>
+                            <Typography variant="subtitle2" fontWeight="bold" >กะการทำงาน</Typography>
+                            <TextField
+                                select
+                                fullWidth
+                                size="small"
+                                value={workshift}
+                                SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+                                onChange={(e) => setWorkshift(e.target.value)}
+                            >
+                                {
+                                    workshifts.map((row) => (
+                                        <MenuItem value={row}>{row.name}</MenuItem>
+                                    ))
+                                }
+                            </TextField>
+                        </Grid>
+                        <Grid item size={12}>
+                            <Typography variant="subtitle2" fontWeight="bold" >ตำแหน่งพนักงาน</Typography>
+                        </Grid>
                         {position.map((row, index) => {
                             function getPositionId(position) {
                                 if (!position || typeof position !== "string") return null;

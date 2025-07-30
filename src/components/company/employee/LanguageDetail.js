@@ -119,9 +119,13 @@ const LanguageDetail = (props) => {
         const merged = employees.map(emp => {
             return {
                 ...emp,
-                languageList: empLangMap[emp.employname] || [],
+                languageList: empLangMap[`${emp.employname} (${emp.nickname})`] || [],
             };
         });
+
+        console.log("merged", merged);
+        console.log("empLangMap keys", Object.keys(empLangMap));
+        console.log("employees map", employees.map(e => e.employname));
 
         setEmployees(merged);
     };

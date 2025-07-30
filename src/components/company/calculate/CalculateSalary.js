@@ -49,7 +49,6 @@ const CalculateSalary = () => {
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     //const { companyName } = useParams();
-    const [editLeave, setEditLeave] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [leave, setLeave] = useState([{ ID: 0, name: '' }]);
@@ -81,17 +80,17 @@ const CalculateSalary = () => {
 
         switch (key) {
             case 'แก้ไขเวลา':
-                return <EditTimeDetail data={key} />;
+                return <EditTimeDetail data={key} department={department} section={section} position={position} employee={employee} />;
             case 'ยื่นเอกสาร':
-                return <DocumentDetail data={key} />;
+                return <DocumentDetail data={key} department={department} section={section} position={position} employee={employee} />;
             case 'รายได้':
-                return <IncomeDetail data={key} />;
+                return <IncomeDetail data={key} department={department} section={section} position={position} employee={employee} />;
             case 'รายจ่าย':
-                return <DeductionDetails data={key} />;
+                return <DeductionDetails data={key} department={department} section={section} position={position} employee={employee} />;
             case 'ตรวจสอบเงินเดือน':
-                return <SalaryDetail data={key} />;
+                return <SalaryDetail data={key} department={department} section={section} position={position} employee={employee} />;
             case 'ปิดงบบัญชี':
-                return <AccountDetail data={key} />;
+                return <AccountDetail data={key} department={department} section={section} position={position} employee={employee} />;
             default:
                 return null;
         }
@@ -215,71 +214,6 @@ const CalculateSalary = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-    const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
-
-        const invalidMessages = [];
-
-        leave.forEach((row, rowIndex) => {
-            columns.forEach((col) => {
-                const value = row[col.key];
-
-                if (value === "") {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
-                    return;
-                }
-
-                if (col.type === "number" && isNaN(Number(value))) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
-                    return;
-                }
-
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
-            });
-        });
-
-        // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        const names = leave.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
-        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
-        if (duplicates.length > 0) {
-            invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
-        }
-
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
-        if (invalidMessages.length > 0) {
-            ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
-            return;
-        }
-
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, leave)
-            .then(() => {
-                ShowSuccess("บันทึกข้อมูลสำเร็จ");
-                console.log("บันทึกสำเร็จ");
-                setEditLeave(false);
-            })
-            .catch((error) => {
-                ShowError("เกิดข้อผิดพลาดในการบันทึก");
-                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
-            });
-    };
-
-    const handleCancel = () => {
-        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
-
-        onValue(leaveRef, (snapshot) => {
-            const leaveData = snapshot.val() || [{ ID: 0, name: '' }];
-            setLeave(leaveData);
-            setEditLeave(false);
-        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
-    };
-
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
@@ -334,6 +268,8 @@ const CalculateSalary = () => {
                 </Grid>
                 <Grid item size={11}>
                     <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
+                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>{menu.split("-")[1]}</Typography>
+                        <Divider sx={{ marginTop: 1, marginBottom: 2 }} />
                         <Box>
                             <SelectEmployeeGroup
                                 department={department}

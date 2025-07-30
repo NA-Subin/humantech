@@ -154,7 +154,7 @@ const TrainingDetail = (props) => {
 
         const merged = employees.map(emp => ({
             ...emp,
-            trainingList: empTrainingMap[emp.employname] || [],
+            trainingList: empTrainingMap[`${emp.employname} (${emp.nickname})`] || [],
         }));
 
         setEmployees(merged);

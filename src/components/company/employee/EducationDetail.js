@@ -133,6 +133,8 @@ const EducationDetail = (props) => {
 
     const handleEducationChange = (updatedList) => {
         // สร้าง map ของ employee ชื่อ => ภาษา list ใหม่
+
+        console.log("updatedList : ", updatedList);
         const empLangMap = {};
 
         updatedList.forEach(row => {
@@ -160,9 +162,13 @@ const EducationDetail = (props) => {
         const merged = employees.map(emp => {
             return {
                 ...emp,
-                educationList: empLangMap[emp.employname] || [],
+                educationList: empLangMap[`${emp.employname} (${emp.nickname})`] || [],
             };
         });
+
+        console.log("merged", merged);
+        console.log("empLangMap keys", Object.keys(empLangMap));
+        console.log("employees map", employees.map(e => e.employname));
 
         setEmployees(merged);
     };
@@ -308,8 +314,17 @@ const EducationDetail = (props) => {
                                                 educationRows.map((row, index) => (
                                                     <TableRow>
                                                         <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
+                                                        {row.isFirst && (
+                                                            <>
+                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>
+                                                                    {row.employname}
+                                                                </TableCell>
+                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>
+                                                                    {row.position}
+                                                                </TableCell>
+                                                            </>
+                                                        )}
+                                                        {/* ถ้าไม่ใช่ isFirst ไม่ต้องแสดง 2 คอลัมน์แรก */}
                                                         <TableCell sx={{ textAlign: "center" }}>{row.education}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.educationLevel}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.institution}</TableCell>

@@ -37,39 +37,42 @@ import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../theme/SearchEmployee";
-import dayjs from "dayjs";
-dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.format("dddd")
+import IncomepleteTime from "./time/IncompleteTime";
+import LeaveEarly from "./time/LeaveEarly";
+import LateDetail from "./time/Late";
+import MissingWorkDetail from "./time/MissingWork";
+import OverbreakDetail from "./time/Overbreak";
+import OTDetail from "./time/OT";
+import LeaveDetail from "./time/Leave";
+import DayOffDetail from "./time/DayOff";
+import dayjs from 'dayjs';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
 
-const EditTimeDetail = () => {
+dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.format("dddd")
+dayjs.extend(isSameOrBefore);
+
+const EditTimeDetail = (props) => {
+    const { department, section, position, employee } = props;
+    console.log("Search : ", department, section, position, employee);
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     //const { companyName } = useParams();
-    const [editLeave, setEditLeave] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [leave, setLeave] = useState([{ ID: 0, name: '' }]);
     const [workshift, setWorkshift] = useState([]);
+    const [dateArrayMap, setDateArrayMap] = useState({});
     const columns = [
         { label: "ประเภทการลา", key: "name", type: "text" },
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
-    const [department, setDepartment] = useState("");
-    const [section, setSection] = useState("");
-    const [position, setPosition] = useState("");
-    const [employee, setEmployee] = useState("");
     const [menu, setMenu] = useState('0-แก้ไขเวลา');
+    const [day, setDay] = useState(1);
 
     console.log("Menu : ", menu);
 
     console.log("workshift : ", workshift);
-
-    // ทุกครั้งที่ department, section หรือ position เปลี่ยน จะ reset employee
-
-    const [departments, setDepartments] = useState([]);
-    const [sections, setSections] = useState([]);
-    const [positions, setPositions] = useState([]);
     const [employees, setEmployees] = useState([]);
 
     const attendantRows = [];
@@ -77,12 +80,86 @@ const EditTimeDetail = () => {
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
 
+    // ฟังก์ชัน map วันที่อังกฤษ → ไทย
+    const dayNameMap = {
+        Sunday: "อาทิตย์",
+        Monday: "จันทร์",
+        Tuesday: "อังคาร",
+        Wednesday: "พุธ",
+        Thursday: "พฤหัสบดี",
+        Friday: "ศุกร์",
+        Saturday: "เสาร์",
+    };
+
+    const generateFilteredDatesFromHistories = (workshifthistories) => {
+        if (!Array.isArray(workshifthistories)) return [];
+
+        const datesSet = new Set();
+
+        // ฟังก์ชันย่อย แปลงปี 2 หลักเป็น 4 หลัก
+        const parseYear = (y) => {
+            if (y === "now") return dayjs().year();
+            if (y.length === 2) return 2000 + parseInt(y);
+            return parseInt(y);
+        };
+
+        // แปลงเดือน
+        const parseMonth = (m) => (m === "now" ? dayjs().month() : parseInt(m) - 1);
+
+        // แปลงวัน โดย "now" = วันสุดท้ายของเดือนนั้น
+        const parseDay = (d, year, month) => {
+            if (d === "now") {
+                return dayjs().year(year).month(month).endOf("month").date();
+            }
+            return parseInt(d);
+        };
+
+        workshifthistories.forEach(history => {
+            if (!history || !Array.isArray(history.holiday)) return;
+
+            const holidays = history.holiday.map(h => h.name);
+
+            const now = dayjs();
+
+            const startYear = parseYear(history.YYYYstart);
+            const endYear = parseYear(history.YYYYend);
+
+            const startMonth = parseMonth(history.MMstart);
+            const endMonth = parseMonth(history.MMend);
+
+            const startDay = parseDay(history.DDstart, startYear, startMonth);
+            const endDay = history.DDend === "now"
+                ? dayjs().year(endYear).month(endMonth).endOf("month").date()
+                : parseInt(history.DDend);
+
+            const startDate = dayjs().year(startYear).month(startMonth).date(startDay);
+            const endDate = dayjs().year(endYear).month(endMonth).date(endDay);
+
+            let current = startDate;
+
+            while (current.isSameOrBefore(endDate, "day")) {
+                const dayName = dayNameMap[current.format("dddd")];
+                if (!holidays.includes(dayName)) {
+                    datesSet.add(current.format("DD/MM/YYYY"));
+                }
+                current = current.add(1, "day");
+            }
+        });
+
+        // แปลง Set กลับเป็น Array และ sort วันที่
+        return Array.from(datesSet).sort((a, b) => {
+            return dayjs(a, "DD/MM/YYYY").unix() - dayjs(b, "DD/MM/YYYY").unix();
+        });
+    };
+
+
     employees.forEach(emp => {
         const position = emp.position.split("-")[1];
         const department = emp.department.split("-")[1];
         const section = emp.section.split("-")[1];
         const year = dayjs().format("YYYY");
         const month = dayjs().month() + 1; // ใช้เลขเดือนตรงกับ key
+        //setDateArray(generateFilteredDates(workshift));
 
         const attendantList = emp.attendant?.[year]?.[month] || [];
 
@@ -120,100 +197,26 @@ const EditTimeDetail = () => {
         }
     });
 
-    // ฟังก์ชัน map วันที่อังกฤษ → ไทย
-    const dayNameMap = {
-        Sunday: "อาทิตย์",
-        Monday: "จันทร์",
-        Tuesday: "อังคาร",
-        Wednesday: "พุธ",
-        Thursday: "พฤหัสบดี",
-        Friday: "ศุกร์",
-        Saturday: "เสาร์",
-    };
+    useEffect(() => {
+        const map = {};
 
-    // ฟังก์ชันหลัก
-    const generateFilteredDates = (shift) => {
-        console.log("shift : ", shift);
-        if (!shift || !shift.holiday) return [];
+        employees.forEach(emp => {
+            const filteredDates = generateFilteredDatesFromHistories(emp.workshifthistory);
+            map[emp.ID] = filteredDates;
+        });
 
-        const holidays = shift.holiday.map(h => h.name);
-        console.log("holidays : ", holidays);
-        const daysInMonth = dayjs().daysInMonth();
+        console.log("Filtered Date Map:", map);
+        setDateArrayMap(map);
+    }, [employees]);
 
-        return Array.from({ length: daysInMonth }, (_, i) => {
-            const date = dayjs().date(i + 1);
-            const dayName = dayNameMap[date.format("dddd")];
-            return holidays.includes(dayName) ? null : date.format("DD/MM/YYYY");
-        }).filter(Boolean);
-    };
 
-    const test = dayjs("2025-04-12").format("dddd");
-    console.log(dayNameMap[test]); // ควรเป็น "เสาร์"
+    // // ตัวอย่างเรียกใช้:
+    // const dateArray = generateFilteredDates(workshift[1]); // หรือ [1]
 
-    // ตัวอย่างเรียกใช้:
-    const dateArray = generateFilteredDates(workshift[1]); // หรือ [1]
-
-    console.log("dateArray : ", dateArray);
+    console.log("dateArrayMap : ", dateArrayMap);
 
     console.log("attendantRows : ", attendantRows);
     console.log("employees : ", employees);
-
-    useEffect(() => {
-        if (!firebaseDB || !companyId) return;
-
-        const departmentRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
-
-        const unsubscribe = onValue(departmentRef, (snapshot) => {
-            const departmentData = snapshot.val();
-
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!departmentData) {
-                setDepartments([{ ID: 0, name: '' }]);
-            } else {
-                setDepartments(departmentData);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
-
-    useEffect(() => {
-        if (!firebaseDB || !companyId) return;
-
-        const sectionRef = ref(firebaseDB, `workgroup/company/${companyId}/section`);
-
-        const unsubscribe = onValue(sectionRef, (snapshot) => {
-            const sectionData = snapshot.val();
-
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!sectionData) {
-                setSections([{ ID: 0, name: '' }]);
-            } else {
-                setSections(sectionData);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
-
-    useEffect(() => {
-        if (!firebaseDB || !companyId) return;
-
-        const positionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
-
-        const unsubscribe = onValue(positionRef, (snapshot) => {
-            const positionData = snapshot.val();
-
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!positionData) {
-                setPositions([{ ID: 0, name: '' }]);
-            } else {
-                setPositions(positionData);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
 
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -260,25 +263,6 @@ const EditTimeDetail = () => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
-
-        const unsubscribe = onValue(leaveRef, (snapshot) => {
-            const leaveData = snapshot.val();
-
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!leaveData) {
-                setLeave([{ ID: 0, name: '' }]);
-            } else {
-                setLeave(leaveData);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
-
-    useEffect(() => {
-        if (!firebaseDB || !companyId) return;
-
         const workshiftRef = ref(firebaseDB, `workgroup/company/${companyId}/workshift`);
 
         const unsubscribe = onValue(workshiftRef, (snapshot) => {
@@ -294,71 +278,6 @@ const EditTimeDetail = () => {
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
-
-    const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
-
-        const invalidMessages = [];
-
-        leave.forEach((row, rowIndex) => {
-            columns.forEach((col) => {
-                const value = row[col.key];
-
-                if (value === "") {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
-                    return;
-                }
-
-                if (col.type === "number" && isNaN(Number(value))) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
-                    return;
-                }
-
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
-            });
-        });
-
-        // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        const names = leave.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
-        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
-        if (duplicates.length > 0) {
-            invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
-        }
-
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
-        if (invalidMessages.length > 0) {
-            ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
-            return;
-        }
-
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, leave)
-            .then(() => {
-                ShowSuccess("บันทึกข้อมูลสำเร็จ");
-                console.log("บันทึกสำเร็จ");
-                setEditLeave(false);
-            })
-            .catch((error) => {
-                ShowError("เกิดข้อผิดพลาดในการบันทึก");
-                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
-            });
-    };
-
-    const handleCancel = () => {
-        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
-
-        onValue(leaveRef, (snapshot) => {
-            const leaveData = snapshot.val() || [{ ID: 0, name: '' }];
-            setLeave(leaveData);
-            setEditLeave(false);
-        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
-    };
 
     return (
         <React.Fragment>
@@ -376,91 +295,42 @@ const EditTimeDetail = () => {
                         // }}
                         >
                             {/* <FormControlLabel control={<Checkbox defaultChecked />} label="ทั้งหมด" /> */}
-                            <FormControlLabel control={<Checkbox checked />} label="วันทำงาน/ไม่มาทำงาน" />
-                            <FormControlLabel control={<Checkbox />} label="ลงเวลาไม่ครบคู่" />
-                            <FormControlLabel control={<Checkbox />} label="สาย" />
-                            <FormControlLabel control={<Checkbox />} label="กลับก่อน" />
-                            <FormControlLabel control={<Checkbox />} label="พักเกิน" />
-                            <FormControlLabel control={<Checkbox />} label="โอที" />
-                            <FormControlLabel control={<Checkbox />} label="ขาดงาน/ลางาน" />
-                            <FormControlLabel control={<Checkbox />} label="ทำงานในวันหยุด" />
+                            <FormControlLabel control={<Checkbox checked={day === 1} onClick={() => setDay(1)} />} label="วันทำงาน/ไม่มาทำงาน" />
+                            <FormControlLabel control={<Checkbox checked={day === 2} onClick={() => setDay(2)} />} label="ลงเวลาไม่ครบคู่" />
+                            <FormControlLabel control={<Checkbox checked={day === 3} onClick={() => setDay(3)} />} label="สาย" />
+                            <FormControlLabel control={<Checkbox checked={day === 4} onClick={() => setDay(4)} />} label="กลับก่อน" />
+                            <FormControlLabel control={<Checkbox checked={day === 5} onClick={() => setDay(5)} />} label="พักเกิน" />
+                            <FormControlLabel control={<Checkbox checked={day === 6} onClick={() => setDay(6)} />} label="โอที" />
+                            <FormControlLabel control={<Checkbox checked={day === 7} onClick={() => setDay(7)} />} label="ลางาน" />
+                            <FormControlLabel control={<Checkbox checked={day === 8} onClick={() => setDay(8)} />} label="ทำงานในวันหยุด" />
                         </FormGroup>
                     </Grid>
                     <Grid item size={12}>
-                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>แก้ไขเวลา</Typography>
+                        <Divider sx={{ marginTop: 1 }} />
                     </Grid>
                     <Grid item size={12}>
-                        <Divider sx={{ marginTop: -1 }} />
-                    </Grid>
-                    <Grid item size={editLeave ? 12 : 11}>
-                        {
-                            editLeave ?
-                                <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                                    <TableExcel
-                                        columns={columns}
-                                        initialData={department}
-                                        onDataChange={setDepartment}
-                                    />
-                                </Paper>
-                                :
-                                <TableContainer component={Paper} textAlign="center">
-                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
-                                        <TableHead>
-                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                <TablecellHeader>ชื่อ</TablecellHeader>
-                                                <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                                <TablecellHeader>วันที่</TablecellHeader>
-                                                <TablecellHeader>กะการทำงาน</TablecellHeader>
-                                                <TablecellHeader>เวลาทำงาน</TablecellHeader>
-                                                <TablecellHeader>มาเช้า/สาย/พักไว/พักเกิน/กลับก่อน/กลับช้า</TablecellHeader>
-                                                <TablecellHeader>โอที</TablecellHeader>
-                                                <TablecellHeader>ลา</TablecellHeader>
-                                                <TablecellHeader>หมายเหตุ</TablecellHeader>
-                                            </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {attendantRows
-                                                .map((emp, index) => (
-                                                    <TableRow key={emp.ID ?? index}>
-                                                        <TableCell align="center">{index + 1}</TableCell>
-                                                        <TableCell align="center">{emp.employname}</TableCell>
-                                                        <TableCell align="center">{emp.position}</TableCell>
-                                                        <TableCell align="center">{`${emp.datein} - ${emp.dateout}`}</TableCell>
-                                                        <TableCell align="center">{emp.workshift}</TableCell>
-                                                        <TableCell align="center">{`${emp.checkin} - ${emp.checkout}`}</TableCell>
-                                                        <TableCell align="center">{emp.socialSecurity}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                        </TableBody>
-
-                                    </Table>
-                                </TableContainer>
-                        }
+                        <Typography variant="subtitle1" fontWeight="bold" sx={{ marginBottom: -1 }} gutterBottom>
+                            จัดการข้อมูล{
+                                day === 1 ? "วันทำงาน/ไม่มาทำงาน"
+                                    : day === 2 ? "ลงเวลาไม่ครบคู่"
+                                        : day === 3 ? "สาย"
+                                            : day === 4 ? "กลับก่อน"
+                                                : day === 5 ? "พักเกิน"
+                                                    : day === 6 ? "โอที"
+                                                        : day === 7 ? "ลางาน"
+                                                            : "ทำงานในวันหยุด"
+                            }
+                        </Typography>
                     </Grid>
                     {
-                        !editLeave &&
-                        <Grid item size={1} textAlign="right">
-                            <Box display="flex" justifyContent="center" alignItems="center">
-                                <Button
-                                    variant="contained"
-                                    size="small"
-                                    color="warning"
-                                    fullWidth
-                                    sx={{
-                                        height: "60px",
-                                        flexDirection: "column",
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        textTransform: "none",
-                                    }}
-                                    onClick={() => setEditLeave(true)}
-                                >
-                                    <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
-                                    แก้ไข
-                                </Button>
-                            </Box>
-                        </Grid>
+                        day === 1 ? <MissingWorkDetail department={department} section={section} position={position} employee={employee} dateArray={dateArrayMap} />
+                            : day === 2 ? <IncomepleteTime department={department} section={section} position={position} employee={employee} dateArray={dateArrayMap} />
+                                : day === 3 ? <LateDetail department={department} section={section} position={position} employee={employee} dateArray={dateArrayMap} />
+                                    : day === 4 ? <LeaveEarly department={department} section={section} position={position} employee={employee} dateArray={dateArrayMap} />
+                                        : day === 5 ? <OverbreakDetail department={department} section={section} position={position} employee={employee} dateArray={dateArrayMap} />
+                                            : day === 6 ? <OTDetail department={department} section={section} position={position} employee={employee} dateArray={dateArrayMap} />
+                                                : day === 7 ? <LeaveDetail department={department} section={section} position={position} employee={employee} dateArray={dateArrayMap} />
+                                                    : <DayOffDetail department={department} section={section} position={position} employee={employee} dateArray={dateArrayMap} />
                     }
                 </Grid>
             </Box>

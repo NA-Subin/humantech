@@ -502,7 +502,7 @@ export default function TableExcel({
                                     </TableCell>
                                     {columns.map((col, colIdx) => {
                                         // ถ้า col.key เป็น employname หรือ position ให้ใช้ rowspan
-                                        if (col.key === "employname") {
+                                        if (col.key === "employname" && types === "list") {
                                             if (employnameRowSpan[rowIdx] > 0) {
                                                 return (
                                                     <TableCell key={colIdx} rowSpan={employnameRowSpan[rowIdx]}
@@ -538,7 +538,7 @@ export default function TableExcel({
                                             }
                                             return null; // แถวอื่น ๆ ที่ rowspan=0 ไม่แสดง cell
                                         }
-                                        if (col.key === "position") {
+                                        if (col.key === "position" && types === "list") {
                                             if (positionRowSpan[rowIdx] > 0) {
                                                 return (
                                                     <TableCell key={colIdx} rowSpan={positionRowSpan[rowIdx]}
