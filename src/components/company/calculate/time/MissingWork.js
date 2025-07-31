@@ -38,278 +38,224 @@ import { ShowError, ShowSuccess, ShowWarning } from "../../../../sweetalert/swee
 import { useFirebase } from "../../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../../theme/SearchEmployee";
 import dayjs from "dayjs";
+import { formatThaiShort } from "../../../../theme/DateTH";
 dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.format("dddd")
 
 const MissingWorkDetail = (props) => {
-    const { department, section, position, employee, dateArray } = props;
+    const { dateArray } = props;
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
-    //const { companyName } = useParams();
-    const [editIncomepleteTime, setIncompleteTime] = useState(false);
-    const [companies, setCompanies] = useState([]);
-    const [selectedCompany, setSelectedCompany] = useState(null);
-    const [leave, setLeave] = useState([{ ID: 0, name: '' }]);
-    const [workshift, setWorkshift] = useState([]);
-    const columns = [
-        { label: "ประเภทการลา", key: "name", type: "text" },
-        { label: "จำนวนวัน", key: "max", type: "text" }
-    ];
-
-    console.log("workshift : ", workshift);
-    const [employees, setEmployees] = useState([]);
-
-    const attendantRows = [];
-
-    // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
 
-    employees.forEach(emp => {
-        const position = emp.position.split("-")[1];
-        const department = emp.department.split("-")[1];
-        const section = emp.section.split("-")[1];
-        const year = dayjs().format("YYYY");
-        const month = dayjs().month() + 1; // ใช้เลขเดือนตรงกับ key
+    const result = dateArray.map((item) => {
+        const { attendant = [], dateHistory = [] } = item;
 
-        const attendantList = emp.attendant?.[year]?.[month] || [];
-
-        attendantList.forEach((entry, idx) => {
-            attendantRows.push({
-                employname: `${emp.employname} (${emp.nickname})`,
-                position,
-                department,
-                section,
-                checkin: entry.checkin,
-                checkout: entry.checkout,
-                datein: entry.datein,
-                dateout: entry.dateout,
-                workshift: entry.shift,
-                isFirst: idx === 0,
-                rowSpan: attendantList.length,
+        const newDateHistory = dateHistory.map((d) => {
+            // หาวันที่ตรงกับ datein หรือ dateout
+            const found = attendant.find((a) => {
+                const datein = a.DDI && a.MMI ? `${a.DDI}/${a.MMI}/2025` : null;
+                const dateout = a.DDO && a.MMO ? `${a.DDO}/${a.MMO}/2025` : null;
+                return d.date === datein || d.date === dateout;
             });
+
+            let message = "ขาดงาน";
+            let datein = "";
+            let dateout = "";
+            let checkin = "";
+            let checkout = "";
+
+            if (found) {
+                if (found.DDI && found.MMI) {
+                    datein = `${found.DDI}/${found.MMI}/2025`;
+                    checkin = found.checkin || ""; // เวลาเข้า
+                }
+
+                if (found.DDO && found.MMO) {
+                    dateout = `${found.DDO}/${found.MMO}/2025`;
+                    checkout = found.checkout || ""; // เวลาออก
+                }
+
+                if (datein && dateout) {
+                    message = "ลงเวลาเข้าออกครบ";
+                } else if (datein && !dateout) {
+                    message = "ลงเวลาไม่ครบ (ไม่มีเวลาออก)";
+                } else if (!datein && dateout) {
+                    message = "ลงเวลาไม่ครบ (ไม่มีเวลาเข้า)";
+                }
+            }
+
+            return {
+                ...d,
+                datein,
+                dateout,
+                checkin,
+                checkout,
+                message,
+            };
         });
 
-        // ถ้าไม่มีข้อมูลการเข้างาน
-        if (attendantList.length === 0) {
-            attendantRows.push({
-                employname: `${emp.employname} (${emp.nickname})`,
-                position,
-                department,
-                section,
-                checkin: "",
-                checkout: "",
-                datein: "",
-                dateout: "",
-                workshift: "",
-                isFirst: true,
-                rowSpan: 1,
-            });
-        }
+        return {
+            ...item,
+            dateHistory: newDateHistory,
+        };
     });
 
-    console.log("dateArray : ", dateArray);
+    console.log("result : ", result);
 
-    console.log("attendantRows : ", attendantRows);
-    console.log("employees : ", employees);
+    // const handleSave = () => {
+    //     const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
 
-    useEffect(() => {
-        if (!firebaseDB || !companyId) return;
+    //     const invalidMessages = [];
 
-        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+    //     leave.forEach((row, rowIndex) => {
+    //         columns.forEach((col) => {
+    //             const value = row[col.key];
 
-        const unsubscribe = onValue(employeeRef, (snapshot) => {
-            const employeeData = snapshot.val();
+    //             if (value === "") {
+    //                 invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
+    //                 return;
+    //             }
 
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!employeeData) {
-                setEmployees([{ ID: 0, name: '' }]);
-            } else {
-                setEmployees(employeeData);
-            }
-        });
+    //             if (col.type === "number" && isNaN(Number(value))) {
+    //                 invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
+    //                 return;
+    //             }
 
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
+    //             if (
+    //                 col.type === "select" &&
+    //                 !col.options?.some(opt => opt.value === value)
+    //             ) {
+    //                 invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
+    //                 return;
+    //             }
+    //         });
+    //     });
 
+    //     // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
+    //     const names = leave.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+    //     const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
+    //     if (duplicates.length > 0) {
+    //         invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
+    //     }
 
-    useEffect(() => {
-        if (!firebaseDB) return;
+    //     // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
+    //     if (invalidMessages.length > 0) {
+    //         ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
+    //         return;
+    //     }
 
-        const companiesRef = ref(firebaseDB, "workgroup/company");
-        const unsubscribe = onValue(companiesRef, (snapshot) => {
-            const data = snapshot.exists() ? snapshot.val() : {};
-            const list = Object.entries(data).map(([key, value]) => ({
-                id: key,
-                ...value,
-            }));
-            setCompanies(list);
+    //     // ✅ บันทึกเมื่อผ่านเงื่อนไข
+    //     set(companiesRef, leave)
+    //         .then(() => {
+    //             ShowSuccess("บันทึกข้อมูลสำเร็จ");
+    //             console.log("บันทึกสำเร็จ");
+    //             setIncompleteTime(false);
+    //         })
+    //         .catch((error) => {
+    //             ShowError("เกิดข้อผิดพลาดในการบันทึก");
+    //             console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+    //         });
+    // };
 
-            // ค้นหา company ตาม companyId
-            const found = list.find((item, index) => String(index) === companyId);
-            if (found) {
-                setSelectedCompany(found);
-            }
-        });
+    // const handleCancel = () => {
+    //     const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
 
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
-
-    useEffect(() => {
-        if (!firebaseDB || !companyId) return;
-
-        const workshiftRef = ref(firebaseDB, `workgroup/company/${companyId}/workshift`);
-
-        const unsubscribe = onValue(workshiftRef, (snapshot) => {
-            const workshiftData = snapshot.val();
-
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!workshiftData) {
-                setWorkshift([{ ID: 0, name: '' }]);
-            } else {
-                setWorkshift(workshiftData);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
-
-    const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
-
-        const invalidMessages = [];
-
-        leave.forEach((row, rowIndex) => {
-            columns.forEach((col) => {
-                const value = row[col.key];
-
-                if (value === "") {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
-                    return;
-                }
-
-                if (col.type === "number" && isNaN(Number(value))) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
-                    return;
-                }
-
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
-            });
-        });
-
-        // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        const names = leave.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
-        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
-        if (duplicates.length > 0) {
-            invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
-        }
-
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
-        if (invalidMessages.length > 0) {
-            ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
-            return;
-        }
-
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, leave)
-            .then(() => {
-                ShowSuccess("บันทึกข้อมูลสำเร็จ");
-                console.log("บันทึกสำเร็จ");
-                setIncompleteTime(false);
-            })
-            .catch((error) => {
-                ShowError("เกิดข้อผิดพลาดในการบันทึก");
-                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
-            });
-    };
-
-    const handleCancel = () => {
-        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
-
-        onValue(leaveRef, (snapshot) => {
-            const leaveData = snapshot.val() || [{ ID: 0, name: '' }];
-            setLeave(leaveData);
-            setIncompleteTime(false);
-        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
-    };
+    //     onValue(leaveRef, (snapshot) => {
+    //         const leaveData = snapshot.val() || [{ ID: 0, name: '' }];
+    //         setLeave(leaveData);
+    //         setIncompleteTime(false);
+    //     }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
+    // };
 
     return (
         <React.Fragment>
-            <Grid item size={editIncomepleteTime ? 12 : 11}>
+            {/* <Grid item size={editIncomepleteTime ? 12 : 11}> */}
+            <Grid item size={12}>
                 {
-                    editIncomepleteTime ?
-                        <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                            {/* <TableExcel
-                                columns={columns}
-                                initialData={department}
-                                onDataChange={setDepartment}
-                            /> */}
-                        </Paper>
-                        :
-                        <TableContainer component={Paper} textAlign="center">
-                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
-                                <TableHead>
-                                    <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                        <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                        <TablecellHeader>ชื่อ</TablecellHeader>
-                                        <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                        <TablecellHeader>วันที่</TablecellHeader>
-                                        <TablecellHeader>กะการทำงาน</TablecellHeader>
-                                        <TablecellHeader>เวลาทำงาน</TablecellHeader>
-                                        <TablecellHeader>มาเช้า/สาย/พักไว/พักเกิน/กลับก่อน/กลับช้า</TablecellHeader>
-                                        <TablecellHeader>โอที</TablecellHeader>
-                                        <TablecellHeader>ลา</TablecellHeader>
-                                        <TablecellHeader>หมายเหตุ</TablecellHeader>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {attendantRows
-                                        .map((emp, index) => (
-                                            <TableRow key={emp.ID ?? index}>
-                                                <TableCell align="center">{index + 1}</TableCell>
-                                                <TableCell align="center">{emp.employname}</TableCell>
-                                                <TableCell align="center">{emp.position}</TableCell>
-                                                <TableCell align="center">{`${emp.datein} - ${emp.dateout}`}</TableCell>
-                                                <TableCell align="center">{emp.workshift}</TableCell>
-                                                <TableCell align="center">{`${emp.checkin} - ${emp.checkout}`}</TableCell>
-                                                <TableCell align="center">{emp.socialSecurity}</TableCell>
+                    // editIncomepleteTime ?
+                    //     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
+                    //         <TableExcel
+                    //             columns={columns}
+                    //             initialData={department}
+                    //             onDataChange={setDepartment}
+                    //         />
+                    //     </Paper>
+                    //     :
+                    <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", overflow: "auto" }}>
+                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1080px" }}>
+                            <TableHead
+                                sx={{
+                                    position: "sticky",
+                                    top: 0,
+                                    zIndex: 2,
+                                    backgroundColor: theme.palette.primary.dark,
+                                }}
+                            >
+                                <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                    <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
+                                    <TablecellHeader sx={{ width: 120 }}>วันที่</TablecellHeader>
+                                    <TablecellHeader sx={{ width: 120 }}>กะการทำงาน</TablecellHeader>
+                                    <TablecellHeader sx={{ width: 120 }}>เวลาทำงาน</TablecellHeader>
+                                    <TablecellHeader>การลงเวลา</TablecellHeader>
+                                    <TablecellHeader sx={{ width: 200 }}>หมายเหตุ</TablecellHeader>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {
+                                    result.map((emp, index) => (
+                                        <React.Fragment>
+                                            <TableRow>
+                                                <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
+                                                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
+                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
+                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
+                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
+                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
+                                                            ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
+                                                                ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
+                                                                : emp.department.split("-")[1]}
+                                                        </Typography>
+                                                        {
+                                                            emp.section.split("-")[1] !== "ไม่มี" &&
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
+                                                        }
+                                                        <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
+                                                    </Box>
+                                                </TableCell>
                                             </TableRow>
-                                        ))}
-                                </TableBody>
+                                            {
+                                                emp.dateHistory
+                                                    .filter(date => date.message === "ขาดงาน")
+                                                    .map((date, index) => (
+                                                        <TableRow>
+                                                            <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{formatThaiShort(dayjs(date.date, "DD/MM/YYYY"))}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{date.workshift.split("-")[1]}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{`${date.start} - ${date.stop}`}</TableCell>
+                                                            {
+                                                                (date.checkin === "" && date.checkout === "") ?
+                                                                    <TableCell sx={{ textAlign: "center" }}> </TableCell>
+                                                                    : date.checkin === "" ?
+                                                                        <TableCell sx={{ textAlign: "center" }}>{`ลงชื่อออก ${date.checkout}`}</TableCell>
+                                                                        : date.checkout === "" ?
+                                                                            <TableCell sx={{ textAlign: "center" }}>{`ลงชื่อเข้า ${date.checkin}`}</TableCell>
+                                                                            :
+                                                                            <TableCell sx={{ textAlign: "center" }}>{`เข้า ${date.checkin} - ออก ${date.checkout}`}</TableCell>
+                                                            }
+                                                            <TableCell sx={{ textAlign: "center", color: theme.palette.error.main, fontWeight: "bold" }}>{date.message}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                            }
+                                        </React.Fragment>
+                                    ))
+                                }
+                            </TableBody>
 
-                            </Table>
-                        </TableContainer>
+                        </Table>
+                    </TableContainer>
                 }
             </Grid>
-            {
-                !editIncomepleteTime &&
-                <Grid item size={1} textAlign="right">
-                    <Box display="flex" justifyContent="center" alignItems="center">
-                        <Button
-                            variant="contained"
-                            size="small"
-                            color="warning"
-                            fullWidth
-                            sx={{
-                                height: "60px",
-                                flexDirection: "column",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => setIncompleteTime(true)}
-                        >
-                            <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
-                            แก้ไข
-                        </Button>
-                    </Box>
-                </Grid>
-            }
         </React.Fragment>
     )
 }

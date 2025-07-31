@@ -47,6 +47,9 @@ import LanguageDetail from "./LanguageDetail";
 import OtherDetail from "./OtherDetail";
 import dayjs from "dayjs";
 import ThaiDateSelector from "../../../theme/ThaiDateSelector";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+
+dayjs.extend(customParseFormat);
 
 const Employee = () => {
     const { firebaseDB, domainKey } = useFirebase();
@@ -61,11 +64,33 @@ const Employee = () => {
     const [positionDetail, setPositionDetail] = useState([]);
     const [workshift, setWorkshift] = useState([]);
     const [workshifts, setWorkshifts] = useState([]);
+    const [employeetype, setEmployeetype] = useState([]);
+    const [employeetypes, setEmployeetypes] = useState([]);
     const [editWorkshift, setEditWorkshift] = useState(false);
     const [workshiftDate, setWorkshiftDate] = useState(dayjs(new Date).format("DD/MM/YYYY"));
     const [menu, setMenu] = useState("");
     const paperRef = useRef(null);
     console.log("checkEmployee : ", checkEmployee);
+
+    const toDateString = (dateObj) => {
+        if (!dateObj || !dateObj.day || !dateObj.month || !dateObj.year) return '';
+
+        const { day, month, year } = dateObj;
+        const gregorianYear = Number(year) - 543;
+        const date = dayjs(`${gregorianYear}-${month}-${day}`, "YYYY-M-D");
+        return date.format("DD/MM/YYYY"); // 👉 "01/03/2025"
+    };
+
+    const toDateObject = (dateStr) => {
+        if (!dateStr) return { day: '', month: '', year: '' };
+
+        const date = dayjs(dateStr, "DD/MM/YYYY");
+        return {
+            day: date.date(),
+            month: date.month() + 1,
+            year: String(date.year() + 543),
+        };
+    };
 
     useEffect(() => {
         if (paperRef.current) {
@@ -173,10 +198,10 @@ const Employee = () => {
             })),
         },
         {
-            label: "กะการทำงาน",
-            key: "workshift",
+            label: "ประเภทการจ้าง",
+            key: "employeetype",
             type: "select",
-            options: workshift,
+            options: employeetype,
         },
     ];
 
@@ -419,6 +444,24 @@ const Employee = () => {
         });
     }, [firebaseDB, companyId]);
 
+    useEffect(() => {
+        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/employeetype`);
+
+        onValue(optionRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // แปลง object เป็น array ของ { value, label }
+                const opts = Object.values(data).map((item) => ({
+                    value: `${item.ID}-${item.name}`, // ค่าเวลาบันทึก
+                    label: item.name,                 // แสดงผล
+                }));
+                const employeetypeArray = Object.values(data);
+                setEmployeetype(opts); // <-- ใช้ใน columns
+                setEmployeetypes(employeetypeArray);
+            }
+        });
+    }, [firebaseDB, companyId]);
+
     console.log("employees : ", employees);
 
     useEffect(() => {
@@ -579,6 +622,108 @@ const Employee = () => {
             });
     };
 
+    // const dates = toDateString(workshiftDate);
+    // const newStartDate = dayjs(toDateString(workshiftDate), "DD/MM/YYYY");
+    // console.log("DD : ",dayjs(workshiftDate.day || new Date).format("DD"));
+    // console.log("MM : ",dayjs(workshiftDate.month || new Date).format("MM"));
+    // console.log("YYYY : ",dayjs(workshiftDate.year || new Date).format("YYYY"));
+    // console.log("Date : ",toDateString(workshiftDate));
+    // console.log("Dates : ",dayjs(dates, "DD/MM/YYYY"));
+    // console.log("Dates s : ",dayjs(toDateString(workshiftDate), "DD/MM/YYYY"));
+
+    const handleSaveWorkshift = () => {
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${opendetail.ID}`);
+
+        if (!workshift || !workshiftDate || !workshifts?.length) {
+            ShowWarning("ข้อมูลไม่ครบ", "กรุณาเลือกกะการทำงานและวันที่ให้ครบถ้วนก่อนบันทึก");
+            return;
+        }
+
+        const shiftID = Number(workshift.ID);
+        const shiftData = workshifts.find(row => row.ID === shiftID);
+
+        if (!shiftData) {
+            ShowWarning("ไม่พบข้อมูลกะ", "ไม่สามารถค้นหากะที่เลือกได้");
+            return;
+        }
+
+        const currentHistory = Array.isArray(opendetail.workshifthistory) ? [...opendetail.workshifthistory] : [];
+        const lastIndex = currentHistory.length - 1;
+        const lastHistory = currentHistory[lastIndex] || null;
+
+        const isSameWorkshift = (historyEntry, shift) => {
+            if (!historyEntry || !shift) return false;
+            return (
+                historyEntry.start === shift.start &&
+                historyEntry.stop === shift.stop
+            );
+        };
+
+        const newStartDate = dayjs(toDateString(workshiftDate), "DD/MM/YYYY");
+
+        // ถ้าเหมือน shift เดิม -> ไม่ต้องเพิ่ม history
+        if (isSameWorkshift(lastHistory, shiftData)) {
+            set(companiesRef, {
+                ...opendetail,
+                workshift: `${workshift.ID}-${workshift.name}`,
+            })
+                .then(() => {
+                    ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                    setEditWorkshift(false);
+                })
+                .catch((error) => {
+                    ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                    console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+                });
+            return;
+        }
+
+        // ถ้าเปลี่ยน shift -> ปรับ entry เดิม และเพิ่มใหม่
+        if (lastHistory) {
+            const newEndDate = newStartDate.subtract(1, "day");
+            currentHistory[lastIndex] = {
+                ...lastHistory,
+                DDend: newEndDate.format("DD"),
+                MMend: newEndDate.format("MM"),
+                YYYYend: newEndDate.format("YYYY"),
+                dateend: newEndDate.format("DD/MM/YYYY"),
+            };
+        }
+
+        const newHistoryEntry = {
+            ID: currentHistory.length,
+            workshift: `${workshift.ID}-${workshift.name}`,
+            DDstart: dayjs(workshiftDate.day).format("DD"),
+            MMstart: dayjs(workshiftDate.month).format("MM"),
+            YYYYstart: dayjs(workshiftDate.year).format("YYYY"),
+            datestart: toDateString(workshiftDate),
+            DDend: "now",
+            MMend: "now",
+            YYYYend: "now",
+            dateend: "now",
+            start: workshift.start,
+            stop: workshift.stop,
+            holiday: workshift.holiday,
+        };
+
+        const updatedEmployee = {
+            ...opendetail,
+            workshift: `${workshift.ID}-${workshift.name}`,
+            workshifthistory: [...currentHistory, newHistoryEntry],
+        };
+
+        set(companiesRef, updatedEmployee)
+            .then(() => {
+                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                setEditWorkshift(false);
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+            });
+    };
+
+
     const handleCancel = () => {
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
@@ -692,7 +837,7 @@ const Employee = () => {
                                                             <TablecellHeader sx={{ width: "15%" }}>ฝ่ายงาน</TablecellHeader>
                                                             <TablecellHeader sx={{ width: "15%" }}>ส่วนงาน</TablecellHeader>
                                                             <TablecellHeader sx={{ width: "15%" }}>ตำแหน่ง</TablecellHeader>
-                                                            <TablecellHeader sx={{ width: "15%" }}>กะการทำงาน</TablecellHeader>
+                                                            <TablecellHeader sx={{ width: "15%" }}>ประเภทการจ้าง</TablecellHeader>
                                                         </TableRow>
                                                     </TableHead>
                                                     <TableBody>
@@ -707,10 +852,19 @@ const Employee = () => {
                                                                         <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>{row.employeecode}</TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>{`${row.employname} ${row.nickname === undefined ? "" : `(${row.nickname})`}`}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>{row.department.split("-")[1]}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>{row.section.split("-")[1]}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>{row.position.split("-")[1]}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>{row.workshift.split("-")[1]}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                            {row.department?.includes("-") ? row.department.split("-")[1] : row.department}
+                                                                        </TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                            {row.section?.includes("-") ? row.section.split("-")[1] : row.section}
+                                                                        </TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                            {row.position?.includes("-") ? row.position.split("-")[1] : row.position}
+                                                                        </TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                            {row.employeetype?.includes("-") ? row.employeetype.split("-")[1] : row.employeetype}
+                                                                        </TableCell>
+
                                                                     </TableRow>
                                                                 ))}
                                                     </TableBody>
@@ -913,7 +1067,7 @@ const Employee = () => {
                                                                 <Button variant="contained" color="error" onClick={() => setEditWorkshift(false)} sx={{ marginRight: 2 }}>
                                                                     ยกเลิก
                                                                 </Button>
-                                                                <Button variant="contained" color="success" onClick={() => setEditWorkshift(false)}>
+                                                                <Button variant="contained" color="success" onClick={handleSaveWorkshift}>
                                                                     บันทึก
                                                                 </Button>
                                                             </Box>

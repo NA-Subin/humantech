@@ -33,6 +33,7 @@ import { useEffect, useState } from "react";
 import DomainLoginAdmin from "./components/login/login-admin/Login";
 import IncomeDetail from "./components/company/salary/Income";
 import DeductionsDetail from "./components/company/salary/Deductions";
+import EmployeeTypeDetail from "./components/company/structure/EmployeeType";
 
 const ProtectedRouteWrapper = ({ children }) => {
   const location = useLocation();
@@ -123,6 +124,8 @@ function CompanyRoutes({ page }: { page?: string }) {
       return <SectionDetail />;
     case "position":
       return <PositionDetail />;
+    case "employee-type":
+      return <EmployeeTypeDetail />;
     case "social-security":
       return <SSODetail />;
     case "employee":

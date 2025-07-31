@@ -343,6 +343,41 @@ export default function InsertCompany() {
         if (!companyName.trim() || !firebaseDB) return;
 
         const companiesRef = ref(firebaseDB, "workgroup/company");
+        // const groupsRef = ref(firebaseDB, "workgroup/backenid");
+
+        let backendId = "";
+
+        // try {
+        //     const snapshot = await get(groupsRef);
+        //     if (snapshot.exists()) {
+        //         backendId = snapshot.val(); // สมมติ backenid เป็น string เช่น "abc123"
+        //     } else {
+        //         throw new Error("ไม่พบค่า backenid ใน Firebase");
+        //     }
+
+        //     console.log("backend Id : ", backendId);
+
+        //     const response = await fetch(`http://upload.happysoftth.com/humantech/${backendId}/company`, {
+        //         method: "POST",
+        //         headers: {
+        //             "Content-Type": "application/json",
+        //         },
+        //         body: JSON.stringify({ company: companyName }),
+        //     });
+
+        //     if (!response.ok) {
+        //         const text = await response.text();
+        //         console.error("Backend error response:", text);
+        //         throw new Error(`HTTP error! status: ${response.status}`);
+        //     }
+
+        //     const data = await response.json();
+        //     backendId = data.id; // สมมติ response json มี field ชื่อ id
+        // } catch (error) {
+        //     console.error("Error post group to backend:", error);
+        //     alert("เกิดข้อผิดพลาดขณะส่งข้อมูลไป backend");
+        //     return;
+        // }
 
         try {
             const snapshot = await get(companiesRef);
@@ -363,7 +398,8 @@ export default function InsertCompany() {
                 sso: sso,
                 workshift: workShift,
                 tax: tax,
-                deduction: deductionData
+                deduction: deductionData,
+                cpnbackendid: backendId
             });
 
             setCompanyName("");

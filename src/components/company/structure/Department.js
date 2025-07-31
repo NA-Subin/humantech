@@ -48,6 +48,7 @@ const DepartmentDetail = () => {
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [department, setDepartment] = useState([{ ID: 0, deptname: '', keyposition: '' }]);
+    const [position, setPosition] = useState([]);
     const levelOptions = Array.from({ length: 10 }, (_, i) => ({
         value: `${i + 1}`,
         label: `${i + 1}`,
@@ -55,10 +56,10 @@ const DepartmentDetail = () => {
     const columns = [
         { label: "ชื่อแผนก", key: "deptname", type: "text", width: "60%" },
         {
-            label: "ระดับ",
+            label: "อำนาจอนุมัติ",
             key: "keyposition",
             type: "select",
-            options: levelOptions,
+            options: position,
         },
     ];
 
@@ -105,6 +106,24 @@ const DepartmentDetail = () => {
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+
+        onValue(optionRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const opts = Object.values(data).map((item) => ({
+                    ...item, // ต้องมี item.departmentid อยู่
+                    value: `${item.ID}-${item.positionname}`,
+                    label: item.positionname,
+                }));
+                setPosition(opts);
+            } else {
+                setPosition([]);
+            }
+        });
+    }, [companyId]);
 
     const handleSave = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
@@ -224,7 +243,7 @@ const DepartmentDetail = () => {
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
                                                     <TablecellHeader sx={{ width: "60%" }}>ชื่อแผนก/ฝ่ายงาน</TablecellHeader>
-                                                    <TablecellHeader>ระดับ</TablecellHeader>
+                                                    <TablecellHeader>อำนาจอนุมัติ</TablecellHeader>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
@@ -238,7 +257,7 @@ const DepartmentDetail = () => {
                                                             <TableRow>
                                                                 <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.deptname}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.keyposition}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.keyposition.split("-")[1]}</TableCell>
                                                             </TableRow>
                                                         ))}
                                             </TableBody>

@@ -98,29 +98,29 @@ const AdminApproveDomainForm = () => {
             // let backendId = null;
 
             let backendId = "";
-            // try {
-            //     const response = await fetch("http://upload.happysoftth.com/humantech/group", {
-            //         method: "POST",
-            //         headers: {
-            //             "Content-Type": "application/json",
-            //         },
-            //         body: JSON.stringify({ group: domainKey }),
-            //     });
+            try {
+                const response = await fetch("http://upload.happysoftth.com/humantech/group", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ group: domainKey }),
+                });
 
-            //     if (!response.ok) {
-            //         const text = await response.text(); // อ่านข้อความ error ที่ backend ส่งกลับ
-            //         console.error("Backend error response:", text);
-            //         throw new Error(`HTTP error! status: ${response.status}`);
-            //     }
+                if (!response.ok) {
+                    const text = await response.text(); // อ่านข้อความ error ที่ backend ส่งกลับ
+                    console.error("Backend error response:", text);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
 
-            //     const data = await response.json();
-            //     backendId = data.id;  // สมมติ response json มี field ชื่อ id
-            // } catch (error) {
-            //     console.error("Error post group to backend:", error);
-            //     alert("เกิดข้อผิดพลาดขณะส่งข้อมูลไป backend");
-            //     setIsSubmitting(false);
-            //     return;
-            // }
+                const data = await response.json();
+                backendId = data.id;  // สมมติ response json มี field ชื่อ id
+            } catch (error) {
+                console.error("Error post group to backend:", error);
+                alert("เกิดข้อผิดพลาดขณะส่งข้อมูลไป backend");
+                setIsSubmitting(false);
+                return;
+            }
 
             await set(domainRef, {
                 id: nextDomainId,
@@ -176,7 +176,8 @@ const AdminApproveDomainForm = () => {
                     startDate,
                     endDate,
                 },
-                workgroupname: domainKey
+                workgroupname: domainKey,
+                backendid: backendId,
             });
         } catch (error) {
             console.error("❌ Error saving config:", error);

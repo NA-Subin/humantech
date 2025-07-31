@@ -297,6 +297,8 @@ const AddEmployee = () => {
     const [employeeID, setEmployeeID] = useState(null);
     const [department, setDepartment] = useState([{ DepartmentName: '', Section: '' }]);
     const [workshifts, setWorkshifts] = useState([]);
+    const [employeetype, setEmployeetype] = useState([]);
+    const [type, setType] = useState({});
     const [workshift, setWorkshift] = useState("");
     const [position, setPosition] = useState([{
         ID: 0,
@@ -502,6 +504,24 @@ const AddEmployee = () => {
                 setWorkshifts([]);
             } else {
                 setWorkshifts(workshiftData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const employeetypeRef = ref(firebaseDB, `workgroup/company/${companyId}/employeetype`);
+
+        const unsubscribe = onValue(employeetypeRef, (snapshot) => {
+            const employeetypeData = snapshot.val();
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!employeetypeData) {
+                setEmployeetype([]);
+            } else {
+                setEmployeetype(employeetypeData);
             }
         });
 
@@ -732,10 +752,12 @@ const AddEmployee = () => {
             const nextIndex = Object.keys(employeeData).length;
 
             await set(child(employeeRef, String(nextIndex)), {
+                ID: nextIndex,
                 employeecode: employeeCode,
                 password: "1234567",
                 nickname: nickname,
                 employeeid: nextIndex,
+                employeetype: `${type.ID}-${type.name}`,
                 section: checkPosition.sectionid,
                 department: checkPosition.deptid,
                 position: `${checkPosition.ID}-${checkPosition.positionname}`,
@@ -762,7 +784,7 @@ const AddEmployee = () => {
             content: (
                 <>
                     <Grid container spacing={2} marginTop={2}>
-                        <Grid item size={12}>
+                        <Grid item size={6}>
                             <Typography variant="subtitle2" fontWeight="bold" >กะการทำงาน</Typography>
                             <TextField
                                 select
@@ -774,6 +796,23 @@ const AddEmployee = () => {
                             >
                                 {
                                     workshifts.map((row) => (
+                                        <MenuItem value={row}>{row.name}</MenuItem>
+                                    ))
+                                }
+                            </TextField>
+                        </Grid>
+                        <Grid item size={6}>
+                            <Typography variant="subtitle2" fontWeight="bold" >ประเภทการจ้าง</Typography>
+                            <TextField
+                                select
+                                fullWidth
+                                size="small"
+                                value={type}
+                                SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+                                onChange={(e) => setType(e.target.value)}
+                            >
+                                {
+                                    employeetype.map((row) => (
                                         <MenuItem value={row}>{row.name}</MenuItem>
                                     ))
                                 }

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Grid, Typography, TextField, MenuItem } from "@mui/material";
 
 // Reusable Select Field
@@ -62,7 +62,7 @@ export default function SelectEmployeeGroup({
   setEmployee,
   employees,
 }) {
-  // 👉 Logic Reset
+  // Reset cascading selects
   useEffect(() => {
     if (section !== "") setSection("");
     if (position !== "") setPosition("");
@@ -78,6 +78,35 @@ export default function SelectEmployeeGroup({
     if (employee !== "") setEmployee("");
   }, [position]);
 
+  const departmentsWithAll = useMemo(() => {
+    return [{ ID: "all", deptname: "ทั้งหมด" }, ...departments];
+  }, [departments]);
+
+  // Add "ทั้งหมด" dynamically
+  const sectionsWithAll = useMemo(() => {
+    if (!department) return sections;
+    return [{ ID: "all", sectionname: "ทั้งหมด", keyposition: department }, ...sections];
+  }, [sections, department]);
+
+  const positionsWithAll = useMemo(() => {
+    if (!section) return positions;
+    return [{ ID: "all", positionname: "ทั้งหมด", deptid: department, sectionid: section }, ...positions];
+  }, [positions, department, section]);
+
+  const employeesWithAll = useMemo(() => {
+    if (!position) return employees;
+    return [
+      {
+        employeeid: "all",
+        employname: "ทั้งหมด",
+        position,
+        department,
+        section,
+      },
+      ...employees,
+    ];
+  }, [employees, position, department, section]);
+
   return (
     <Grid container spacing={2} sx={{ marginBottom: 2 }}>
       {/* ฝ่ายงาน */}
@@ -85,18 +114,19 @@ export default function SelectEmployeeGroup({
         label="เลือกฝ่ายงาน"
         value={department}
         onChange={(e) => setDepartment(e.target.value)}
-        options={departments}
+        options={departmentsWithAll}
         getOptionValue={(row) => `${row.ID}-${row.deptname}`}
         getOptionLabel={(row) => row.deptname}
       />
+
 
       {/* ส่วนงาน */}
       <SelectField
         label="เลือกส่วนงาน"
         value={section}
         onChange={(e) => setSection(e.target.value)}
-        options={sections}
-        filterFn={(row) => row.keyposition === department}
+        options={sectionsWithAll}
+        filterFn={(row) => row.deptid === department || row.ID === "all"}
         getOptionValue={(row) => `${row.ID}-${row.sectionname}`}
         getOptionLabel={(row) => row.sectionname}
         showEmptyWhenNoMatch={department !== ""}
@@ -108,10 +138,11 @@ export default function SelectEmployeeGroup({
         label="เลือกตำแหน่ง"
         value={position}
         onChange={(e) => setPosition(e.target.value)}
-        options={positions}
+        options={positionsWithAll}
         filterFn={(row) =>
-          row.deptid === department &&
-          (row.sectionid === section || row.sectionid === "0-ไม่มี")
+          row.ID === "all" ||
+          (row.deptid === department &&
+            (row.sectionid === section || row.sectionid === "0-ไม่มี"))
         }
         getOptionValue={(row) => `${row.ID}-${row.positionname}`}
         getOptionLabel={(row) => row.positionname}
@@ -122,11 +153,12 @@ export default function SelectEmployeeGroup({
         label="เลือกพนักงาน"
         value={employee}
         onChange={(e) => setEmployee(e.target.value)}
-        options={employees}
+        options={employeesWithAll}
         filterFn={(row) =>
-          row.position === position &&
-          row.department === department &&
-          (row.section === section || row.section === "0-ไม่มี")
+          row.employeeid === "all" ||
+          (row.position === position &&
+            row.department === department &&
+            (row.section === section || row.section === "0-ไม่มี"))
         }
         getOptionValue={(row) => `${row.employeeid}-${row.employname}`}
         getOptionLabel={(row) => row.employname}

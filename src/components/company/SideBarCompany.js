@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { styled, useTheme, alpha } from '@mui/material/styles';
-import { getDatabase, ref, push, onValue } from "firebase/database";
+import { getDatabase, ref, push, onValue, update } from "firebase/database";
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import MuiDrawer from '@mui/material/Drawer';
@@ -26,6 +26,7 @@ import Badge from '@mui/material/Badge';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
+import CloseIcon from '@mui/icons-material/Close';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import HailIcon from '@mui/icons-material/Hail';
@@ -44,6 +45,7 @@ import PhoneIphoneRoundedIcon from '@mui/icons-material/PhoneIphoneRounded';
 import InstallMobileRoundedIcon from '@mui/icons-material/InstallMobileRounded';
 import MarkEmailUnreadRoundedIcon from '@mui/icons-material/MarkEmailUnreadRounded';
 import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
+import BusinessIcon from '@mui/icons-material/Business';
 import AccessTimeFilledIcon from '@mui/icons-material/AccessTimeFilled';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import Dialog from '@mui/material/Dialog';
@@ -53,10 +55,12 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Slide from '@mui/material/Slide';
 import Logo from '../../img/Humantech.png';
 import LogoGreen from '../../img/HumantechGreen.png';
-import { Button, ButtonGroup, Collapse, Grid } from '@mui/material';
+import { Button, ButtonGroup, Chip, Collapse, Grid } from '@mui/material';
 import { signOut } from 'firebase/auth';
 import { auth } from '../../server/firebase';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
+import { IconButtonError } from '../../theme/style';
+import { ShowError, ShowSuccess } from '../../sweetalert/sweetalert';
 
 
 const drawerWidth = 260;
@@ -292,6 +296,9 @@ export default function SideBarCompany() {
     const [anchorElSetting, setAnchorElSetting] = React.useState(null);
     const openSetting = Boolean(anchorElSetting);
     const [selectedMenu, setSelectedMenu] = useState('');
+    const [lat, setLat] = useState("");
+    const [lng, setLng] = useState("");
+    const [googlemap, setGooglemap] = useState("");
 
     const handleClickMenu = (event) => {
         setAnchorElMenu(event.currentTarget);
@@ -354,6 +361,7 @@ export default function SideBarCompany() {
     const [openEmail, setOpenEmail] = React.useState(false);
     const [openPassword, setOpenPassword] = React.useState(false);
     const [openPhone, setOpenPhone] = React.useState(false);
+    const [openCoordinates, setOpenCoordinates] = React.useState(false);
 
     const handleClickOpenEmail = () => {
         setOpenEmail(true);
@@ -375,8 +383,53 @@ export default function SideBarCompany() {
         setOpenPhone(true);
     };
 
+    const handleClickOpenCoordinates = () => {
+        setOpenCoordinates(true);
+    };
+
     const handleClosePhone = () => {
         setOpenPhone(false);
+    };
+
+    const handleCloseCoordinates = () => {
+        setOpenCoordinates(false);
+    };
+
+    const handleMapLinkChange = (e) => {
+        const value = e.target.value;
+        setGooglemap(value);
+
+        // ลองดึงค่าพิกัดจากลิงก์
+        const match = value.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (match) {
+            const lat = parseFloat(match[1]);
+            const lng = parseFloat(match[2]);
+
+            setLat(lat);
+            setLng(lng);
+        } else {
+            console.warn("ลิงก์ไม่มีพิกัดที่สามารถแยกได้");
+        }
+    };
+
+    const handleSaveCoordinates = () => {
+        const companyRef = ref(firebaseDB, `workgroup/company/${companyId}`);
+
+        const updates = {
+            lat: lat,
+            lng: lng,
+        };
+
+        update(companyRef, updates)
+            .then(() => {
+                ShowSuccess("บันทึกพิกัดสำเร็จ");
+                console.log("บันทึก lat/lng สำเร็จ");
+                setOpenCoordinates(false);
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึกพิกัด");
+                console.error("เกิดข้อผิดพลาด:", error);
+            });
     };
 
     const handleLogout = async () => {
@@ -476,9 +529,10 @@ export default function SideBarCompany() {
                             transformOrigin={{ horizontal: 'center', vertical: 'top' }}
                             anchorOrigin={{ horizontal: 'center', vertical: 'bottom' }}
                         >
-                            <MenuItem onClick={handleClickOpenEmail}><MailOutlineRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนอีเมล</MenuItem><Divider />
-                            <MenuItem onClick={handleClickOpenPassword}><PasswordRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนรหัสผ่าน</MenuItem><Divider />
+                            {/* <MenuItem onClick={handleClickOpenEmail}><MailOutlineRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนอีเมล</MenuItem><Divider />
+                            <MenuItem onClick={handleClickOpenPassword}><PasswordRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนรหัสผ่าน</MenuItem><Divider /> */}
                             <MenuItem onClick={handleClickOpenPhone}><PhoneIphoneRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนเบอร์โทรศัพท์</MenuItem><Divider />
+                            <MenuItem onClick={handleClickOpenCoordinates}><BusinessIcon sx={{ marginRight: 2 }} /> เพิ่มพิกัดของบริษัท</MenuItem><Divider />
                         </Menu>
                         {/* <Button size="large" color="inherit">
                             <IconButton size="large" aria-label="เลือกภาษา" color="inherit">
@@ -536,7 +590,7 @@ export default function SideBarCompany() {
                             </IconButton>
                         </Button>
                     </ButtonGroup>
-                    <Dialog
+                    {/* <Dialog
                         maxWidth="md"
                         open={openEmail}
                         TransitionComponent={Transition}
@@ -605,17 +659,38 @@ export default function SideBarCompany() {
                             <Button onClick={handleClosePassword}>ยกเลิก</Button>
                             <Button onClick={handleClosePassword}>เปลี่ยนรหัสผ่าน</Button>
                         </DialogActions>
-                    </Dialog>
+                    </Dialog> */}
                     <Dialog
-                        maxWidth="md"
                         open={openPhone}
                         TransitionComponent={Transition}
                         keepMounted
                         onClose={handleClosePhone}
-                        aria-describedby="alert-dialog-slide-description"
+                        PaperProps={{
+                            sx: {
+                                borderRadius: 4, // ค่าตรงนี้คือความมน ยิ่งมากยิ่งมน (ค่า default คือ 1 หรือ 4px)
+                                width: "600px",
+                                position: "absolute",
+                            },
+                        }}
                     >
-                        <DialogTitle sx={{ backgroundColor: theme.palette.primary.main, color: theme.palette.primary.contrastText }}>{"เปลี่ยนเบอร์โทร"}</DialogTitle>
-                        <Divider />
+                        <DialogTitle
+                            sx={{
+                                textAlign: "center",
+                                fontWeight: "bold"
+                            }}
+                        >
+                            <Grid container spacing={2}>
+                                <Grid item size={10}>
+                                    <Typography variant="h6" fontWeight="bold" gutterBottom>เปลี่ยนเบอร์โทรศัพท์</Typography>
+                                </Grid>
+                                <Grid item size={2} sx={{ textAlign: "right" }}>
+                                    <IconButtonError sx={{ marginTop: -2 }} onClick={handleClosePhone}>
+                                        <CloseIcon />
+                                    </IconButtonError>
+                                </Grid>
+                            </Grid>
+                            <Divider sx={{ marginTop: 2, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                        </DialogTitle>
                         <DialogContent>
                             <TextField sx={{ marginBottom: 1 }} fullWidth label="เบอร์โทรเดิม" type="text" margin="normal" InputProps={{
                                 startAdornment: (
@@ -635,6 +710,76 @@ export default function SideBarCompany() {
                         <DialogActions>
                             <Button onClick={handleClosePhone}>ยกเลิก</Button>
                             <Button onClick={handleClosePhone}>เปลี่ยนเบอร์โทร</Button>
+                        </DialogActions>
+                    </Dialog>
+                    <Dialog
+                        open={openCoordinates}
+                        TransitionComponent={Transition}
+                        keepMounted
+                        onClose={handleCloseCoordinates}
+                        PaperProps={{
+                            sx: {
+                                borderRadius: 4, // ค่าตรงนี้คือความมน ยิ่งมากยิ่งมน (ค่า default คือ 1 หรือ 4px)
+                                width: "600px",
+                                position: "absolute",
+                            },
+                        }}
+                    >
+                        <DialogTitle
+                            sx={{
+                                textAlign: "center",
+                                fontWeight: "bold"
+                            }}
+                        >
+                            <Grid container spacing={2}>
+                                <Grid item size={10}>
+                                    <Typography variant="h6" fontWeight="bold" gutterBottom>กำหนดพิกัดของบริษัท</Typography>
+                                </Grid>
+                                <Grid item size={2} sx={{ textAlign: "right" }}>
+                                    <IconButtonError sx={{ marginTop: -2 }} onClick={handleCloseCoordinates}>
+                                        <CloseIcon />
+                                    </IconButtonError>
+                                </Grid>
+                            </Grid>
+                            <Divider sx={{ marginTop: 2, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                        </DialogTitle>
+                        <DialogContent>
+                            <Grid container spacing={2} marginTop={2} marginBottom={2}>
+                                <Grid item size={6}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >พิกัด latitude</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={lat}
+                                        onChange={(e) => setLat(e.target.value)}
+                                    />
+                                </Grid>
+                                <Grid item size={6}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >พิกัด longitude</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={lng}
+                                        onChange={(e) => setLng(e.target.value)}
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <Divider ><Chip label="หรือ" size="small" /></Divider>
+                                </Grid>
+                                <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >url จาก google map</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={googlemap}
+                                        onChange={handleMapLinkChange}
+                                    />
+                                </Grid>
+                            </Grid>
+                        </DialogContent>
+                        <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
+                            <Button variant="contained" color="error" onClick={handleCloseCoordinates}>ยกเลิก</Button>
+                            <Button variant="contained" color="success" onClick={handleSaveCoordinates}>บันทึก</Button>
                         </DialogActions>
                     </Dialog>
                     <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
@@ -834,7 +979,8 @@ export default function SideBarCompany() {
                                 'ระดับตำแหน่งงาน',
                                 'แผนก/ฝ่ายงาน',
                                 'ส่วนงาน',
-                                'ตำแหน่งงาน'
+                                'ตำแหน่งงาน',
+                                'ประเภทการจ้าง'
                             ].map((text, index) => {
                                 const isSelected = selectedMenu === text;
 
@@ -868,7 +1014,9 @@ export default function SideBarCompany() {
                                                         ? `/?domain=${domain}&company=${companyName}&operation=department`
                                                         : index === 2
                                                             ? `/?domain=${domain}&company=${companyName}&operation=section`
-                                                            : `/?domain=${domain}&company=${companyName}&operation=position`
+                                                            : index === 3
+                                                                ? `/?domain=${domain}&company=${companyName}&operation=position`
+                                                                : `/?domain=${domain}&company=${companyName}&operation=employee-type`
 
                                             }
                                             sx={{
