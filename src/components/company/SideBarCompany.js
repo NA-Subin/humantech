@@ -26,6 +26,7 @@ import Badge from '@mui/material/Badge';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import MoreIcon from '@mui/icons-material/MoreVert';
 import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
+import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import CloseIcon from '@mui/icons-material/Close';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -55,12 +56,13 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Slide from '@mui/material/Slide';
 import Logo from '../../img/Humantech.png';
 import LogoGreen from '../../img/HumantechGreen.png';
-import { Button, ButtonGroup, Chip, Collapse, Grid } from '@mui/material';
+import { Button, ButtonGroup, Chip, Collapse, Grid, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import { signOut } from 'firebase/auth';
-import { auth } from '../../server/firebase';
+import { auth, database } from '../../server/firebase';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
-import { IconButtonError } from '../../theme/style';
+import { IconButtonError, TablecellHeader, TablecellNoData } from '../../theme/style';
 import { ShowError, ShowSuccess } from '../../sweetalert/sweetalert';
+import ThaiAddressSelector from '../../theme/ThaiAddressSelector';
 
 
 const drawerWidth = 260;
@@ -260,6 +262,7 @@ export default function SideBarCompany() {
     const companyId = companyName?.split(":")[0];
     const [openData, setOpenData] = useState(false);
     const [openEmployee, setOpenEmployee] = useState(false);
+    const [openAddress, setOpenAddress] = useState({});
 
     useEffect(() => {
         if (!firebaseDB) return;
@@ -283,7 +286,7 @@ export default function SideBarCompany() {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-    console.log("company : ", selectedCompany);
+    console.log("company : ", selectedCompany?.address);
     const theme = useTheme();
     const [open, setOpen] = React.useState(true);
     const [openLogo, setOpenLogo] = React.useState(false);
@@ -296,9 +299,42 @@ export default function SideBarCompany() {
     const [anchorElSetting, setAnchorElSetting] = React.useState(null);
     const openSetting = Boolean(anchorElSetting);
     const [selectedMenu, setSelectedMenu] = useState('');
+    const [companyid, setCompanyid] = useState("");
     const [lat, setLat] = useState("");
     const [lng, setLng] = useState("");
     const [googlemap, setGooglemap] = useState("");
+    const [address, setAddress] = useState({});
+    const [thailand, setThailand] = React.useState([]);
+    React.useEffect(() => {
+        if (!database) return;
+
+        const thailandRef = ref(database, `thailand`);
+
+        const unsubscribe = onValue(thailandRef, (snapshot) => {
+            const thailandData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!thailandData) {
+                setThailand([{ ID: 0, name: '', employeenumber: '' }]);
+            } else {
+                setThailand(thailandData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [database]);
+
+    const handleAddress = (newaddress) => {
+        setCompanyid(newaddress.ID);
+        setLat(newaddress.lat);
+        setLng(newaddress.lng);
+        setAddress({
+            amphure: newaddress.amphure,
+            province: newaddress.province,
+            tambon: newaddress.tambon,
+            zipCode: newaddress.zipCode
+        })
+    }
 
     const handleClickMenu = (event) => {
         setAnchorElMenu(event.currentTarget);
@@ -395,22 +431,55 @@ export default function SideBarCompany() {
         setOpenCoordinates(false);
     };
 
+    function formatAddress(data) {
+        // ตัดเอาส่วนหลัง '-' ออกมา ถ้าไม่มี '-' จะใช้ทั้งสตริงเลย
+        const getName = (str) => {
+            if (!str) return "";
+            const parts = str.split("-");
+            return parts.length > 1 ? parts[1] : str;
+        };
+
+        const tambon = getName(data.tambon);
+        const amphure = getName(data.amphure);
+        const province = getName(data.province);
+        const zipCode = data.zipCode || "";
+
+        return `ตำบล ${tambon}, อำเภอ ${amphure}, จังหวัด ${province}, รหัสไปรษณีย์ ${zipCode}`;
+    }
+
+
     const handleMapLinkChange = (e) => {
         const value = e.target.value;
         setGooglemap(value);
 
-        // ลองดึงค่าพิกัดจากลิงก์
-        const match = value.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-        if (match) {
-            const lat = parseFloat(match[1]);
-            const lng = parseFloat(match[2]);
+        // รวม regex สำหรับหลายรูปแบบ
+        const regexList = [
+            /@(-?\d+\.\d+),(-?\d+\.\d+)/,              // แบบ @lat,lng,...
+            /\/place\/(-?\d+\.\d+),(-?\d+\.\d+)/,      // แบบ /place/lat,lng
+            /q=(-?\d+\.\d+),(-?\d+\.\d+)/,             // แบบ ?q=lat,lng
+            /\/maps\/(-?\d+\.\d+),(-?\d+\.\d+)/,       // แบบ /maps/lat,lng
+            /\/\?ll=(-?\d+\.\d+),(-?\d+\.\d+)/,        // แบบ ?ll=lat,lng
+        ];
 
-            setLat(lat);
-            setLng(lng);
-        } else {
-            console.warn("ลิงก์ไม่มีพิกัดที่สามารถแยกได้");
+        let found = false;
+
+        for (const regex of regexList) {
+            const match = value.match(regex);
+            if (match) {
+                const lat = parseFloat(match[1]);
+                const lng = parseFloat(match[2]);
+                setLat(lat);
+                setLng(lng);
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            console.warn("ไม่พบพิกัดในลิงก์");
         }
     };
+
 
     const handleSaveCoordinates = () => {
         const companyRef = ref(firebaseDB, `workgroup/company/${companyId}`);
@@ -720,10 +789,11 @@ export default function SideBarCompany() {
                         PaperProps={{
                             sx: {
                                 borderRadius: 4, // ค่าตรงนี้คือความมน ยิ่งมากยิ่งมน (ค่า default คือ 1 หรือ 4px)
-                                width: "600px",
+                                width: "800px",
                                 position: "absolute",
                             },
                         }}
+                        maxWidth="lg"
                     >
                         <DialogTitle
                             sx={{
@@ -745,41 +815,104 @@ export default function SideBarCompany() {
                         </DialogTitle>
                         <DialogContent>
                             <Grid container spacing={2} marginTop={2} marginBottom={2}>
-                                <Grid item size={6}>
-                                    <Typography variant="subtitle2" fontWeight="bold" >พิกัด latitude</Typography>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        value={lat}
-                                        onChange={(e) => setLat(e.target.value)}
-                                    />
-                                </Grid>
-                                <Grid item size={6}>
-                                    <Typography variant="subtitle2" fontWeight="bold" >พิกัด longitude</Typography>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        value={lng}
-                                        onChange={(e) => setLng(e.target.value)}
-                                    />
-                                </Grid>
                                 <Grid item size={12}>
-                                    <Divider ><Chip label="หรือ" size="small" /></Divider>
+                                    <TableContainer component={Paper} textAlign="center">
+                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "750px" }}>
+                                            <TableHead>
+                                                <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                    <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
+                                                    <TablecellHeader>ชื่อ</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 500 }}>ที่อยู่</TablecellHeader>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {Array.isArray(selectedCompany?.address) && selectedCompany.address.length === 0 ? (
+                                                    <TableRow>
+                                                        <TableCell colSpan={3} align="center">
+                                                            <FolderOffRoundedIcon />
+                                                            <br />
+                                                            ไม่มีข้อมูล
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ) : (
+                                                    selectedCompany?.address?.map((row, index) => (
+                                                        <TableRow
+                                                            key={index}
+                                                            hover
+                                                            sx={{ cursor: "pointer" }}
+                                                            onClick={() => handleAddress(row)}
+                                                        >
+                                                            <TableCell align="center">{index + 1}</TableCell>
+                                                            <TableCell align="center">{row.name}</TableCell>
+                                                            <TableCell align="center">{formatAddress(row)}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                )}
+
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
                                 </Grid>
-                                <Grid item size={12}>
-                                    <Typography variant="subtitle2" fontWeight="bold" >url จาก google map</Typography>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        value={googlemap}
-                                        onChange={handleMapLinkChange}
-                                    />
-                                </Grid>
+                                {
+                                    selectedCompany?.address?.map((row, index) => (
+                                        companyid === row.ID &&
+                                        <React.Fragment>
+                                            <Grid item size={12} marginTop={2}>
+                                                <Divider ><Chip label="พิกัดละติจูดและลองจิจูด" size="small" /></Divider>
+                                            </Grid>
+                                            <Grid item size={12}>
+                                                <ThaiAddressSelector
+                                                    label="ที่อยู่ปัจจุบัน"
+                                                    thailand={thailand}
+                                                    value={address}
+                                                    placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
+                                                    onChange={(val) => setAddress(val)}
+                                                />
+                                            </Grid>
+                                            <Grid item size={6}>
+                                                <Typography variant="subtitle2" fontWeight="bold" >พิกัด latitude</Typography>
+                                                <TextField
+                                                    fullWidth
+                                                    size="small"
+                                                    value={lat}
+                                                    onChange={(e) => setLat(e.target.value)}
+                                                />
+                                            </Grid>
+                                            <Grid item size={6}>
+                                                <Typography variant="subtitle2" fontWeight="bold" >พิกัด longitude</Typography>
+                                                <TextField
+                                                    fullWidth
+                                                    size="small"
+                                                    value={lng}
+                                                    onChange={(e) => setLng(e.target.value)}
+                                                />
+                                            </Grid>
+                                            <Grid item size={12}>
+                                                <Divider ><Chip label="หรือ" size="small" /></Divider>
+                                            </Grid>
+                                            <Grid item size={12}>
+                                                <Typography variant="subtitle2" fontWeight="bold" >url จาก google map</Typography>
+                                                <TextField
+                                                    fullWidth
+                                                    size="small"
+                                                    value={googlemap}
+                                                    onChange={handleMapLinkChange}
+                                                />
+                                            </Grid>
+                                        </React.Fragment>
+                                    ))
+                                }
                             </Grid>
                         </DialogContent>
                         <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
                             <Button variant="contained" color="error" onClick={handleCloseCoordinates}>ยกเลิก</Button>
-                            <Button variant="contained" color="success" onClick={handleSaveCoordinates}>บันทึก</Button>
+                            {
+
+                                selectedCompany?.address?.map((row, index) => (
+                                    companyid === row.ID &&
+                                    <Button variant="contained" color="success" onClick={handleSaveCoordinates}>บันทึก</Button>
+                                ))
+                            }
                         </DialogActions>
                     </Dialog>
                     <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
@@ -1062,77 +1195,79 @@ export default function SideBarCompany() {
                                 โครงสร้างเงินเดือน
                             </Typography>}
 
-                            {['ประกันสังคม', 'ภาษี', 'ค่าลดหย่อนภาษี', 'รายได้เพิ่มเติม', 'รายหักเพิ่มเติม'].map((text, index) => {
-                                const isSelected = selectedMenu === text;
+                            {['ประกันสังคม', 'ภาษี',
+                                //'ค่าลดหย่อนภาษี',
+                                'รายได้เพิ่มเติม', 'รายหักเพิ่มเติม'].map((text, index) => {
+                                    const isSelected = selectedMenu === text;
 
-                                return (
-                                    <ListItem
-                                        key={text}
-                                        disablePadding
-                                        sx={{
-                                            display: open ? 'block' : 'flex',
-                                            height: 34, // ลดความสูง
-                                            paddingY: 0.3,
-                                        }}
-                                    >
-                                        <ListItemButton
-                                            component={Link}
-                                            // to={
-                                            //     index === 0
-                                            //         ? `/${domain}/${companyName}/social-security`
-                                            //         : index === 1
-                                            //             ? `/${domain}/${companyName}/tax`
-                                            //             : `/${domain}/${companyName}/deduction`
-                                            // }
-                                            to={
-                                                index === 0
-                                                    ? `/?domain=${domain}&company=${companyName}&salary=social-security`
-                                                    : index === 1
-                                                        ? `/?domain=${domain}&company=${companyName}&salary=tax`
-                                                        : index === 2
-                                                            ? `/?domain=${domain}&company=${companyName}&salary=deduction`
-                                                            : index === 3
-                                                                ? `/?domain=${domain}&company=${companyName}&salary=income`
-                                                                : `/?domain=${domain}&company=${companyName}&salary=deductions`
-                                            }
-                                            onClick={() => setSelectedMenu(text)}
+                                    return (
+                                        <ListItem
+                                            key={text}
+                                            disablePadding
                                             sx={{
-                                                height: 30,
-                                                paddingY: 0.5,
-                                                paddingX: open ? 2 : 1,
-                                                paddingLeft: isSelected ? 4 : 2,
-                                                backgroundColor: isSelected ? 'primary.main' : 'transparent',
-                                                color: isSelected ? 'white' : 'inherit',
-                                                '&:hover': {
-                                                    backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
-                                                },
+                                                display: open ? 'block' : 'flex',
+                                                height: 34, // ลดความสูง
+                                                paddingY: 0.3,
                                             }}
                                         >
-                                            <ListItemIcon
+                                            <ListItemButton
+                                                component={Link}
+                                                // to={
+                                                //     index === 0
+                                                //         ? `/${domain}/${companyName}/social-security`
+                                                //         : index === 1
+                                                //             ? `/${domain}/${companyName}/tax`
+                                                //             : `/${domain}/${companyName}/deduction`
+                                                // }
+                                                to={
+                                                    index === 0
+                                                        ? `/?domain=${domain}&company=${companyName}&salary=social-security`
+                                                        : index === 1
+                                                            ? `/?domain=${domain}&company=${companyName}&salary=tax`
+                                                            // : index === 2
+                                                            //     ? `/?domain=${domain}&company=${companyName}&salary=deduction`
+                                                            : index === 2
+                                                                ? `/?domain=${domain}&company=${companyName}&salary=income`
+                                                                : `/?domain=${domain}&company=${companyName}&salary=deductions`
+                                                }
+                                                onClick={() => setSelectedMenu(text)}
                                                 sx={{
-                                                    minWidth: 28,
-                                                    mr: open ? 0.5 : 'auto',
-                                                    justifyContent: 'center',
-                                                    marginLeft: open ? 1 : 'auto',
-                                                    color: isSelected ? 'white' : '#616161',
-                                                }}
-                                            >
-                                                <AttachMoneyIcon sx={{ fontSize: 18 }} />
-                                            </ListItemIcon>
-
-                                            <ListItemText
-                                                primary={text}
-                                                sx={{
-                                                    opacity: open ? 1 : 0,
-                                                    '& .MuiTypography-root': {
-                                                        fontSize: '13px', // ลดขนาดตัวอักษร
+                                                    height: 30,
+                                                    paddingY: 0.5,
+                                                    paddingX: open ? 2 : 1,
+                                                    paddingLeft: isSelected ? 4 : 2,
+                                                    backgroundColor: isSelected ? 'primary.main' : 'transparent',
+                                                    color: isSelected ? 'white' : 'inherit',
+                                                    '&:hover': {
+                                                        backgroundColor: isSelected ? 'primary.dark' : 'action.hover',
                                                     },
                                                 }}
-                                            />
-                                        </ListItemButton>
-                                    </ListItem>
-                                )
-                            })}
+                                            >
+                                                <ListItemIcon
+                                                    sx={{
+                                                        minWidth: 28,
+                                                        mr: open ? 0.5 : 'auto',
+                                                        justifyContent: 'center',
+                                                        marginLeft: open ? 1 : 'auto',
+                                                        color: isSelected ? 'white' : '#616161',
+                                                    }}
+                                                >
+                                                    <AttachMoneyIcon sx={{ fontSize: 18 }} />
+                                                </ListItemIcon>
+
+                                                <ListItemText
+                                                    primary={text}
+                                                    sx={{
+                                                        opacity: open ? 1 : 0,
+                                                        '& .MuiTypography-root': {
+                                                            fontSize: '13px', // ลดขนาดตัวอักษร
+                                                        },
+                                                    }}
+                                                />
+                                            </ListItemButton>
+                                        </ListItem>
+                                    )
+                                })}
                             {!openData && <Divider />}
                             {open && <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1, marginBottom: -0.5 }}>
                                 โครงสร้างเวลา

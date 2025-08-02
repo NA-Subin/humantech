@@ -118,13 +118,31 @@ const SectionDetail = () => {
             const data = snapshot.val();
             if (data) {
                 const opts = Object.values(data).map((item) => ({
-                    ...item, // ต้องมี item.departmentid อยู่
+                    ...item,
                     value: `${item.ID}-${item.positionname}`,
                     label: item.positionname,
                 }));
-                setPosition(opts);
+
+                // ✅ เพิ่มค่าว่างไว้ที่ด้านบนสุด
+                const withEmpty = [
+                    {
+                        value: "ว่าง-ว่าง",
+                        label: "ว่าง",
+                        departmentid: "", // ถ้าจำเป็นต้องมีให้กำหนดด้วย
+                    },
+                    ...opts,
+                ];
+
+                setPosition(withEmpty);
             } else {
-                setPosition([]);
+                // ยังเพิ่มค่าว่างแม้ไม่มีข้อมูลใน firebase
+                setPosition([
+                    {
+                        value: "ว่าง-ว่าง",
+                        label: "ว่าง",
+                        departmentid: "",
+                    }
+                ]);
             }
         });
     }, [companyId]);

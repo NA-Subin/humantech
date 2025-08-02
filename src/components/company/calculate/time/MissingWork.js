@@ -231,7 +231,11 @@ const MissingWorkDetail = (props) => {
                                                         <TableRow>
                                                             <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
                                                             <TableCell sx={{ textAlign: "center" }}>{formatThaiShort(dayjs(date.date, "DD/MM/YYYY"))}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center" }}>{date.workshift.split("-")[1]}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                {typeof date.workshift === "string" && date.workshift.includes("-")
+                                                                    ? date.workshift.split("-")[1]
+                                                                    : ""}
+                                                            </TableCell>
                                                             <TableCell sx={{ textAlign: "center" }}>{`${date.start} - ${date.stop}`}</TableCell>
                                                             {
                                                                 (date.checkin === "" && date.checkout === "") ?

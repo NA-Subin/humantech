@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use, useRef } from "react";
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, get } from "firebase/database";
 import '../../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -126,7 +126,7 @@ const Employee = () => {
                 const opts = Object.values(data).map((item) => ({
                     value: `${item.ID}-${item.sectionname}`,
                     label: item.sectionname,
-                    keyposition: item.keyposition
+                    keyposition: item.deptid
                 }));
 
                 // เพิ่มตัวเลือก "ไม่มี" เข้าไปที่ด้านบน
@@ -499,10 +499,10 @@ const Employee = () => {
         setEmployees(enrichedEmployees);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
-
-        // const workshifthistory = workshifts.find((row) => row.ID === Number(workshift.split("-")[0]))
+        const groupsRef = ref(firebaseDB, "workgroup");
+        const companyRef = ref(firebaseDB, `workgroup/company/${companyId}`);
 
         const invalidMessages = [];
 
@@ -530,95 +530,143 @@ const Employee = () => {
             });
         });
 
-        // ✅ ตรวจสอบว่า employee.name ซ้ำหรือไม่
-        const names = employees.map(row => row.name?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        const names = employees.map(row => row.name?.trim()).filter(Boolean);
         const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
         if (duplicates.length > 0) {
             invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
         }
 
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
         if (invalidMessages.length > 0) {
             ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
             return;
         }
 
-        // ✅ เติม workshifthistory ก่อนบันทึก
-        const enrichedEmployees = employees.map(emp => {
-            const shiftID = Number(emp.workshift?.split("-")[0]);
-            const shiftData = workshifts.find(row => row.ID === shiftID);
+        // 🔁 โหลดข้อมูล group และ company เพื่อใช้ใน backend call
+        let backendGroupID = "";
+        let backendCompanyID = "";
 
-            const currentHistory = Array.isArray(emp.workshifthistory) ? [...emp.workshifthistory] : [];
-
-            // หา history ล่าสุด
-            const lastIndex = currentHistory.length - 1;
-            const lastHistory = currentHistory[lastIndex] || null;
-
-            const isSameWorkshift = (historyEntry, shift) => {
-                if (!historyEntry || !shift) return false;
-                return (
-                    historyEntry.start === shift.start &&
-                    historyEntry.stop === shift.stop
-                );
-            };
-
-            if (isSameWorkshift(lastHistory, shiftData)) {
-                // workshift เดิม ไม่เพิ่ม history ใหม่
-                return { ...emp, workshifthistory: currentHistory };
+        try {
+            const groupSnap = await get(groupsRef);
+            if (groupSnap.exists()) {
+                backendGroupID = groupSnap.val().backendid;
             } else {
-                // workshift เปลี่ยน เพิ่ม entry ใหม่
+                throw new Error("ไม่พบค่า backenid");
+            }
 
-                // คำนวณวันที่เริ่มใหม่ = lastHistory.DDend + 1 วัน หรือวันนี้ถ้าไม่มี lastHistory
-                let newStartDate = dayjs();
-                if (lastHistory && lastHistory.DDend !== "now") {
-                    const dateString = `${lastHistory.DDend}/${lastHistory.MMend}/${lastHistory.YYYYend}`;
-                    newStartDate = dayjs(dateString, "DD/MM/YYYY").add(1, "day");
+            const companySnap = await get(companyRef);
+            if (companySnap.exists()) {
+                backendCompanyID = companySnap.val().cpnbackendid;
+            } else {
+                throw new Error("ไม่พบค่า cpnbackendid");
+            }
+        } catch (error) {
+            console.error("เกิดข้อผิดพลาดในการโหลดข้อมูล backend id:", error);
+            ShowError("เกิดข้อผิดพลาดในการโหลดข้อมูล backend id");
+            return;
+        }
+
+        // ✅ เติม workshifthistory และสร้าง empbackendid หากยังไม่มี
+        const enrichedEmployees = await Promise.all(
+            employees.map(async (emp) => {
+                let updatedEmp = { ...emp };
+
+                // ✅ เพิ่ม empbackendid ถ้ายังไม่มี
+                if (!emp.empbackendid || emp.empbackendid === "") {
+                    try {
+                        const response = await fetch(
+                            `http://upload.happysoftth.com/humantech/${backendGroupID}/${backendCompanyID}/employee`,
+                            {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({ name: emp.employname || "" }),
+                            }
+                        );
+
+                        if (!response.ok) {
+                            const text = await response.text();
+                            console.error("Backend error response:", text);
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const data = await response.json();
+                        updatedEmp.empbackendid = data.id;
+                    } catch (err) {
+                        console.error("Error creating employee in backend:", err);
+                        ShowError("เกิดข้อผิดพลาดขณะสร้างพนักงานใน backend");
+                        return emp; // คืนค่าตัวเดิมหาก error
+                    }
                 }
 
-                // อัพเดตวันที่ end ของ entry ก่อนหน้าเป็น วันก่อน newStartDate (newStartDate - 1 วัน)
-                if (lastHistory) {
-                    const newEndDate = newStartDate.subtract(1, "day");
-                    currentHistory[lastIndex] = {
-                        ...lastHistory,
-                        DDend: newEndDate.format("DD"),
-                        MMend: newEndDate.format("MM"),
-                        YYYYend: newEndDate.format("YYYY"),
-                        dateend: newEndDate.format("DD/MM/YYYY"),
+                // ✅ จัดการ workshifthistory
+                const shiftID = Number(emp.workshift?.split("-")[0]);
+                const shiftData = workshifts.find(row => row.ID === shiftID);
+                const currentHistory = Array.isArray(emp.workshifthistory) ? [...emp.workshifthistory] : [];
+
+                const lastIndex = currentHistory.length - 1;
+                const lastHistory = currentHistory[lastIndex] || null;
+
+                const isSameWorkshift = (historyEntry, shift) => {
+                    if (!historyEntry || !shift) return false;
+                    return (
+                        historyEntry.start === shift.start &&
+                        historyEntry.stop === shift.stop
+                    );
+                };
+
+                if (isSameWorkshift(lastHistory, shiftData)) {
+                    return { ...updatedEmp, workshifthistory: currentHistory };
+                } else {
+                    let newStartDate = dayjs();
+                    if (lastHistory && lastHistory.DDend !== "now") {
+                        const dateString = `${lastHistory.DDend}/${lastHistory.MMend}/${lastHistory.YYYYend}`;
+                        newStartDate = dayjs(dateString, "DD/MM/YYYY").add(1, "day");
+                    }
+
+                    if (lastHistory) {
+                        const newEndDate = newStartDate.subtract(1, "day");
+                        currentHistory[lastIndex] = {
+                            ...lastHistory,
+                            DDend: newEndDate.format("DD"),
+                            MMend: newEndDate.format("MM"),
+                            YYYYend: newEndDate.format("YYYY"),
+                            dateend: newEndDate.format("DD/MM/YYYY"),
+                        };
+                    }
+
+                    const newHistoryEntry = {
+                        start: shiftData?.start || "",
+                        stop: shiftData?.stop || "",
+                        holiday: shiftData?.holiday || [],
+                        DDstart: newStartDate.format("DD"),
+                        DDend: "now",
+                        MMstart: newStartDate.format("MM"),
+                        MMend: "now",
+                        YYYYstart: newStartDate.format("YYYY"),
+                        YYYYend: "now",
+                        datestart: newStartDate.format("DD/MM/YYYY"),
+                        dateend: "now",
+                    };
+
+                    return {
+                        ...updatedEmp,
+                        workshifthistory: [...currentHistory, newHistoryEntry],
+                        password: "1234567"
                     };
                 }
+            })
+        );
 
-                const newHistoryEntry = {
-                    start: shiftData?.start || "",
-                    stop: shiftData?.stop || "",
-                    holiday: shiftData?.holiday || [],
-                    DDstart: newStartDate.format("DD"),
-                    DDend: "now",
-                    MMstart: newStartDate.format("MM"),
-                    MMend: "now",
-                    YYYYstart: newStartDate.format("YYYY"),
-                    YYYYend: "now",
-                    datestart: newStartDate.format("DD/MM/YYYY"),
-                    dateend: "now",
-                };
-
-                return {
-                    ...emp,
-                    workshifthistory: [...currentHistory, newHistoryEntry],
-                };
-            }
-        });
-
-
-        // ✅ บันทึก enrichedEmployees แทน
+        // ✅ บันทึก
         set(companiesRef, enrichedEmployees)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
-                console.log("บันทึกสำเร็จ");
                 setEditEmployee(false);
             })
             .catch((error) => {
-                ShowError("เกิดข้อผิดพลาดในการบันทึก");
                 console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
             });
     };
 
@@ -630,6 +678,8 @@ const Employee = () => {
     // console.log("Date : ",toDateString(workshiftDate));
     // console.log("Dates : ",dayjs(dates, "DD/MM/YYYY"));
     // console.log("Dates s : ",dayjs(toDateString(workshiftDate), "DD/MM/YYYY"));
+
+    console.log("date : ",workshiftDate);
 
     const handleSaveWorkshift = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${opendetail.ID}`);
@@ -653,15 +703,12 @@ const Employee = () => {
 
         const isSameWorkshift = (historyEntry, shift) => {
             if (!historyEntry || !shift) return false;
-            return (
-                historyEntry.start === shift.start &&
-                historyEntry.stop === shift.stop
-            );
+            return historyEntry.start === shift.start && historyEntry.stop === shift.stop;
         };
 
         const newStartDate = dayjs(toDateString(workshiftDate), "DD/MM/YYYY");
 
-        // ถ้าเหมือน shift เดิม -> ไม่ต้องเพิ่ม history
+        // ถ้า shift เหมือนเดิม → update เฉพาะ workshift
         if (isSameWorkshift(lastHistory, shiftData)) {
             set(companiesRef, {
                 ...opendetail,
@@ -678,8 +725,8 @@ const Employee = () => {
             return;
         }
 
-        // ถ้าเปลี่ยน shift -> ปรับ entry เดิม และเพิ่มใหม่
-        if (lastHistory) {
+        // ถ้ามี history อย่างน้อย 1 รายการ → ปรับ end ก่อนเพิ่มใหม่
+        if (currentHistory.length > 0) {
             const newEndDate = newStartDate.subtract(1, "day");
             currentHistory[lastIndex] = {
                 ...lastHistory,
@@ -690,6 +737,7 @@ const Employee = () => {
             };
         }
 
+        // เพิ่ม entry ใหม่
         const newHistoryEntry = {
             ID: currentHistory.length,
             workshift: `${workshift.ID}-${workshift.name}`,
@@ -722,7 +770,6 @@ const Employee = () => {
                 console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
             });
     };
-
 
     const handleCancel = () => {
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);

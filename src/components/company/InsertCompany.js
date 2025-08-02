@@ -8,9 +8,10 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AddIcon from '@mui/icons-material/Add';
-import { CardActionArea, CardContent, Grid, InputAdornment, TextField, Typography } from '@mui/material';
+import { CardActionArea, CardContent, Divider, Grid, InputAdornment, TextField, Typography } from '@mui/material';
 import theme from '../../theme/theme';
 import { IconButtonError } from '../../theme/style';
+import CloseIcon from '@mui/icons-material/Close';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
 import { database } from '../../server/firebase';
 import ThaiAddressSelector from '../../theme/ThaiAddressSelector';
@@ -24,6 +25,8 @@ export default function InsertCompany() {
     const [phone, setPhone] = React.useState("")
     const [thailand, setThailand] = React.useState([]);
     const [address, setAddress] = React.useState({});
+    const [lat, setLat] = React.useState("");
+    const [lng,setLng] = React.useState("");
     const [addressAll, setAddressAll] = React.useState("");
     const leave = [
         {
@@ -224,61 +227,85 @@ export default function InsertCompany() {
     const tax = [
         {
             "ID": 0,
+            "avgRange": "0",
+            "maxRange": "0",
             "note": "ได้รับการยกเว้นภาษี",
-            "summaryEnd": 150000,
-            "summaryStart": 0,
-            "tax": "0%"
+            "summaryEnd": "150000",
+            "summaryStart": "0",
+            "tax": "0",
+            "taxRange": "150000"
         },
         {
             "ID": 1,
+            "avgRange": "7500",
+            "maxRange": "7500",
             "note": "(เงินได้สุทธิ – 150,000) x 5%",
-            "summaryEnd": 300000,
-            "summaryStart": 150001,
-            "tax": "5%"
+            "summaryEnd": "300000",
+            "summaryStart": "150001",
+            "tax": "5",
+            "taxRange": "150000"
         },
         {
             "ID": 2,
+            "avgRange": "27500",
+            "maxRange": "20000",
             "note": "(เงินได้สุทธิ – 300,000) x 10%",
-            "summaryEnd": 500000,
-            "summaryStart": 300001,
-            "tax": "10%"
+            "summaryEnd": "500000",
+            "summaryStart": "300001",
+            "tax": "10",
+            "taxRange": "200000"
         },
         {
             "ID": 3,
+            "avgRange": "65000",
+            "maxRange": "37500",
             "note": "(เงินได้สุทธิ – 500,000) x 15%",
-            "summaryEnd": 750000,
-            "summaryStart": 500001,
-            "tax": "15%"
+            "summaryEnd": "750000",
+            "summaryStart": "500001",
+            "tax": "15",
+            "taxRange": "250000"
         },
         {
             "ID": 4,
+            "avgRange": "115000",
+            "maxRange": "50000",
             "note": "(เงินได้สุทธิ – 750,000) x 20%",
-            "summaryEnd": 1000000,
-            "summaryStart": 750001,
-            "tax": "20%"
+            "summaryEnd": "1000000",
+            "summaryStart": "750001",
+            "tax": "20",
+            "taxRange": "250000"
         },
         {
             "ID": 5,
+            "avgRange": "365000",
+            "maxRange": "250000",
             "note": "(เงินได้สุทธิ – 1,000,000) x 25%",
-            "summaryEnd": 2000000,
-            "summaryStart": 1000001,
-            "tax": "25%"
+            "summaryEnd": "2000000",
+            "summaryStart": "1000001",
+            "tax": "25",
+            "taxRange": "1000000"
         },
         {
             "ID": 6,
+            "avgRange": "1265000",
+            "maxRange": "900000",
             "note": "(เงินได้สุทธิ – 2,000,000) x 30%",
-            "summaryEnd": 5000000,
-            "summaryStart": 2000001,
-            "tax": "30%"
+            "summaryEnd": "5000000",
+            "summaryStart": "2000001",
+            "tax": "30",
+            "taxRange": "3000000"
         },
         {
             "ID": 7,
+            "avgRange": "0",
+            "maxRange": "0",
             "note": "(เงินได้สุทธิ – 5,000,000) x 35%",
-            "summaryEnd": "-",
-            "summaryStart": 5000001,
-            "tax": "35%"
+            "summaryEnd": "0",
+            "summaryStart": "5000001",
+            "tax": "35",
+            "taxRange": "0"
         }
-    ]
+    ];
 
     const deductionData = [
         { "ID": 0, "title": "ค่าลดหย่อนส่วนตัว", "amount": 60000, "unit": "บาท", "detail": "สำหรับผู้มีเงินได้ทุกคน" },
@@ -343,21 +370,22 @@ export default function InsertCompany() {
         if (!companyName.trim() || !firebaseDB) return;
 
         const companiesRef = ref(firebaseDB, "workgroup/company");
-        // const groupsRef = ref(firebaseDB, "workgroup/backenid");
+        const groupsRef = ref(firebaseDB, "workgroup");
 
         let backendId = "";
+        let databackendID = {};
 
         // try {
         //     const snapshot = await get(groupsRef);
         //     if (snapshot.exists()) {
-        //         backendId = snapshot.val(); // สมมติ backenid เป็น string เช่น "abc123"
+        //         databackendID = snapshot.val(); // สมมติ backenid เป็น string เช่น "abc123"
         //     } else {
         //         throw new Error("ไม่พบค่า backenid ใน Firebase");
         //     }
 
-        //     console.log("backend Id : ", backendId);
+        //     console.log("backend Id : ", databackendID.backendid);
 
-        //     const response = await fetch(`http://upload.happysoftth.com/humantech/${backendId}/company`, {
+        //     const response = await fetch(`http://upload.happysoftth.com/humantech/${databackendID.backendid}/company`, {
         //         method: "POST",
         //         headers: {
         //             "Content-Type": "application/json",
@@ -388,7 +416,15 @@ export default function InsertCompany() {
                 companyserial: shortName.trim(),
                 companyname: companyName,
                 companyaddress: fullAddress,
-                Address: address,
+                address: [
+                    {
+                        ...address,
+                        lat: lat,
+                        lng: lng,
+                        name: "บริษัท",
+                        ID : 0
+                    }
+                ],
                 email: email,
                 companytel: phone,
                 createdAt: new Date().toISOString(),
@@ -440,24 +476,36 @@ export default function InsertCompany() {
             </CardActionArea>
             <Dialog
                 open={open}
-                onClose={handleClose}
                 keepMounted
-                maxWidth="md"
+                onClose={handleClose}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 4, // ค่าตรงนี้คือความมน ยิ่งมากยิ่งมน (ค่า default คือ 1 หรือ 4px)
+                        width: "600px",
+                        position: "absolute",
+                    },
+                }}
             >
-                <DialogTitle sx={{ backgroundColor: theme.palette.primary.dark }}>
+                <DialogTitle
+                    sx={{
+                        textAlign: "center",
+                        fontWeight: "bold"
+                    }}
+                >
                     <Grid container spacing={2}>
-                        <Grid size={10}>
-                            <Typography variant="h6" fontWeight="bold" color="white" >เพิ่มบริษัท</Typography>
+                        <Grid item size={10}>
+                            <Typography variant="h6" fontWeight="bold" gutterBottom>เพิ่มบริษัท</Typography>
                         </Grid>
-                        <Grid size={2} textAlign="right">
-                            <IconButtonError onClick={handleClose}>
-                                <CancelIcon />
+                        <Grid item size={2} sx={{ textAlign: "right" }}>
+                            <IconButtonError sx={{ marginTop: -2 }} onClick={handleClose}>
+                                <CloseIcon />
                             </IconButtonError>
                         </Grid>
                     </Grid>
+                    <Divider sx={{ marginTop: 2, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
                 </DialogTitle>
                 <DialogContent>
-                    <Grid container spacing={2} marginTop={2}>
+                    <Grid container spacing={2} marginTop={2} marginBottom={2}>
                         <Grid item size={4}>
                             <Typography variant="subtitle2" fontWeight="bold" >ชื่อย่อ</Typography>
                             <TextField
@@ -475,6 +523,26 @@ export default function InsertCompany() {
                                 size="small"
                                 value={companyName}
                                 onChange={(e) => setCompanyName(e.target.value)}
+                                fullWidth
+                            />
+                        </Grid>
+                        <Grid item size={6}>
+                            <Typography variant="subtitle2" fontWeight="bold" >Email</Typography>
+                            <TextField
+                                type="text"
+                                size="small"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                fullWidth
+                            />
+                        </Grid>
+                        <Grid item size={6}>
+                            <Typography variant="subtitle2" fontWeight="bold" >เบอร์โทรศัพท์</Typography>
+                            <TextField
+                                type="text"
+                                size="small"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
                                 fullWidth
                             />
                         </Grid>
@@ -499,28 +567,26 @@ export default function InsertCompany() {
                             />
                         </Grid>
                         <Grid item size={6}>
-                            <Typography variant="subtitle2" fontWeight="bold" >Email</Typography>
+                            <Typography variant="subtitle2" fontWeight="bold" >พิกัดละติจูด (latitude)</Typography>
                             <TextField
-                                type="text"
-                                size="small"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
                                 fullWidth
+                                size="small"
+                                value={lat}
+                                onChange={(e) => setLat(e.target.value)}
                             />
                         </Grid>
                         <Grid item size={6}>
-                            <Typography variant="subtitle2" fontWeight="bold" >เบอร์โทรศัพท์</Typography>
+                            <Typography variant="subtitle2" fontWeight="bold" >พิกัดลองจิจูด (longitude)</Typography>
                             <TextField
-                                type="text"
-                                size="small"
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
                                 fullWidth
+                                size="small"
+                                value={lng}
+                                onChange={(e) => setLng(e.target.value)}
                             />
                         </Grid>
                     </Grid>
                 </DialogContent>
-                <DialogActions sx={{ borderTop: `2px solid ${theme.palette.primary.dark}`, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `2px solid ${theme.palette.primary.dark}` }}>
                     <Button variant="contained" color="error" onClick={handleClose}>ยกเลิก</Button>
                     <Button variant="contained" color="success" onClick={handleAddCompany} autoFocus>
                         บันทึก

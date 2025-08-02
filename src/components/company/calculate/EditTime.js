@@ -52,7 +52,7 @@ dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.fo
 dayjs.extend(isSameOrBefore);
 
 const EditTimeDetail = (props) => {
-    const { department, section, position, employee } = props;
+    const { department, section, position, employee, month } = props;
     console.log("Search : ", department, section, position, employee);
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
@@ -67,6 +67,7 @@ const EditTimeDetail = (props) => {
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
+    console.log("MOnth : ", month);
     console.log("department : ", department);
     console.log("section : ", section);
     console.log("position : ", position);
@@ -95,7 +96,19 @@ const EditTimeDetail = (props) => {
         Saturday: "เสาร์",
     };
 
-    const generateFilteredDatesFromHistories = (employeeID, attendant, employeecode, nickname, employname, department, section, position, workshifthistories) => {
+    const generateFilteredDatesFromHistories = (
+        employeeID,
+        attendant,
+        employeecode,
+        nickname,
+        employname,
+        department,
+        section,
+        position,
+        workshifthistories,
+        filterYear,
+        filterMonth
+    ) => {
         if (!Array.isArray(workshifthistories)) return {
             employeeID,
             attendant,
@@ -110,7 +123,7 @@ const EditTimeDetail = (props) => {
 
         const parseYear = (y) => y === "now" ? dayjs().year() : parseInt(y) > 2500 ? parseInt(y) - 543 : parseInt(y);
         const parseMonth = (m) => m === "now" ? dayjs().month() : parseInt(m) - 1;
-        const parseDay = (d, y, m) => d === "now" ? dayjs().year(y).month(m).endOf("month").date() : parseInt(d);
+        const parseDay = (d) => d === "now" ? dayjs().date() : parseInt(d);
 
         const allDates = [];
 
@@ -119,11 +132,11 @@ const EditTimeDetail = (props) => {
 
             const startYear = parseYear(history.YYYYstart);
             const startMonth = parseMonth(history.MMstart);
-            const startDay = parseDay(history.DDstart, startYear, startMonth);
+            const startDay = parseDay(history.DDstart);
 
             const endYear = parseYear(history.YYYYend);
             const endMonth = parseMonth(history.MMend);
-            const endDay = parseDay(history.DDend, endYear, endMonth);
+            const endDay = parseDay(history.DDend);
 
             let current = dayjs().year(startYear).month(startMonth).date(startDay);
             const end = dayjs().year(endYear).month(endMonth).date(endDay);
@@ -131,17 +144,18 @@ const EditTimeDetail = (props) => {
             while (current.isSameOrBefore(end, 'day')) {
                 const dayName = dayNameMap[current.format("dddd")];
                 if (!holidays.includes(dayName)) {
-                    allDates.push({
-                        date: current.format("DD/MM/YYYY"),
-                        workshift: history.workshift || null,
-                        start: history.start || null,
-                        stop: history.stop || null,
-                    });
+                    if (current.year() === filterYear && current.month() === filterMonth) {
+                        allDates.push({
+                            date: current.format("DD/MM/YYYY"),
+                            workshift: history.workshift || null,
+                            start: history.start || null,
+                            stop: history.stop || null,
+                        });
+                    }
                 }
                 current = current.add(1, 'day');
             }
         });
-
 
         allDates.sort((a, b) => dayjs(a.date, "DD/MM/YYYY").unix() - dayjs(b.date, "DD/MM/YYYY").unix());
 
@@ -157,6 +171,51 @@ const EditTimeDetail = (props) => {
             dateHistory: allDates
         };
     };
+
+    useEffect(() => {
+        if (!employees || employees.length === 0 || !month) return;
+
+        let filteredEmployees = employees;
+
+        if (department) {
+            filteredEmployees = filteredEmployees.filter(e => e.department === department);
+        }
+
+        if (section) {
+            filteredEmployees = filteredEmployees.filter(e => e.section === section);
+        }
+
+        if (position) {
+            filteredEmployees = filteredEmployees.filter(e => e.position === position);
+        }
+
+        if (employee) {
+            const empId = Number(employee.split("-")[0]);
+            filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
+        }
+
+        const year = month.year();      // ใช้จาก dayjs
+        const m = month.month();        // เป็นเลข 0-11
+
+        const mapped = filteredEmployees.map(e =>
+            generateFilteredDatesFromHistories(
+                e.ID,
+                e.attendant?.[year]?.[m + 1],  // +1 เพราะใน attendant ใช้เลขเดือน 1-12
+                e.employeecode,
+                e.nickname,
+                e.employname,
+                e.department,
+                e.section,
+                e.position,
+                e.workshifthistory,
+                year,
+                m
+            )
+        );
+
+        console.log("Mapped Employee Dates (filtered):", mapped);
+        setDateArrayMap(mapped);
+    }, [employees, department, section, position, employee, month]);
 
     employees.forEach(emp => {
         const position = emp.position.split("-")[1];
@@ -201,50 +260,6 @@ const EditTimeDetail = (props) => {
             });
         }
     });
-
-    useEffect(() => {
-        if (!employees || employees.length === 0) return;
-
-        let filteredEmployees = employees;
-
-        if (department) {
-            filteredEmployees = filteredEmployees.filter(e => e.department === department);
-        }
-
-        if (section) {
-            filteredEmployees = filteredEmployees.filter(e => e.section === section);
-        }
-
-        if (position) {
-            filteredEmployees = filteredEmployees.filter(e => e.position === position);
-        }
-
-        if (employee) {
-            const empId = Number(employee.split("-")[0]);
-            filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
-        }
-
-        const year = dayjs(new Date()).format("YYYY");
-        const month = dayjs(new Date()).format("M");
-
-
-        const mapped = filteredEmployees.map(e =>
-            generateFilteredDatesFromHistories(
-                e.ID,
-                e.attendant?.[year]?.[month],
-                e.employeecode,
-                e.nickname,
-                e.employname,
-                e.department,
-                e.section,
-                e.position,
-                e.workshifthistory
-            )
-        );
-
-        console.log("Mapped Employee Dates (filtered):", mapped);
-        setDateArrayMap(mapped);
-    }, [employees, department, section, position, employee]);
 
     // // ตัวอย่างเรียกใช้:
     // const dateArray = generateFilteredDates(workshift[1]); // หรือ [1]
@@ -335,10 +350,9 @@ const EditTimeDetail = (props) => {
                             <FormControlLabel control={<Checkbox checked={day === 2} onClick={() => setDay(2)} />} label="ลงเวลาไม่ครบคู่" />
                             <FormControlLabel control={<Checkbox checked={day === 3} onClick={() => setDay(3)} />} label="สาย" />
                             <FormControlLabel control={<Checkbox checked={day === 4} onClick={() => setDay(4)} />} label="กลับก่อน" />
-                            <FormControlLabel control={<Checkbox checked={day === 5} onClick={() => setDay(5)} />} label="พักเกิน" />
-                            <FormControlLabel control={<Checkbox checked={day === 6} onClick={() => setDay(6)} />} label="โอที" />
-                            <FormControlLabel control={<Checkbox checked={day === 7} onClick={() => setDay(7)} />} label="ลางาน" />
-                            <FormControlLabel control={<Checkbox checked={day === 8} onClick={() => setDay(8)} />} label="ทำงานในวันหยุด" />
+                            <FormControlLabel control={<Checkbox checked={day === 6} onClick={() => setDay(5)} />} label="โอที" />
+                            <FormControlLabel control={<Checkbox checked={day === 7} onClick={() => setDay(6)} />} label="ลางาน" />
+                            <FormControlLabel control={<Checkbox checked={day === 8} onClick={() => setDay(7)} />} label="ทำงานในวันหยุด" />
                         </FormGroup>
                     </Grid>
                     <Grid item size={12}>
@@ -351,24 +365,22 @@ const EditTimeDetail = (props) => {
                                     : day === 2 ? "จัดการข้อมูลลงเวลาไม่ครบคู่"
                                         : day === 3 ? "จัดการข้อมูลสาย"
                                             : day === 4 ? "จัดการข้อมูลกลับก่อน"
-                                                : day === 5 ? "จัดการข้อมูลพักเกิน"
-                                                    : day === 6 ? "จัดการข้อมูลโอที"
-                                                        : day === 7 ? "จัดการข้อมูลลางาน"
-                                                            : day === 8 ? "จัดการข้อมูลทำงานในวันหยุด"
-                                                                : ""
+                                                : day === 5 ? "จัดการข้อมูลโอที"
+                                                    : day === 6 ? "จัดการข้อมูลลางาน"
+                                                        : day === 7 ? "จัดการข้อมูลทำงานในวันหยุด"
+                                                            : ""
                             }
                         </Typography>
                     </Grid>
                     {
-                        day === 1 ? <MissingWorkDetail dateArray={dateArrayMap} />
-                            : day === 2 ? <IncomepleteTime dateArray={dateArrayMap} />
-                                : day === 3 ? <LateDetail dateArray={dateArrayMap} />
-                                    : day === 4 ? <LeaveEarly dateArray={dateArrayMap} />
-                                        : day === 5 ? <OverbreakDetail dateArray={dateArrayMap} />
-                                            : day === 6 ? <OTDetail dateArray={dateArrayMap} />
-                                                : day === 7 ? <LeaveDetail dateArray={dateArrayMap} />
-                                                    : day === 8 ? <DayOffDetail dateArray={dateArrayMap} />
-                                                        : ""
+                        day === 1 ? <MissingWorkDetail dateArray={dateArrayMap} month={month} />
+                            : day === 2 ? <IncomepleteTime dateArray={dateArrayMap} month={month} />
+                                : day === 3 ? <LateDetail dateArray={dateArrayMap} month={month} />
+                                    : day === 4 ? <LeaveEarly dateArray={dateArrayMap} month={month} />
+                                        : day === 5 ? <OTDetail dateArray={dateArrayMap} month={month} />
+                                            : day === 6 ? <LeaveDetail dateArray={dateArrayMap} month={month} />
+                                                : day === 7 ? <DayOffDetail dateArray={dateArrayMap} month={month} />
+                                                    : ""
                     }
                 </Grid>
             </Box>

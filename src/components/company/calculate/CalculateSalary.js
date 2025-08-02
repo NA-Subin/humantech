@@ -43,6 +43,11 @@ import DocumentDetail from "./Document";
 import IncomeDetail from "./IncomeDetail";
 import AccountDetail from "./AccountClose";
 import DeductionDetails from "./DeductionDetail";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { formatThaiFull, formatThaiMonth } from "../../../theme/DateTH";
+import dayjs from "dayjs";
+import "dayjs/locale/th";
 
 const CalculateSalary = () => {
     const { firebaseDB, domainKey } = useFirebase();
@@ -63,6 +68,14 @@ const CalculateSalary = () => {
     const [employee, setEmployee] = useState("");
     const [menu, setMenu] = useState('0-แก้ไขเวลา');
 
+    const [selectedDate, setSelectedDate] = useState(dayjs()); // ✅ เป็น dayjs object
+
+    const handleDateChangeDate = (newValue) => {
+        if (newValue) {
+            setSelectedDate(newValue); // ✅ newValue เป็น dayjs อยู่แล้ว
+        }
+    };
+
     console.log("Menu : ", menu);
 
     // ทุกครั้งที่ department, section หรือ position เปลี่ยน จะ reset employee
@@ -80,17 +93,17 @@ const CalculateSalary = () => {
 
         switch (key) {
             case 'แก้ไขเวลา':
-                return <EditTimeDetail data={key} department={department} section={section} position={position} employee={employee} />;
+                return <EditTimeDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'ยื่นเอกสาร':
-                return <DocumentDetail data={key} department={department} section={section} position={position} employee={employee} />;
+                return <DocumentDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'รายได้':
-                return <IncomeDetail data={key} department={department} section={section} position={position} employee={employee} />;
+                return <IncomeDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'รายจ่าย':
-                return <DeductionDetails data={key} department={department} section={section} position={position} employee={employee} />;
+                return <DeductionDetails data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'ตรวจสอบเงินเดือน':
-                return <SalaryDetail data={key} department={department} section={section} position={position} employee={employee} />;
+                return <SalaryDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'ปิดงบบัญชี':
-                return <AccountDetail data={key} department={department} section={section} position={position} employee={employee} />;
+                return <AccountDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             default:
                 return null;
         }
@@ -220,6 +233,42 @@ const CalculateSalary = () => {
                 <Grid container spacing={2}>
                     <Grid item size={12}>
                         <Typography variant="h5" fontWeight="bold" gutterBottom>คำนวณเงินเดือน (Calculate Salary)</Typography>
+                    </Grid>
+                    <Grid item size={12} sx={{ display: "flex", alignItems: "center", justifyContent: "right", marginTop: -8 }}>
+                        <Paper sx={{ width: "20%" }}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
+                                <DatePicker
+                                    openTo="month"
+                                    views={["year", "month"]}
+                                    value={selectedDate}
+                                    format="MMMM"
+                                    onChange={handleDateChangeDate}
+                                    slotProps={{
+                                        textField: {
+                                            size: "small",
+                                            fullWidth: true,
+                                            inputProps: {
+                                                value: selectedDate ? selectedDate.format("MMMM") : "",
+                                                readOnly: true,
+                                            },
+                                            InputProps: {
+                                                startAdornment: (
+                                                    <InputAdornment position="start" sx={{ marginRight: 2 }}>
+                                                        <b>เลือกเดือน :</b>
+                                                    </InputAdornment>
+                                                ),
+                                                sx: {
+                                                    fontSize: "16px",
+                                                    height: "40px",
+                                                    padding: "10px",
+                                                    fontWeight: "bold",
+                                                },
+                                            },
+                                        },
+                                    }}
+                                />
+                            </LocalizationProvider>
+                        </Paper>
                     </Grid>
                     <Grid item size={12}>
                         <Divider />

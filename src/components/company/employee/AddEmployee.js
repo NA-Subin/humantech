@@ -745,6 +745,49 @@ const AddEmployee = () => {
         if (!companyName.trim() || !firebaseDB) return;
 
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+        const companiesRef = ref(firebaseDB, "workgroup/company");
+        const groupsRef = ref(firebaseDB, "workgroup");
+
+        let backendId = "";
+        let groupid = {};
+        let companyid = {};
+
+        try {
+            const group = await get(groupsRef);
+            if (group.exists()) {
+                groupid = group.val(); // สมมติ backenid เป็น string เช่น "abc123"
+            } else {
+                throw new Error("ไม่พบค่า backenid ใน Firebase");
+            }
+
+            const company = await get(companiesRef);
+            if (company.exists()) {
+                companyid = company.val(); // สมมติ backenid เป็น string เช่น "abc123"
+            } else {
+                throw new Error("ไม่พบค่า backenid ใน Firebase");
+            }
+
+            const response = await fetch(`http://upload.happysoftth.com/humantech/${groupid.backendid}/${companyid.cpnbackendid}/employee`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ name: `${name} ${lastName}` }),
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                console.error("Backend error response:", text);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            backendId = data.id; // สมมติ response json มี field ชื่อ id
+        } catch (error) {
+            console.error("Error post group to backend:", error);
+            alert("เกิดข้อผิดพลาดขณะส่งข้อมูลไป backend");
+            return;
+        }
 
         try {
             const snapshot = await get(employeeRef);
@@ -769,7 +812,8 @@ const AddEmployee = () => {
                 trainingList: trainingList,
                 specialAbilities: specialAbilities,
                 workshift: workshiftName,
-                workshifthistory: workshifthistory
+                workshifthistory: workshifthistory,
+                empbackendid: backendId
             });
 
         } catch (error) {

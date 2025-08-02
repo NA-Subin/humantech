@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ref, get, set, remove } from "firebase/database";
+import { ref, get, set, remove, getDatabase } from "firebase/database";
 import { auth, database } from "../../server/firebase";
 import JSON5 from "json5"; // ✅ ใช้ json5 แทน JSON.parse
 import { createUserWithEmailAndPassword } from "firebase/auth";
@@ -10,6 +10,7 @@ import { useFirebase } from "../../server/ProjectFirebaseContext";
 import { useNavigate } from "react-router-dom";
 import { ShowConfirm } from "../../sweetalert/sweetalert";
 import { logout } from "../../server/logoutAuth";
+import { getApp, getApps, initializeApp } from "firebase/app";
 
 const AdminApproveDomainForm = () => {
     const { firebaseDB } = useFirebase();  // ✅ ดึง firebaseDB ที่ใช้งานจริง
@@ -55,18 +56,16 @@ const AdminApproveDomainForm = () => {
 
         setIsSubmitting(true);
 
+        // ใช้เพื่อให้ใช้ต่อทั้ง 2 ฐาน
+        let nextDomainId = null;
+        let requestData = null;
+        let startDate = "";
+        let endDate = "";
+        let backendId = "";
+
         try {
-            // requestId คือ id ที่เลือกใน select (เลข key ของ requests)
-            const requestRef = ref(database, `requests/${domainID}`); // selectedDomain = requestId (string เลข)
-
-            // หาค่า nextId ของ domains เพื่อเก็บ domain ใหม่
-            const domainsSnap = await get(ref(database, "workgroupid"));
-            const domains = domainsSnap.exists() ? domainsSnap.val() : {};
-
-            const nextDomainId = Object.keys(domains).length + 1;
-
-            const domainRef = ref(database, `workgroupid/${nextDomainId}`);
-
+            // ดึงข้อมูล request
+            const requestRef = ref(database, `requests/${domainID}`);
             const reqSnap = await get(requestRef);
             if (!reqSnap.exists()) {
                 alert("ไม่พบ domain นี้ในรายการคำขอ");
@@ -74,6 +73,16 @@ const AdminApproveDomainForm = () => {
                 return;
             }
 
+            requestData = reqSnap.val();
+            startDate = requestData.createdAt;
+            endDate = new Date(new Date(startDate).setMonth(new Date(startDate).getMonth() + 1)).toISOString();
+
+            // ตรวจหา nextDomainId
+            const domainsSnap = await get(ref(database, "workgroupid"));
+            const domains = domainsSnap.exists() ? domainsSnap.val() : {};
+            nextDomainId = Object.keys(domains).length + 1;
+
+            // ตรวจและ parse config
             let config;
             try {
                 config = JSON5.parse(configRaw);
@@ -90,14 +99,7 @@ const AdminApproveDomainForm = () => {
                 return;
             }
 
-            const requestData = reqSnap.val();
-            const startDate = requestData.createdAt;
-            const endDate = new Date(new Date(startDate).setMonth(new Date(startDate).getMonth() + 1)).toISOString();
-
-            // --- POST ข้อมูล group ไปที่ backend ---
-            // let backendId = null;
-
-            let backendId = "";
+            // POST ไป backend เพื่อสร้าง group
             try {
                 const response = await fetch("http://upload.happysoftth.com/humantech/group", {
                     method: "POST",
@@ -108,13 +110,13 @@ const AdminApproveDomainForm = () => {
                 });
 
                 if (!response.ok) {
-                    const text = await response.text(); // อ่านข้อความ error ที่ backend ส่งกลับ
+                    const text = await response.text();
                     console.error("Backend error response:", text);
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
                 const data = await response.json();
-                backendId = data.id;  // สมมติ response json มี field ชื่อ id
+                backendId = data.id;
             } catch (error) {
                 console.error("Error post group to backend:", error);
                 alert("เกิดข้อผิดพลาดขณะส่งข้อมูลไป backend");
@@ -122,9 +124,11 @@ const AdminApproveDomainForm = () => {
                 return;
             }
 
+            // บันทึกลงฐานข้อมูลหลัก
+            const domainRef = ref(database, `workgroupid/${nextDomainId}`);
             await set(domainRef, {
                 id: nextDomainId,
-                domainKey,       // เก็บ domainKey ไว้ในข้อมูล ไม่ใช่ key ใน path
+                domainKey,
                 config,
                 selectedPlan: {
                     ...requestData.selectedPlan,
@@ -135,13 +139,13 @@ const AdminApproveDomainForm = () => {
                     ...requestData.company,
                     startDate,
                     endDate,
-                }, // เก็บข้อมูลบริษัทที่เลือก
-                backendid: backendId,  // เก็บ backend id ที่ได้จาก response
+                },
+                backendid: backendId,
             });
 
+            // สร้าง user
             const email = `${domainKey}@humantech.com`;
             const password = "1234567";
-
             try {
                 await createUserWithEmailAndPassword(auth, email, password);
                 console.log(`User created: ${email}`);
@@ -156,6 +160,7 @@ const AdminApproveDomainForm = () => {
                 }
             }
 
+            // ลบคำขอออก
             await remove(requestRef);
 
             alert("✅ เพิ่ม config และสร้างบัญชีผู้ใช้สำเร็จ");
@@ -164,12 +169,45 @@ const AdminApproveDomainForm = () => {
             setDomainKey("");
             setConfigRaw("");
 
-            // โหลด requests ใหม่
             const snap = await get(ref(database, "requests"));
             setRequests(snap.exists() ? snap.val() : {});
+        } catch (error) {
+            console.error("❌ Error saving to database หลัก:", error);
+            alert("เกิดข้อผิดพลาดในการบันทึกฐานข้อมูลหลัก");
+            setIsSubmitting(false);
+            return;
+        }
 
-            // บันทึก selectedPlan ซ้ำที่ workgroup/payment/${nextDomainId}
-            const paymentRef = ref(firebaseDB, `workgroup`);
+        // 👇 ส่วนนี้แยกต่างหาก — เขียนไปยัง firebaseDB (ฐานที่ 2)
+        try {
+            let config;
+            try {
+                config = JSON5.parse(configRaw);
+            } catch (e) {
+                console.error("config parse error:", e.message);
+                alert(`Config ผิดพลาด: ${e.message}`);
+                setIsSubmitting(false);
+                return;
+            }
+
+            if (!config.apiKey?.trim() || !config.projectId?.trim() || !config.databaseURL?.trim()) {
+                alert("config ต้องมี apiKey, projectId และ databaseURL");
+                setIsSubmitting(false);
+                return;
+            }
+            // เช็คว่ามีแอปนี้สร้างแล้วหรือยัง เพื่อป้องกันซ้ำ
+            const dynamicAppName = `app-${domainKey}`;
+            let dynamicApp;
+
+            if (!getApps().some(app => app.name === dynamicAppName)) {
+                dynamicApp = initializeApp(config, dynamicAppName);  // ใช้ชื่อแอปเฉพาะ
+            } else {
+                dynamicApp = getApp().find(app => app.name === dynamicAppName);
+            }
+
+            const dynamicDB = getDatabase(dynamicApp);
+            const paymentRef = ref(dynamicDB, `workgroup`);
+
             await set(paymentRef, {
                 payment: {
                     ...requestData.selectedPlan,
@@ -179,9 +217,11 @@ const AdminApproveDomainForm = () => {
                 workgroupname: domainKey,
                 backendid: backendId,
             });
+
+            console.log("✅ บันทึก payment ไปยัง Realtime Database ของ domain ใหม่สำเร็จ");
         } catch (error) {
-            console.error("❌ Error saving config:", error);
-            alert("เกิดข้อผิดพลาดขณะบันทึกข้อมูล");
+            console.error("❌ Error เขียนลงฐานข้อมูล domain ใหม่โดยใช้ config:", error);
+            alert("เกิดข้อผิดพลาดในการเขียนข้อมูลไปยัง domain ใหม่จาก config");
         } finally {
             setIsSubmitting(false);
         }
