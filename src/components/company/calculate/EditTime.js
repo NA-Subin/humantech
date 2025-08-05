@@ -60,6 +60,7 @@ const EditTimeDetail = (props) => {
     //const { companyName } = useParams();
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
+    const [holiday, setHoliday] = useState([]);
     const [workshift, setWorkshift] = useState([]);
     const [dateArrayMap, setDateArrayMap] = useState({});
     const columns = [
@@ -67,6 +68,7 @@ const EditTimeDetail = (props) => {
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
+    console.log("holiday : ", holiday);
     console.log("MOnth : ", month);
     console.log("department : ", department);
     console.log("section : ", section);
@@ -107,7 +109,8 @@ const EditTimeDetail = (props) => {
         position,
         workshifthistories,
         filterYear,
-        filterMonth
+        filterMonth,
+        holidaysInMonth = []
     ) => {
         if (!Array.isArray(workshifthistories)) return {
             employeeID,
@@ -125,6 +128,7 @@ const EditTimeDetail = (props) => {
         const parseMonth = (m) => m === "now" ? dayjs().month() : parseInt(m) - 1;
         const parseDay = (d) => d === "now" ? dayjs().date() : parseInt(d);
 
+        const holidayDatesSet = new Set(holidaysInMonth.map(h => h.date)); // เช่น "28/07/2025"
         const allDates = [];
 
         workshifthistories.forEach((history) => {
@@ -142,17 +146,23 @@ const EditTimeDetail = (props) => {
             const end = dayjs().year(endYear).month(endMonth).date(endDay);
 
             while (current.isSameOrBefore(end, 'day')) {
-                const dayName = dayNameMap[current.format("dddd")];
-                if (!holidays.includes(dayName)) {
+                const currentDateStr = current.format("DD/MM/YYYY");
+                const dayName = dayNameMap[current.format("dddd")]; // ex: "Sunday" → "อาทิตย์"
+
+                const isNotInShiftHoliday = !holidays.includes(dayName);
+                const isNotInGlobalHoliday = !holidayDatesSet.has(currentDateStr);
+
+                if (isNotInShiftHoliday && isNotInGlobalHoliday) {
                     if (current.year() === filterYear && current.month() === filterMonth) {
                         allDates.push({
-                            date: current.format("DD/MM/YYYY"),
+                            date: currentDateStr,
                             workshift: history.workshift || null,
                             start: history.start || null,
                             stop: history.stop || null,
                         });
                     }
                 }
+
                 current = current.add(1, 'day');
             }
         });
@@ -194,13 +204,17 @@ const EditTimeDetail = (props) => {
             filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
         }
 
-        const year = month.year();      // ใช้จาก dayjs
-        const m = month.month();        // เป็นเลข 0-11
+        const year = month.year();   // จาก dayjs, เช่น 2025
+        const m = month.month();     // จาก dayjs, 0-11
+
+        const holidaysInMonth = holiday.filter(h =>
+            parseInt(h.YYYY) === year && parseInt(h.MM) === m + 1
+        );
 
         const mapped = filteredEmployees.map(e =>
             generateFilteredDatesFromHistories(
                 e.ID,
-                e.attendant?.[year]?.[m + 1],  // +1 เพราะใน attendant ใช้เลขเดือน 1-12
+                e.attendant?.[year]?.[m + 1], // ใน attendant ใช้ 1-based เดือน
                 e.employeecode,
                 e.nickname,
                 e.employname,
@@ -209,13 +223,14 @@ const EditTimeDetail = (props) => {
                 e.position,
                 e.workshifthistory,
                 year,
-                m
+                m,
+                holidaysInMonth
             )
         );
 
         console.log("Mapped Employee Dates (filtered):", mapped);
         setDateArrayMap(mapped);
-    }, [employees, department, section, position, employee, month]);
+    }, [employees, department, section, position, employee, month, holiday]);
 
     employees.forEach(emp => {
         const position = emp.position.split("-")[1];
@@ -282,6 +297,44 @@ const EditTimeDetail = (props) => {
                 setEmployees([{ ID: 0, name: '' }]);
             } else {
                 setEmployees(employeeData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+
+        const unsubscribe = onValue(employeeRef, (snapshot) => {
+            const employeeData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!employeeData) {
+                setEmployees([{ ID: 0, name: '' }]);
+            } else {
+                setEmployees(employeeData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const holidayRef = ref(firebaseDB, `workgroup/company/${companyId}/holiday`);
+
+        const unsubscribe = onValue(holidayRef, (snapshot) => {
+            const holidaysData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!holidaysData) {
+                setHoliday([{ ID: 0, name: '' }]);
+            } else {
+                setHoliday(holidaysData);
             }
         });
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, use } from "react";
 import '../../../../App.css'
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, get, serverTimestamp, update } from "firebase/database";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -27,9 +27,12 @@ import theme from "../../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../../theme/style"
-
+import SettingsApplicationsIcon from '@mui/icons-material/SettingsApplications';
+import SaveIcon from '@mui/icons-material/Save';
+import DisabledByDefaultIcon from '@mui/icons-material/DisabledByDefault';
+import AddAlarmIcon from '@mui/icons-material/AddAlarm';
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Checkbox, FormControlLabel, FormGroup, InputAdornment } from "@mui/material";
+import { Checkbox, FormControlLabel, FormGroup, InputAdornment, Tooltip } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
@@ -39,6 +42,8 @@ import { useFirebase } from "../../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../../theme/SearchEmployee";
 import dayjs from "dayjs";
 import { formatThaiShort } from "../../../../theme/DateTH";
+import { LocalizationProvider, TimePicker } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.format("dddd")
 
 const IncomepleteTime = (props) => {
@@ -47,6 +52,10 @@ const IncomepleteTime = (props) => {
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
+    const [empID, setEmployID] = useState("");
+    const [empDate, setEmployDate] = useState("");
+    const [checkin, setCheckin] = useState("");
+    const [checkout, setCheckout] = useState("");
 
     const result = dateArray.map((item) => {
         const { attendant = [], dateHistory = [] } = item;
@@ -64,8 +73,13 @@ const IncomepleteTime = (props) => {
             let dateout = "";
             let checkin = "";
             let checkout = "";
+            let attendantID = "";
+
+            //console.log("found : ",found);
 
             if (found) {
+                attendantID = found.ID;
+
                 if (found.DDI && found.MMI) {
                     datein = `${found.DDI}/${found.MMI}/2025`;
                     checkin = found.checkin || ""; // เวลาเข้า
@@ -92,6 +106,7 @@ const IncomepleteTime = (props) => {
                 checkin,
                 checkout,
                 message,
+                attendantID
             };
         });
 
@@ -100,6 +115,75 @@ const IncomepleteTime = (props) => {
             dateHistory: newDateHistory,
         };
     });
+
+    const handleUpdateTime = (empID, empdate, newcheckin, newcheckout) => {
+        setEmployID(empID);
+        setEmployDate(empdate);
+        setCheckin(newcheckin);
+        setCheckout(newcheckout);
+    }
+
+    const handleCancel = () => {
+        setEmployID("");
+        setEmployDate("");
+    }
+
+    const handleSave = async (empID, newdate) => {
+        console.log("new Date : ", newdate);
+        const dateObj = dayjs(newdate.date, "DD/MM/YYYY"); // วันเริ่มต้น
+        const year = dateObj.year();
+        const m = dateObj.month(); // 0-based
+        const day = dateObj.date(); // วันที่ในเดือน
+
+        const checkinTime = dayjs(checkin, "HH:mm:ss");
+        const checkoutTime = dayjs(checkout, "HH:mm:ss");
+
+        // ตรวจสอบว่าข้ามวันหรือไม่
+        const isNextDay = checkoutTime.isBefore(checkinTime);
+
+        // หากข้ามวัน ให้ใช้วันที่ถัดไปสำหรับออกงาน
+        const dateOutObj = isNextDay ? dateObj.add(1, "day") : dateObj;
+
+        const attendantRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${empID}/attendant/${year}/${m + 1}/${newdate.attendantID}`);
+        const atendantSnapshot = await get(attendantRef);
+        const data = atendantSnapshot.val();
+
+        const invalidMessages = {
+            ...data,
+            DDI: day,
+            MMI: m + 1,
+            YYYYI: year,
+            datein: dateObj.format("DD/MM/YYYY"),
+            datecodeI: dateObj.format("YYYY.DDMM"),
+
+            DDO: dateOutObj.date(),
+            MMO: dateOutObj.month() + 1,
+            YYYYO: dateOutObj.year(),
+            dateout: dateOutObj.format("DD/MM/YYYY"),
+            datecodeO: dateOutObj.format("YYYY.DDMM"),
+
+            checkin,
+            checkout,
+            status: 2,
+            unixin: newdate.checkin === "" ? serverTimestamp() : data.unixin,
+            unixout: newdate.checkout === "" ? serverTimestamp() : data.unixout,
+        };
+
+        console.log("invalidMessages : ", invalidMessages);
+
+        update(attendantRef, invalidMessages)
+            .then(() => {
+                ShowSuccess("เพิ่มเวลาสำเร็จ");
+                setEmployID("");
+                setEmployDate("");
+                setCheckin("");
+                setCheckout("");
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+            });
+    };
 
     console.log("result : ", result);
 
@@ -233,16 +317,205 @@ const IncomepleteTime = (props) => {
                                                             <TableCell sx={{ textAlign: "center" }}>{formatThaiShort(dayjs(date.date, "DD/MM/YYYY"))}</TableCell>
                                                             <TableCell sx={{ textAlign: "center" }}>{date.workshift.split("-")[1]}</TableCell>
                                                             <TableCell sx={{ textAlign: "center" }}>{`${date.start} - ${date.stop}`}</TableCell>
-                                                            {
-                                                                (date.checkin === "" && date.checkout === "") ?
-                                                                    <TableCell sx={{ textAlign: "center" }}> </TableCell>
-                                                                    : date.checkin === "" ?
-                                                                        <TableCell sx={{ textAlign: "center" }}>{`ลงชื่อออก ${date.checkout}`}</TableCell>
-                                                                        : date.checkout === "" ?
-                                                                            <TableCell sx={{ textAlign: "center" }}>{`ลงชื่อเข้า ${date.checkin}`}</TableCell>
-                                                                            :
-                                                                            <TableCell sx={{ textAlign: "center" }}>{`เข้า ${date.checkin} - ออก ${date.checkout}`}</TableCell>
-                                                            }
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                {
+                                                                    empID === emp.employeeID && empDate === formatThaiShort(dayjs(date.date, "DD/MM/YYYY")) ?
+                                                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                                            <Grid container spacing={1}>
+                                                                                <Grid item size={5}>
+                                                                                    <TimePicker
+                                                                                        label="เข้างาน"
+                                                                                        value={dayjs(checkin, 'HH:mm:ss')}
+                                                                                        onChange={(newValue) => setCheckin(newValue.format('HH:mm:ss'))}
+                                                                                        views={['hours', 'minutes', 'seconds']}
+                                                                                        ampm={false}
+                                                                                        slotProps={{
+                                                                                            textField: {
+                                                                                                size: 'small',
+                                                                                                fullWidth: true,
+                                                                                                sx: {
+                                                                                                    '& .MuiOutlinedInput-root': {
+                                                                                                        height: 25, // ปรับความสูงที่นี่
+                                                                                                    },
+                                                                                                    '& .MuiInputBase-input': {
+                                                                                                        height: '100%',
+                                                                                                        padding: "0 8px",
+                                                                                                        fontSize: "14px",
+                                                                                                    },
+                                                                                                    '& .MuiInputLabel-root': {
+                                                                                                        fontSize: "14px",
+                                                                                                    },
+                                                                                                },
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                </Grid>
+                                                                                <Grid item size={5}>
+                                                                                    <TimePicker
+                                                                                        label="ออกงาน"
+                                                                                        value={dayjs(checkout, 'HH:mm:ss')}
+                                                                                        onChange={(newValue) => setCheckout(newValue.format('HH:mm:ss'))}
+                                                                                        views={['hours', 'minutes', 'seconds']}
+                                                                                        ampm={false}
+                                                                                        slotProps={{
+                                                                                            textField: {
+                                                                                                size: 'small',
+                                                                                                fullWidth: true,
+                                                                                                sx: {
+                                                                                                    '& .MuiOutlinedInput-root': {
+                                                                                                        height: 25, // ปรับความสูงที่นี่
+                                                                                                    },
+                                                                                                    '& .MuiInputBase-input': {
+                                                                                                        height: '100%',
+                                                                                                        padding: "0 8px",
+                                                                                                        fontSize: "14px",
+                                                                                                    },
+                                                                                                    '& .MuiInputLabel-root': {
+                                                                                                        fontSize: "14px",
+                                                                                                    },
+                                                                                                },
+                                                                                            },
+                                                                                        }}
+                                                                                    />
+                                                                                </Grid>
+                                                                                <Grid item size={2}>
+                                                                                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                                                        <IconButton onClick={() => handleSave(emp.employeeID, date)}>
+                                                                                            <SaveIcon color="success" />
+                                                                                        </IconButton>
+                                                                                        <IconButton onClick={() => handleCancel()}>
+                                                                                            <DisabledByDefaultIcon color="error" />
+                                                                                        </IconButton>
+                                                                                    </Box>
+                                                                                </Grid>
+                                                                            </Grid>
+                                                                        </LocalizationProvider>
+
+                                                                        // <Grid container spacing={2}>
+                                                                        //     <Grid item size={5} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                                        //         <TextField
+                                                                        //             type="time"
+                                                                        //             size="small"
+                                                                        //             value={checkin}
+                                                                        //             onChange={(e) => setCheckin(e.target.value)}
+                                                                        //             fullWidth
+                                                                        //             InputProps={{
+                                                                        //                 step: 1,
+                                                                        //                 startAdornment: (
+                                                                        //                     <InputAdornment
+                                                                        //                         position="start"
+                                                                        //                         sx={{ display: "flex", alignItems: "center", ml: 1 }}
+                                                                        //                     >
+                                                                        //                         <Typography
+                                                                        //                             variant="body1"
+                                                                        //                             fontWeight="bold"
+                                                                        //                             sx={{ whiteSpace: "nowrap", fontSize: "14px" }}
+                                                                        //                         >
+                                                                        //                             เข้างาน :
+                                                                        //                         </Typography>
+                                                                        //                     </InputAdornment>
+                                                                        //                 ),
+                                                                        //                 sx: {
+                                                                        //                     height: 30, // ปรับความสูง input
+                                                                        //                     padding: 0,
+                                                                        //                     '& input': {
+                                                                        //                         height: 30,
+                                                                        //                         padding: "0 8px", // ปรับให้พอดีช่อง
+                                                                        //                         fontSize: 14,
+                                                                        //                     }
+                                                                        //                 }
+                                                                        //             }}
+                                                                        //             sx={{
+                                                                        //                 '& .MuiOutlinedInput-root': {
+                                                                        //                     height: 30,
+                                                                        //                     fontSize: 14,
+                                                                        //                 }
+                                                                        //             }}
+                                                                        //         />
+                                                                        //     </Grid>
+                                                                        //     <Grid item size={5} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                                        //         <TextField
+                                                                        //             type="time"
+                                                                        //             size="small"
+                                                                        //             fullWidth
+                                                                        //             value={checkout}
+                                                                        //             onChange={(e) => setCheckout(e.target.value)}
+                                                                        //             InputProps={{
+                                                                        //                 step: 1,
+                                                                        //                 startAdornment: (
+                                                                        //                     <InputAdornment
+                                                                        //                         position="start"
+                                                                        //                         sx={{ display: "flex", alignItems: "center", ml: 1 }}
+                                                                        //                     >
+                                                                        //                         <Typography
+                                                                        //                             variant="body1"
+                                                                        //                             fontWeight="bold"
+                                                                        //                             sx={{ whiteSpace: "nowrap", fontSize: "14px" }}
+                                                                        //                         >
+                                                                        //                             ออกงาน :
+                                                                        //                         </Typography>
+                                                                        //                     </InputAdornment>
+                                                                        //                 ),
+                                                                        //                 sx: {
+                                                                        //                     height: 30, // ปรับความสูง input
+                                                                        //                     padding: 0,
+                                                                        //                     '& input': {
+                                                                        //                         height: 30,
+                                                                        //                         padding: "0 8px", // ปรับให้พอดีช่อง
+                                                                        //                         fontSize: 14,
+                                                                        //                     }
+                                                                        //                 }
+                                                                        //             }}
+                                                                        //             sx={{
+                                                                        //                 '& .MuiOutlinedInput-root': {
+                                                                        //                     height: 30,
+                                                                        //                     fontSize: 14,
+                                                                        //                 }
+                                                                        //             }}
+                                                                        //         />
+                                                                        //     </Grid>
+                                                                        //     <Grid item size={2}>
+                                                                        //         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                                        //             <IconButton onClick={() => handleSave(emp.employeeID, date.date, date.workshift, date.attendantID)}>
+                                                                        //                 <SaveIcon color="success" />
+                                                                        //             </IconButton>
+                                                                        //             <IconButton onClick={() => handleCancel()}>
+                                                                        //                 <DisabledByDefaultIcon color="error" />
+                                                                        //             </IconButton>
+                                                                        //         </Box>
+                                                                        //     </Grid>
+                                                                        // </Grid>
+                                                                        :
+                                                                        <Box>
+                                                                            {
+                                                                                (date.checkin === "" && date.checkout === "") ?
+                                                                                    ""
+                                                                                    : date.checkin === "" ?
+                                                                                        <>
+                                                                                            <Tooltip title="เพิ่มเวลาเข้า" placement="left">
+                                                                                                <IconButton onClick={() => handleUpdateTime(emp.employeeID, formatThaiShort(dayjs(date.date, "DD/MM/YYYY")), date.checkin, date.checkout)}>
+                                                                                                    <AddAlarmIcon color="warning" />
+                                                                                                </IconButton>
+                                                                                            </Tooltip>
+                                                                                            {`ลงชื่อออก ${date.checkout}`}
+                                                                                        </>
+
+                                                                                        : date.checkout === "" ?
+                                                                                            <>
+                                                                                                {`ลงชื่อเข้า ${date.checkin}`}
+                                                                                                <Tooltip title="เพิ่มเวลาออก" placement="right">
+                                                                                                    <IconButton onClick={() => handleUpdateTime(emp.employeeID, formatThaiShort(dayjs(date.date, "DD/MM/YYYY")), date.checkin, date.checkout)}>
+                                                                                                        <AddAlarmIcon color="warning" />
+                                                                                                    </IconButton>
+                                                                                                </Tooltip>
+                                                                                            </>
+
+                                                                                            :
+                                                                                            `เข้า ${date.checkin} - ออก ${date.checkout}`
+                                                                            }
+                                                                        </Box>
+                                                                }
+                                                            </TableCell>
                                                             <TableCell sx={{ textAlign: "center", color: theme.palette.error.main, fontWeight: "bold" }}>{date.message}</TableCell>
                                                         </TableRow>
                                                     ))

@@ -253,7 +253,7 @@ const LeaveEarly = (props) => {
                                                                     {`${date.start} - ${date.stop}`}
                                                                 </TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>
-                                                                    {`เข้า ${date.checkin} - ออก ${date.checkout}`}
+                                                                    {`ออก ${date.checkout}`}
                                                                 </TableCell>
                                                                 <TableCell
                                                                     sx={{

@@ -253,7 +253,7 @@ const LateDetail = (props) => {
                                                                     {`${date.start} - ${date.stop}`}
                                                                 </TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>
-                                                                    {`เข้า ${date.checkin} - ออก ${date.checkout}`}
+                                                                    {`เข้า ${date.checkin}`}
                                                                 </TableCell>
                                                                 <TableCell sx={{ textAlign: "center", color: theme.palette.error.main, fontWeight: "bold" }}>
                                                                     มาสาย {minutesLate} นาที
