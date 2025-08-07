@@ -17,6 +17,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
+import CloseIcon from '@mui/icons-material/Close';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { styled } from '@mui/material/styles';
@@ -26,12 +27,14 @@ import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import theme from "../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
-import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
+import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany, IconButtonError } from "../../../theme/style"
 import { HTTP } from "../../../server/axios";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
+import { database } from "../../../server/firebase";
+import { Dialog, DialogContent, DialogTitle } from "@mui/material";
 
 const LanguageDetail = (props) => {
     const { menu, data } = props;
@@ -44,7 +47,30 @@ const LanguageDetail = (props) => {
 
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
+    const [thailand, setThailand] = useState([]);
+    const [openDetail, setOpenDetail] = useState({});
+    const [hoveredEmployeename, setHoveredEmployeename] = useState(null);
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
+
+    useEffect(() => {
+        if (!database) return;
+
+        const thailandRef = ref(database, `thailand`);
+
+        const unsubscribe = onValue(thailandRef, (snapshot) => {
+            const thailandData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!thailandData) {
+                setThailand([{ ID: 0, name: '', employeenumber: '' }]);
+            } else {
+                setThailand(thailandData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [database]);
+
     const languageRows = [];
 
     // const language = employees.map(emp => ({
@@ -271,18 +297,27 @@ const LanguageDetail = (props) => {
                                                 :
                                                 (
                                                     languageRows.map((row, index) => (
-                                                        <TableRow key={index}>
+                                                        <TableRow
+                                                            key={index}
+                                                            onClick={() => row.isFirst && setOpenDetail(row)}
+                                                            onMouseEnter={() => setHoveredEmployeename(row.employname)}
+                                                            onMouseLeave={() => setHoveredEmployeename(null)}
+                                                            sx={{
+                                                                cursor: hoveredEmployeename === row.employname ? 'pointer' : 'default',
+                                                                backgroundColor: hoveredEmployeename === row.employname ? theme.palette.primary.light : 'inherit',
+                                                            }}
+                                                        >
                                                             {row.isFirst && (
                                                                 <>
-                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>{row.position}</TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{index + 1}</TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.employname}</TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.position}</TableCell>
                                                                 </>
                                                             )}
-                                                            <TableCell sx={{ textAlign: "center" }}>{row.language}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center" }}>{row.speak}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center" }}>{row.read}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center" }}>{row.write}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.language}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.speak}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.read}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.write}</TableCell>
                                                         </TableRow>
                                                     ))
                                                 )
@@ -324,6 +359,190 @@ const LanguageDetail = (props) => {
                     <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                 </Box>
             }
+
+            {openDetail?.employname && openDetail?.isFirst && (
+                <Dialog
+                    open={true}
+                    onClose={() => setOpenDetail({})}
+                    PaperProps={{
+                        sx: {
+                            borderRadius: 4,
+                            width: "600px",
+                            height: "90vh",
+                            position: "absolute",
+                        },
+                    }}
+                >
+                    <DialogTitle sx={{ textAlign: "center", fontWeight: "bold" }}>
+                        <Grid container spacing={2}>
+                            <Grid item size={10}>
+                                <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลการฝึกอบรม</Typography>
+                            </Grid>
+                            <Grid item size={2} sx={{ textAlign: "right" }}>
+                                <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpenDetail({})}>
+                                    <CloseIcon />
+                                </IconButtonError>
+                            </Grid>
+                        </Grid>
+                        <Divider sx={{ marginTop: 2, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                    </DialogTitle>
+
+                    <DialogContent
+                        sx={{
+                            position: "relative",
+                            overflow: "hidden",
+                            overflowY: 'auto',
+                            height: "300px",
+                        }}
+                    >
+                        <Grid container spacing={2} marginTop={2}>
+                            <Grid item size={3}>
+                                <Typography variant="subtitle2" fontWeight="bold">ชื่อเล่น</Typography>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={
+                                        openDetail?.employname?.includes("(")
+                                            ? openDetail.employname.split(" (")[1].replace(")", "")
+                                            : ""
+                                    }
+                                    disabled
+                                />
+                            </Grid>
+
+                            <Grid item size={4.5}>
+                                <Typography variant="subtitle2" fontWeight="bold">ชื่อ</Typography>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={
+                                        openDetail?.employname?.split(" (")[0] || ""
+                                    }
+                                    disabled
+                                />
+                            </Grid>
+
+                            <Grid item size={4.5}>
+                                <Typography variant="subtitle2" fontWeight="bold">ตำแหน่ง</Typography>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={openDetail?.position}
+                                    disabled
+                                />
+                            </Grid>
+
+                            <Grid item size={12}>
+                                <Divider sx={{ marginTop: 1 }} />
+                            </Grid>
+
+                            {/* ดึงเฉพาะ row education ของคนนี้ทั้งหมด */}
+                            {languageRows
+                                .filter((row) => row.employname === openDetail.employname)
+                                .map((row, idx) => (
+                                    <React.Fragment key={idx}>
+                                        <Grid item size={10}>
+                                            <Typography variant="subtitle1" color="warning.main" fontWeight="bold">
+                                                ลำดับที่ {idx + 1}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item size={2} textAlign="right">
+                                            {languageRows.length > 1 && (
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    color="error"
+                                                //onClick={() => handleRemove(index)}
+                                                >
+                                                    ลบ
+                                                </Button>
+                                            )}
+                                        </Grid>
+
+                                        <Grid item size={12}>
+                                            <TextField
+                                                fullWidth
+                                                size="small"
+                                                value={row.language}
+                                                disabled
+                                            // onChange={(e) =>
+                                            //     handleLanguageChange(index, "language", e.target.value)
+                                            // }
+                                            // placeholder="กรุณากรอกชื่อภาษา"
+                                            />
+                                            {/* <TextField
+                                                select
+                                                fullWidth
+                                                size="small"
+                                                value={lang.language}
+                                                onChange={(e) =>
+                                                    handleLanguageChange(index, "language", e.target.value)
+                                                }
+                                            >
+                                                <MenuItem value="ไทย">ภาษาไทย</MenuItem>
+                                                <MenuItem value="อังกฤษ">ภาษาอังกฤษ</MenuItem>
+                                                <MenuItem value="ญี่ปุ่น">ภาษาญี่ปุ่น</MenuItem>
+                                                <MenuItem value="เกาหลี">ภาษาเกาหลี</MenuItem>
+                                            </TextField> */}
+                                        </Grid>
+                                        <Grid item size={0.5} />
+                                        <Grid item size={3.5}>
+                                            <Box sx={{ borderRadius: 40, backgroundColor: "#80cbc4", width: "150px", height: "150px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                <Typography variant="h5" fontWeight="bold" sx={{ color: "white" }} gutterBottom>{row.language}</Typography>
+                                            </Box>
+                                        </Grid>
+                                        <Grid item size={7.5}>
+                                            <Grid container spacing={2}>
+                                                <Grid item size={2}>
+                                                    <Typography variant="subtitle2" sx={{ marginTop: 1, textAlign: "right" }} fontWeight="bold">พูด</Typography>
+                                                </Grid>
+                                                <Grid item size={10}>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={row.speak}
+                                                        disabled
+                                                    // onChange={(e) => handleLanguageChange(index, "speaking", e.target.value)}
+                                                    // placeholder="กรุณากรอกความสามารถในการพูด"
+                                                    />
+                                                </Grid>
+                                                <Grid item size={2}>
+                                                    <Typography variant="subtitle2" sx={{ marginTop: 1, textAlign: "right" }} fontWeight="bold">อ่าน</Typography>
+                                                </Grid>
+                                                <Grid item size={10}>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={row.read}
+                                                        disabled
+                                                    // onChange={(e) => handleLanguageChange(index, "reading", e.target.value)}
+                                                    // placeholder="กรุณากรอกความสามารถในการอ่าน"
+                                                    />
+                                                </Grid>
+
+                                                <Grid item size={2}>
+                                                    <Typography variant="subtitle2" sx={{ marginTop: 1, textAlign: "right" }} fontWeight="bold">เขียน</Typography>
+                                                </Grid>
+                                                <Grid item size={10}>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={row.write}
+                                                        disabled
+                                                    // onChange={(e) => handleLanguageChange(index, "writing", e.target.value)}
+                                                    // placeholder="กรุณากรอกความสามารถในการเขียน"
+                                                    />
+                                                </Grid>
+                                            </Grid>
+                                        </Grid>
+                                        <Grid item size={0.5} />
+                                        <Grid item size={12}><Divider sx={{ mt: 1 }} /></Grid>
+                                    </React.Fragment>
+                                ))}
+                        </Grid>
+                    </DialogContent>
+                </Dialog>
+            )}
         </Box>
     )
 }

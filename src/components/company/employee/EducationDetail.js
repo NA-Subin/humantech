@@ -17,21 +17,23 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import theme from "../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
-import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
+import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany, IconButtonError } from "../../../theme/style"
 import { HTTP } from "../../../server/axios";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
+import { Dialog, DialogContent, DialogTitle } from "@mui/material";
 
 const EducationDetail = (props) => {
     const { menu, data } = props;
@@ -44,6 +46,8 @@ const EducationDetail = (props) => {
 
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
+    const [openDetail, setOpenDetail] = useState({});
+    const [hoveredEmployeename, setHoveredEmployeename] = useState(null);
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
     const educationRows = [];
@@ -312,28 +316,37 @@ const EducationDetail = (props) => {
                                                 </TableRow>
                                                 :
                                                 educationRows.map((row, index) => (
-                                                    <TableRow>
-                                                        <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                    <TableRow
+                                                        key={index}
+                                                        onClick={() => row.isFirst && setOpenDetail(row)}
+                                                        onMouseEnter={() => setHoveredEmployeename(row.employname)}
+                                                        onMouseLeave={() => setHoveredEmployeename(null)}
+                                                        sx={{
+                                                            cursor: hoveredEmployeename === row.employname ? 'pointer' : 'default',
+                                                            backgroundColor: hoveredEmployeename === row.employname ? theme.palette.primary.light : 'inherit',
+                                                        }}
+                                                    >
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{index + 1}</TableCell>
                                                         {row.isFirst && (
                                                             <>
-                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>
+                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>
                                                                     {row.employname}
                                                                 </TableCell>
-                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>
+                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>
                                                                     {row.position}
                                                                 </TableCell>
                                                             </>
                                                         )}
                                                         {/* ถ้าไม่ใช่ isFirst ไม่ต้องแสดง 2 คอลัมน์แรก */}
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.education}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.educationLevel}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.institution}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.educationCategory}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.faculty}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.branch}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.degree}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.graduateYear}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.gpa}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.education}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.educationLevel}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.institution}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.educationCategory}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.faculty}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.branch}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.degree}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.graduateYear}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.gpa}</TableCell>
                                                     </TableRow>
                                                 ))}
                                     </TableBody>
@@ -373,6 +386,326 @@ const EducationDetail = (props) => {
                     <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                 </Box>
             }
+
+            {openDetail?.employname && openDetail?.isFirst && (
+                <Dialog
+                    open={true}
+                    onClose={() => setOpenDetail({})}
+                    PaperProps={{
+                        sx: {
+                            borderRadius: 4,
+                            width: "600px",
+                            height: "90vh",
+                            position: "absolute",
+                        },
+                    }}
+                >
+                    <DialogTitle sx={{ textAlign: "center", fontWeight: "bold" }}>
+                        <Grid container spacing={2}>
+                            <Grid item size={10}>
+                                <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลการศึกษา</Typography>
+                            </Grid>
+                            <Grid item size={2} sx={{ textAlign: "right" }}>
+                                <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpenDetail({})}>
+                                    <CloseIcon />
+                                </IconButtonError>
+                            </Grid>
+                        </Grid>
+                        <Divider sx={{ marginTop: 2, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                    </DialogTitle>
+
+                    <DialogContent
+                        sx={{
+                            position: "relative",
+                            overflow: "hidden",
+                            overflowY: 'auto',
+                            height: "300px",
+                        }}
+                    >
+                        <Grid container spacing={2} marginTop={2}>
+                            <Grid item size={3}>
+                                <Typography variant="subtitle2" fontWeight="bold">ชื่อเล่น</Typography>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={
+                                        openDetail?.employname?.includes("(")
+                                            ? openDetail.employname.split(" (")[1].replace(")", "")
+                                            : ""
+                                    }
+                                    disabled
+                                />
+                            </Grid>
+
+                            <Grid item size={4.5}>
+                                <Typography variant="subtitle2" fontWeight="bold">ชื่อ</Typography>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={
+                                        openDetail?.employname?.split(" (")[0] || ""
+                                    }
+                                    disabled
+                                />
+                            </Grid>
+
+                            <Grid item size={4.5}>
+                                <Typography variant="subtitle2" fontWeight="bold">ตำแหน่ง</Typography>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={openDetail?.position}
+                                    disabled
+                                />
+                            </Grid>
+
+                            <Grid item size={12}>
+                                <Divider sx={{ marginTop: 1 }} />
+                            </Grid>
+
+                            {/* ดึงเฉพาะ row education ของคนนี้ทั้งหมด */}
+                            {educationRows
+                                .filter((row) => row.employname === openDetail.employname)
+                                .map((row, idx) => (
+                                    <React.Fragment key={idx}>
+                                        <Grid item size={10}>
+                                            <Typography variant="subtitle1" color="warning.main" fontWeight="bold">
+                                                ลำดับที่ {idx + 1}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item size={2} textAlign="right">
+                                            {educationRows.length > 1 && (
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    color="error"
+                                                //onClick={() => handleRemove(index)}
+                                                >
+                                                    ลบ
+                                                </Button>
+                                            )}
+                                        </Grid>
+
+                                        <Grid item size={12}>
+                                            <Typography variant="subtitle2" fontWeight="bold">
+                                                สถานภาพการศึกษา
+                                            </Typography>
+                                            <Grid container spacing={2} marginLeft={2} marginRight={2} marginTop={1}>
+                                                <Grid item size={6}
+                                                    sx={{
+                                                        height: "70px",
+                                                        backgroundColor: row.education === "จบการศึกษา" ? "#66bb6a" : "#eeeeee",
+                                                        borderRadius: 2,
+                                                        display: "flex",
+                                                        justifyContent: "center",
+                                                        alignItems: "center"
+                                                    }}
+                                                //onClick={() => (handleChange(index, "education", "จบการศึกษา"), setEducation(true))}
+                                                //onClick={() => setEducation(true)}
+                                                >
+                                                    <Typography variant="h6" fontWeight="bold" color={row.education === "จบการศึกษา" ? "white" : "textDisabled"} gutterBottom>จบการศึกษา</Typography>
+                                                    <MilitaryTechIcon
+                                                        sx={{ fontSize: 70, color: row.education === "จบการศึกษา" ? "white" : "lightgray", marginLeft: 2 }} // กำหนดขนาดไอคอนเป็น 60px
+                                                    />
+                                                </Grid>
+                                                <Grid item size={6}
+                                                    sx={{
+                                                        height: "70px",
+                                                        backgroundColor: row.education === "จบการศึกษา" ? "#eeeeee" : "#81d4fa",
+                                                        borderRadius: 2,
+                                                        display: "flex",
+                                                        justifyContent: "center",
+                                                        alignItems: "center"
+                                                    }}
+                                                //onClick={() => (handleChange(index, "education", "กำลังศึกษาอยู่"), setEducation(false))}
+                                                >
+                                                    <Typography variant="h6" fontWeight="bold" color={row.education === "จบการศึกษา" ? "textDisabled" : "white"} gutterBottom>กำลังศึกษาอยู่</Typography>
+                                                    <MenuBookIcon
+                                                        color="disabled"
+                                                        sx={{ fontSize: 70, color: row.education === "จบการศึกษา" ? "lightgray" : "white", marginLeft: 2 }} // กำหนดขนาดไอคอนเป็น 60px
+                                                    />
+                                                </Grid>
+                                            </Grid>
+                                        </Grid>
+
+                                        <Grid item size={12}>
+                                            <Typography variant="subtitle2" fontWeight="bold">
+                                                ระดับการศึกษา
+                                            </Typography>
+                                            <TextField
+                                                fullWidth
+                                                size="small"
+                                                value={row.educationLevel}
+                                                disabled
+                                            // onChange={(e) =>
+                                            //     handleChange(index, "institution", e.target.value)
+                                            // }
+                                            />
+                                            {/* <TextField
+                                                select
+                                                fullWidth
+                                                size="small"
+                                                value={row.educationLevel}
+                                                SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+                                                onChange={(e) =>
+                                                    handleChange(index, "educationLevel", e.target.value)
+                                                }
+                                            >
+                                                {educationLevels.map((option) => (
+                                                    <MenuItem key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </MenuItem>
+                                                ))}
+                                            </TextField> */}
+                                        </Grid>
+
+                                        {
+                                            (row.educationLevel === "ประถมศึกษา" || row.educationLevel === "มัธยมศึกษา" || row.educationLevel === "") ?
+                                                <React.Fragment>
+                                                    <Grid item size={12}>
+                                                        <Typography variant="subtitle2" fontWeight="bold">
+                                                            สถานศึกษา
+                                                        </Typography>
+                                                        <TextField
+                                                            fullWidth
+                                                            size="small"
+                                                            value={row.institution}
+                                                            placeholder="กรุณากรอกสถานศึกษา"
+                                                            disabled
+                                                        // onChange={(e) =>
+                                                        //     handleChange(index, "institution", e.target.value)
+                                                        // }
+                                                        />
+                                                    </Grid>
+                                                </React.Fragment>
+                                                :
+                                                <React.Fragment>
+                                                    <Grid item size={12}>
+                                                        <Typography variant="subtitle2" fontWeight="bold">
+                                                            สถานศึกษา
+                                                        </Typography>
+                                                        <TextField
+                                                            fullWidth
+                                                            size="small"
+                                                            placeholder="กรุณากรอกสถานศึกษา"
+                                                            value={row.institution}
+                                                            disabled
+                                                        // onChange={(e) =>
+                                                        //     handleChange(index, "institution", e.target.value)
+                                                        // }
+                                                        />
+                                                    </Grid>
+                                                    <Grid item size={12}>
+                                                        <Typography variant="subtitle2" fontWeight="bold" >หมวดการศึกษา</Typography>
+                                                        <TextField
+                                                            fullWidth
+                                                            size="small"
+                                                            value={row.educationCategory}
+                                                            disabled
+                                                        // onChange={(e) =>
+                                                        //     handleChange(index, "institution", e.target.value)
+                                                        // }
+                                                        />
+                                                        {/* <TextField
+                                                            select
+                                                            fullWidth
+                                                            size="small"
+                                                            placeholder="เช่น 2568"
+                                                            value={item.educationCategory}
+                                                            SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+                                                            onChange={(e) =>
+                                                                handleChange(index, "educationCategory", e.target.value)
+                                                            }
+                                                        >
+                                                            {bachelorCategories.map((option) => (
+                                                                <MenuItem key={option.value} value={option.value}>
+                                                                    {option.label}
+                                                                </MenuItem>
+                                                            ))}
+                                                        </TextField> */}
+                                                    </Grid>
+                                                    <Grid item size={12}>
+                                                        <Typography variant="subtitle2" fontWeight="bold" >คณะ</Typography>
+                                                        <TextField
+                                                            fullWidth
+                                                            size="small"
+                                                            value={row.faculty}
+                                                            disabled
+                                                            // onChange={(e) =>
+                                                            //     handleChange(index, "faculty", e.target.value)
+                                                            // }
+                                                            placeholder="กรุณากรอกคณะ"
+                                                        />
+                                                    </Grid>
+                                                    <Grid item size={12}>
+                                                        <Typography variant="subtitle2" fontWeight="bold" >สาขา</Typography>
+                                                        <TextField
+                                                            fullWidth
+                                                            size="small"
+                                                            value={row.branch}
+                                                            disabled
+                                                            // onChange={(e) =>
+                                                            //     handleChange(index, "branch", e.target.value)
+                                                            // }
+                                                            placeholder="กรุณากรอกสาขา"
+                                                        />
+                                                    </Grid>
+                                                    <Grid item size={12}>
+                                                        <Typography variant="subtitle2" fontWeight="bold" >ชื่อปริญญา</Typography>
+                                                        <TextField
+                                                            fullWidth
+                                                            size="small"
+                                                            value={row.degree}
+                                                            disabled
+                                                            // onChange={(e) =>
+                                                            //     handleChange(index, "degree", e.target.value)
+                                                            // }
+                                                            placeholder="กรุณากรอกชื่อปริญญา"
+                                                        />
+                                                    </Grid>
+                                                </React.Fragment>
+                                        }
+                                        <Grid item size={6}>
+                                            <Typography variant="subtitle2" fontWeight="bold">
+                                                ปีที่สำเร็จการศึกษา
+                                            </Typography>
+                                            <TextField
+                                                fullWidth
+                                                size="small"
+                                                value={row.graduateYear}
+                                                placeholder="กรุณากรอกปีที่สำเร็จการศึกษา"
+                                                disabled
+                                            // onChange={(e) =>
+                                            //     handleChange(index, "graduateYear", e.target.value)
+                                            // }
+                                            />
+                                        </Grid>
+
+                                        <Grid item size={6}>
+                                            <Typography variant="subtitle2" fontWeight="bold">
+                                                เกรดเฉลี่ย
+                                            </Typography>
+                                            <TextField
+                                                fullWidth
+                                                size="small"
+                                                value={row.gpa}
+                                                placeholder="กรุณากรอกเกรดเฉลี่ย"
+                                                disabled
+                                            // onChange={(e) =>
+                                            //     handleChange(index, "gpa", e.target.value)
+                                            // }
+                                            />
+                                        </Grid>
+                                        <Grid item size={12}>
+                                            <Divider sx={{ marginTop: 1 }} />
+                                        </Grid>
+                                    </React.Fragment>
+                                ))}
+                        </Grid>
+                    </DialogContent>
+                </Dialog>
+            )}
+
         </Box>
     )
 }

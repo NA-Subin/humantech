@@ -17,22 +17,25 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import GirlIcon from '@mui/icons-material/Girl';
+import BoyIcon from '@mui/icons-material/Boy';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import theme from "../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
-import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
+import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany, IconButtonError } from "../../../theme/style"
 import { HTTP } from "../../../server/axios";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { database } from "../../../server/firebase";
+import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
 
 const PersonalDetail = (props) => {
     const { menu, data } = props;
@@ -43,9 +46,11 @@ const PersonalDetail = (props) => {
 
     const [edit, setEdit] = useState("");
     const [editAddress, setEditAddress] = useState("");
+    const [openDetail, setOpenDetail] = useState({});
 
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
+    const [hoveredEmployeename, setHoveredEmployeename] = useState(null);
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
     const [thailand, setThailand] = useState([]);
@@ -436,23 +441,23 @@ const PersonalDetail = (props) => {
                                     <TableHead>
                                         <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                             <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อ</TablecellHeader>
-                                            <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader>เพศ</TablecellHeader>
-                                            <TablecellHeader>สถานภาพทางทหาร</TablecellHeader>
-                                            <TablecellHeader>ตำบล</TablecellHeader>
-                                            <TablecellHeader>อำเภอ</TablecellHeader>
-                                            <TablecellHeader>จังหวัด</TablecellHeader>
-                                            <TablecellHeader>รหัสไปรณีย์</TablecellHeader>
-                                            <TablecellHeader>สัญชาติ</TablecellHeader>
-                                            <TablecellHeader>ศาสนา</TablecellHeader>
-                                            <TablecellHeader>ส่วนสูง</TablecellHeader>
-                                            <TablecellHeader>น้ำหนัก</TablecellHeader>
-                                            <TablecellHeader>สถานภาพ</TablecellHeader>
-                                            <TablecellHeader>เบอร์โทรศัพท์</TablecellHeader>
-                                            <TablecellHeader>โทรศัพท์บ้าน</TablecellHeader>
-                                            <TablecellHeader>Line ID</TablecellHeader>
-                                            <TablecellHeader>ประเทศ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 300 }}>ชื่อ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 200 }}>ตำแหน่ง</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 100 }}>เพศ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 150 }}>สถานภาพทางทหาร</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 120 }}>ตำบล</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 120 }}>อำเภอ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 120 }}>จังหวัด</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 100 }}>รหัสไปรณีย์</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 100 }}>สัญชาติ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 100 }}>ศาสนา</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 100 }}>ส่วนสูง</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 100 }}>น้ำหนัก</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 100 }}>สถานภาพ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 120 }}>เบอร์โทรศัพท์</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 120 }}>โทรศัพท์บ้าน</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 150 }}>Line ID</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 150 }}>ประเทศ</TablecellHeader>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -463,25 +468,34 @@ const PersonalDetail = (props) => {
                                                 </TableRow>
                                                 :
                                                 personal.map((row, index) => (
-                                                    <TableRow>
-                                                        <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.sex}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.militaryStatus}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.tambon.split("-")[1]}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.amphure.split("-")[1]}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.province.split("-")[1]}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.zipCode}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.nationality}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.religion}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.height}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.weight}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.statusEmployee}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.phone}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.homephone}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.lineID}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.country}</TableCell>
+                                                    <TableRow
+                                                        key={index}
+                                                        onClick={() => setOpenDetail(row)}
+                                                        onMouseEnter={() => setHoveredEmployeename(row.employname)}
+                                                        onMouseLeave={() => setHoveredEmployeename(null)}
+                                                        sx={{
+                                                            cursor: hoveredEmployeename === row.employname ? 'pointer' : 'default',
+                                                            backgroundColor: hoveredEmployeename === row.employname ? theme.palette.primary.light : 'inherit',
+                                                        }}
+                                                    >
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{index + 1}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.employname}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.position}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.sex}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.militaryStatus}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.tambon.split("-")[1]}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.amphure.split("-")[1]}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.province.split("-")[1]}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.zipCode}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.nationality}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.religion}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.height}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.weight}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.statusEmployee}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.phone}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.homephone}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.lineID}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.country}</TableCell>
                                                     </TableRow>
                                                 ))}
                                     </TableBody>
@@ -520,6 +534,300 @@ const PersonalDetail = (props) => {
                     <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                     <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                 </Box>
+            }
+
+            {
+                openDetail?.employname && (
+                    <Dialog
+                        open
+                        onClose={() => setOpenDetail({})}
+                        PaperProps={{
+                            sx: {
+                                borderRadius: 4, // ค่าตรงนี้คือความมน ยิ่งมากยิ่งมน (ค่า default คือ 1 หรือ 4px)
+                                width: "600px",
+                                height: "90vh", // <<< เท่ากับ Dialog หลัก
+                                position: "absolute",
+                            },
+                        }}
+                    >
+                        <DialogTitle
+                            sx={{
+                                textAlign: "center",
+                                fontWeight: "bold"
+                            }}
+                        >
+                            <Grid container spacing={2}>
+                                <Grid item size={10}>
+                                    <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลทั่วไป</Typography>
+                                </Grid>
+                                <Grid item size={2} sx={{ textAlign: "right" }}>
+                                    <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpenDetail({})}>
+                                        <CloseIcon />
+                                    </IconButtonError>
+                                </Grid>
+                            </Grid>
+                            <Divider sx={{ marginTop: 2, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                        </DialogTitle>
+                        <DialogContent
+                            sx={{
+                                position: "relative",
+                                overflow: "hidden",
+                                overflowY: 'auto',
+                                height: "300px", // หรือความสูง fixed ที่คุณใช้
+                            }}
+                        >
+                            <Grid container spacing={2} marginTop={2}>
+                                <Grid item size={3}>
+                                    <Typography variant="subtitle2" fontWeight="bold">ชื่อเล่น</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={
+                                            openDetail?.employname?.includes("(")
+                                                ? openDetail.employname.split(" (")[1].replace(")", "")
+                                                : ""
+                                        }
+                                        disabled
+                                    />
+                                </Grid>
+
+                                <Grid item size={4.5}>
+                                    <Typography variant="subtitle2" fontWeight="bold">ชื่อ</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={
+                                            openDetail?.employname?.split(" (")[0] || ""
+                                        }
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={4.5}>
+                                    <Typography variant="subtitle2" fontWeight="bold">ตำแหน่ง</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.position}
+                                        disabled
+                                    />
+                                </Grid>
+
+                                <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >เพศ</Typography>
+                                    <Grid container spacing={5} marginLeft={4} marginRight={4} >
+                                        <Grid item size={1.5} />
+                                        <Grid item size={4.5}
+                                            sx={{
+                                                height: "70px",
+                                                backgroundColor: openDetail?.sex !== "หญิง" ? "#81d4fa" : "#eeeeee",
+                                                borderRadius: 2,
+                                                display: "flex",
+                                                justifyContent: "center",
+                                                alignItems: "center"
+                                            }}
+                                        //onClick={() => setOpenSex(true)}
+                                        >
+                                            <Typography variant="h4" fontWeight="bold" color={openDetail?.sex !== "หญิง" ? "white" : "textDisabled"} gutterBottom>ชาย</Typography>
+                                            <BoyIcon
+                                                sx={{ fontSize: 70, color: openDetail?.sex !== "หญิง" ? "white" : "lightgray" }} // กำหนดขนาดไอคอนเป็น 60px
+                                            />
+                                        </Grid>
+                                        <Grid item size={4.5}
+                                            sx={{
+                                                height: "70px",
+                                                backgroundColor: openDetail?.sex !== "หญิง" ? "#eeeeee" : "#f48fb1",
+                                                borderRadius: 2,
+                                                display: "flex",
+                                                justifyContent: "center",
+                                                alignItems: "center"
+                                            }}
+                                        // onClick={() => setOpenSex(false)}
+                                        >
+                                            <Typography variant="h4" fontWeight="bold" color={openDetail?.sex !== "หญิง" ? "textDisabled" : "white"} gutterBottom>หญิง</Typography>
+                                            <GirlIcon
+                                                color="disabled"
+                                                sx={{ fontSize: 70, color: openDetail?.sex !== "หญิง" ? "lightgray" : "white" }} // กำหนดขนาดไอคอนเป็น 60px
+                                            />
+                                        </Grid>
+                                        <Grid item size={1.5} />
+                                    </Grid>
+                                </Grid>
+                                <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >สถานภาพทางการทหาร</Typography>
+                                    {/* <TextField
+                                        select
+                                        fullWidth
+                                        size="small"
+                                        value={militaryStatus}
+                                        SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+                                        onChange={(e) => setMilitaryStatus(e.target.value)}
+                                    >
+                                        <MenuItem value="ผ่านการเกณฑ์แล้ว">ผ่านการเกณฑ์แล้ว</MenuItem>
+                                        <MenuItem value="ได้รับการยกเว้น">ได้รับการยกเว้น</MenuItem>
+                                        <MenuItem value="ยังไม่ได้เกณฑ์">ยังไม่ได้เกณฑ์</MenuItem>
+                                    </TextField> */}
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.militaryStatus}
+                                        disabled
+                                    // onChange={(e) => setHeight(e.target.value)}
+                                    />
+                                </Grid>
+                                {/* <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >กรอกข้อมูลวันเกิด</Typography>
+                                    <ThaiDateSelector
+                                        label="วันเกิด"
+                                        value={birthDate}
+                                        onChange={(val) => setBirthDate(val)}
+                                    />
+                                </Grid> */}
+                                <Grid item size={6}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >สัญชาติ</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.nationality}
+                                        // onChange={(e) => setNationality(e.target.value)}
+                                        placeholder="กรุณากรอกสัญชาติ"
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={6}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >ศาสนา</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.religion}
+                                        // onChange={(e) => setReligion(e.target.value)}
+                                        placeholder="กรุณากรอกศาสนา"
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={6}>
+                                    <Typography variant="subtitle2"><b>น้ำหนัก</b>(กิโลกรัม)</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.weight}
+                                        // onChange={(e) => setWeight(e.target.value)}
+                                        placeholder="กรุณากรอกน้ำหนัก"
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={6}>
+                                    <Typography variant="subtitle2"><b>ส่วนสูง</b>(เซนติเมตร)</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.height}
+                                        // onChange={(e) => setHeight(e.target.value)}
+                                        placeholder="กรุณากรอกส่วนสูง"
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >สถานภาพ</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.statusEmployee}
+                                        disabled
+                                    // onChange={(e) => setHeight(e.target.value)}
+                                    />
+                                    {/* <TextField
+                                        select
+                                        fullWidth
+                                        size="small"
+                                        value={statusEmployee}
+                                        SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+                                        onChange={(e) => setStatusEmployee(e.target.value)}
+                                    >
+                                        {
+                                            statuss.map((row, index) => (
+                                                <MenuItem key={index} value={`${row.label}`}>{row.label}</MenuItem>
+                                            ))
+                                        }
+                                    </TextField> */}
+                                </Grid>
+                                <Grid item size={6}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >เบอร์โทรศัพท์</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.phone}
+                                        // onChange={(e) => setPhone(e.target.value)}
+                                        placeholder="กรุณากรอกเบอร์โทรศัพท์"
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={6}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >โทรศัพท์บ้าน</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.homePhone}
+                                        // onChange={(e) => setHomePhone(e.target.value)}
+                                        placeholder="กรุณากรอกเบอร์โทรศัพท์บ้าน"
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >LINE ID</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.lineID}
+                                        //onChange={(e) => setLineID(e.target.value)}
+                                        placeholder="กรุณากรอก LINE ID"
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >ประเทศ</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.country}
+                                        //onChange={(e) => setCountry(e.target.value)}
+                                        placeholder="กรุณากรอกประเทศ"
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >ที่อยู่ปัจจุบัน</Typography>
+                                    <TextField
+                                        type="text"
+                                        size="small"
+                                        placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
+                                        multiline
+                                        rows={3}
+                                        fullWidth
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <ThaiAddressSelector
+                                        label="ที่อยู่ปัจจุบัน"
+                                        thailand={thailand}
+                                        value={openDetail}
+                                        placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
+                                        disabled
+                                    //onChange={(val) => setAddress(val)}
+                                    />
+                                </Grid>
+                            </Grid>
+                        </DialogContent>
+                        {/* <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
+                            <Button variant="contained" color="error" onClick={() => setOpenDetail({})}>
+                                ยกเลิก
+                            </Button>
+                            <Button variant="contained" color="success" onClick={() => setOpenDetail({})}>
+                                บันทึก
+                            </Button>
+                        </DialogActions> */}
+                    </Dialog>
+                )
             }
 
             {/* <Grid container spacing={2} sx={{ marginBottom: 1, marginTop: 5 }}>

@@ -24,14 +24,16 @@ import Paper from '@mui/material/Paper';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import CloseIcon from '@mui/icons-material/Close';
 import theme from "../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
-import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
+import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany, IconButtonError } from "../../../theme/style"
 import { HTTP } from "../../../server/axios";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
+import { Dialog, DialogContent, DialogTitle } from "@mui/material";
 
 const OtherDetail = (props) => {
     const { menu, data } = props;
@@ -44,6 +46,8 @@ const OtherDetail = (props) => {
 
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
+    const [openDetail, setOpenDetail] = useState({});
+    const [hoveredEmployeename, setHoveredEmployeename] = useState(null);
     //const [other, setother] = useState([]); // จะถูกกรองจาก allEmployees
 
     const other = employees.map(emp => ({
@@ -224,17 +228,26 @@ const OtherDetail = (props) => {
                                                 </TableRow>
                                                 :
                                                 other.map((row, index) => (
-                                                    <TableRow>
-                                                        <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.specialAbilities1}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.specialAbilities2}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.specialAbilities3}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.printingSpeedTH}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.printingSpeedENG}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.otherProjects}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.referencePerson}</TableCell>
+                                                    <TableRow
+                                                        key={index}
+                                                        onClick={() => setOpenDetail(row)}
+                                                        onMouseEnter={() => setHoveredEmployeename(row.employname)}
+                                                        onMouseLeave={() => setHoveredEmployeename(null)}
+                                                        sx={{
+                                                            cursor: hoveredEmployeename === row.employname ? 'pointer' : 'default',
+                                                            backgroundColor: hoveredEmployeename === row.employname ? theme.palette.primary.light : 'inherit',
+                                                        }}
+                                                    >
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{index + 1}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.employname}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.position}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.specialAbilities1}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.specialAbilities2}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.specialAbilities3}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.printingSpeedTH}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.printingSpeedENG}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.otherProjects}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.referencePerson}</TableCell>
                                                     </TableRow>
                                                 ))}
                                     </TableBody>
@@ -273,6 +286,202 @@ const OtherDetail = (props) => {
                     <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                     <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                 </Box>
+            }
+
+            {
+                openDetail?.employname && (
+                    <Dialog
+                        open
+                        onClose={() => setOpenDetail({})}
+                        PaperProps={{
+                            sx: {
+                                borderRadius: 4, // ค่าตรงนี้คือความมน ยิ่งมากยิ่งมน (ค่า default คือ 1 หรือ 4px)
+                                width: "600px",
+                                height: "90vh", // <<< เท่ากับ Dialog หลัก
+                                position: "absolute",
+                            },
+                        }}
+                    >
+                        <DialogTitle
+                            sx={{
+                                textAlign: "center",
+                                fontWeight: "bold"
+                            }}
+                        >
+                            <Grid container spacing={2}>
+                                <Grid item size={10}>
+                                    <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลทั่วไป</Typography>
+                                </Grid>
+                                <Grid item size={2} sx={{ textAlign: "right" }}>
+                                    <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpenDetail({})}>
+                                        <CloseIcon />
+                                    </IconButtonError>
+                                </Grid>
+                            </Grid>
+                            <Divider sx={{ marginTop: 2, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                        </DialogTitle>
+                        <DialogContent
+                            sx={{
+                                position: "relative",
+                                overflow: "hidden",
+                                overflowY: 'auto',
+                                height: "300px", // หรือความสูง fixed ที่คุณใช้
+                            }}
+                        >
+                            <Grid container spacing={2} marginTop={2}>
+                                <Grid item size={3}>
+                                    <Typography variant="subtitle2" fontWeight="bold">ชื่อเล่น</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={
+                                            openDetail?.employname?.includes("(")
+                                                ? openDetail.employname.split(" (")[1].replace(")", "")
+                                                : ""
+                                        }
+                                        disabled
+                                    />
+                                </Grid>
+
+                                <Grid item size={4.5}>
+                                    <Typography variant="subtitle2" fontWeight="bold">ชื่อ</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={
+                                            openDetail?.employname?.split(" (")[0] || ""
+                                        }
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={4.5}>
+                                    <Typography variant="subtitle2" fontWeight="bold">ตำแหน่ง</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.position}
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >ความสามารถพิเศษ</Typography>
+                                    <Grid container spacing={1}>
+                                        <Grid item size={1}>
+                                            <Typography variant="subtitle2" sx={{ marginTop: 1, textAlign: "right" }} fontWeight="bold" >1.</Typography>
+                                        </Grid>
+                                        <Grid item size={11}>
+                                            <TextField
+                                                fullWidth
+                                                size="small"
+                                                value={openDetail?.specialAbilities1}
+                                                disabled
+                                            // onChange={(e) => setSpecialAbilities1(e.target.value)}
+                                            // placeholder="กรุณากรอกความสามารถเฉพาะทาง"
+                                            />
+                                        </Grid>
+                                        <Grid item size={1}>
+                                            <Typography variant="subtitle2" sx={{ marginTop: 1, textAlign: "right" }} fontWeight="bold" >2.</Typography>
+                                        </Grid>
+                                        <Grid item size={11}>
+                                            <TextField
+                                                fullWidth
+                                                size="small"
+                                                value={openDetail?.specialAbilities2}
+                                                disabled
+                                            // onChange={(e) => setSpecialAbilities2(e.target.value)}
+                                            // placeholder="กรุณากรอกความสามารถเฉพาะทาง"
+                                            />
+                                        </Grid>
+                                        <Grid item size={1}>
+                                            <Typography variant="subtitle2" sx={{ marginTop: 1, textAlign: "right" }} fontWeight="bold" >3.</Typography>
+                                        </Grid>
+                                        <Grid item size={11}>
+                                            <TextField
+                                                fullWidth
+                                                size="small"
+                                                value={openDetail?.specialAbilities3}
+                                                disabled
+                                            // onChange={(e) => setSpecialAbilities3(e.target.value)}
+                                            // placeholder="กรุณากรอกความสามารถเฉพาะทาง"
+                                            />
+                                        </Grid>
+                                        {/* <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >ความสามารถในการขับขี่</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        placeholder="กรุณากรอกความสามารถในการขับขี่"
+                                    />
+                                </Grid> */}
+                                        <Grid item size={12}>
+                                            <Typography variant="subtitle2" fontWeight="bold" >ความเร็วในการพิมพ์</Typography>
+                                            <Grid container spacing={2}>
+                                                <Grid item size={6}>
+                                                    <Typography variant="subtitle2" fontWeight="bold" >ไทย</Typography>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={openDetail?.printingSpeedTH}
+                                                        disabled
+                                                    // onChange={(e) => setPrintingSpeedTH(e.target.value)}
+                                                    // placeholder="กรุณากรอกความเร็วในการพิมพ์ภาษาไทย"
+                                                    />
+                                                </Grid>
+                                                <Grid item size={6}>
+                                                    <Typography variant="subtitle2" fontWeight="bold" >อังกฤษ</Typography>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={openDetail?.printingSpeedENG}
+                                                        disabled
+                                                    // onChange={(e) => setPrintingSpeedENG(e.target.value)}
+                                                    // placeholder="กรุณากรอกความเร็วในการพิมพ์ภาษาอังกฤษ"
+                                                    />
+                                                </Grid>
+                                            </Grid>
+                                        </Grid>
+                                        <Grid item size={12}>
+                                            <Typography variant="subtitle2" fontWeight="bold" >โครงการ ผลงาน และประสบการณ์อื่นๆ</Typography>
+                                            <TextField
+                                                type="text"
+                                                size="small"
+                                                value={openDetail?.otherProjects}
+                                                // onChange={(e) => setOtherProject(e.target.value)}
+                                                multiline
+                                                rows={3}
+                                                fullWidth
+                                                disabled
+                                            // placeholder="กรุณากรอกโครงการ ผลงาน และประสบการณ์อื่นๆ"
+                                            />
+                                        </Grid>
+                                        <Grid item size={12}>
+                                            <Typography variant="subtitle2" fontWeight="bold" >บุคคลอ้างอิง</Typography>
+                                            <TextField
+                                                type="text"
+                                                size="small"
+                                                value={openDetail?.referencePerson}
+                                                // onChange={(e) => setReferencePerson(e.target.value)}
+                                                multiline
+                                                rows={3}
+                                                fullWidth
+                                                disabled
+                                            // placeholder="กรุณากรอกชื่อบุคคลอ้างอิง"
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                </Grid>
+                            </Grid>
+                        </DialogContent>
+                        {/* <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
+                            <Button variant="contained" color="error" onClick={() => setOpenDetail({})}>
+                                ยกเลิก
+                            </Button>
+                            <Button variant="contained" color="success" onClick={() => setOpenDetail({})}>
+                                บันทึก
+                            </Button>
+                        </DialogActions> */}
+                    </Dialog>
+                )
             }
         </Box>
     )

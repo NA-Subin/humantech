@@ -8,7 +8,7 @@ const monthNames = [
   "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
 ];
 
-export default function ThaiDateSelector({ label = "", value, onChange }) {
+export default function ThaiDateSelector({ label = "", value, onChange, disabled }) {
   const [selectedDay, setSelectedDay] = useState(value?.day || "");
   const [selectedMonth, setSelectedMonth] = useState(value?.month || "");
   const [selectedYear, setSelectedYear] = useState(value?.year || "");
@@ -61,6 +61,7 @@ export default function ThaiDateSelector({ label = "", value, onChange }) {
           value={selectedDay}
           onChange={(e) => setSelectedDay(e.target.value)}
           SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+          disabled={disabled}
         >
           {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => (
             <MenuItem key={day} value={day}>{day}</MenuItem>
@@ -77,6 +78,7 @@ export default function ThaiDateSelector({ label = "", value, onChange }) {
           value={selectedMonth}
           onChange={handleMonthChange}
           SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+          disabled={disabled}
         >
           {monthNames.map((month, index) => (
             <MenuItem key={index + 1} value={index + 1}>
@@ -93,6 +95,7 @@ export default function ThaiDateSelector({ label = "", value, onChange }) {
           value={selectedYear}
           onChange={handleYearChange}
           placeholder="เช่น 2568"
+          disabled={disabled}
         />
       </Grid>
     </Grid>

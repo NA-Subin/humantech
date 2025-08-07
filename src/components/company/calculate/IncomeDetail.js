@@ -39,7 +39,8 @@ import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../theme/SearchEmployee";
 import dayjs from "dayjs";
 
-const IncomeDetail = () => {
+const IncomeDetail = (props) => {
+    const { month } = props;
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
@@ -225,7 +226,7 @@ const IncomeDetail = () => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(new Date).format("YYYY/MM")}`);
+        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(month).format("YYYY/MM")}`);
 
         const unsubscribe = onValue(documentRef, (snapshot) => {
             const documentData = snapshot.val();
@@ -239,10 +240,10 @@ const IncomeDetail = () => {
         });
 
         return () => unsubscribe();
-    }, [firebaseDB, companyId]);
+    }, [firebaseDB, companyId, month]);
 
     const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(new Date).format("YYYY/MM")}`);
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(month).format("YYYY/MM")}`);
 
         const invalidMessages = [];
 
@@ -299,7 +300,7 @@ const IncomeDetail = () => {
     };
 
     const handleCancel = () => {
-        const incomeRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(new Date).format("YYYY/MM")}`);
+        const incomeRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(month).format("YYYY/MM")}`);
 
         onValue(incomeRef, (snapshot) => {
             const incomeData = snapshot.val() || [];
@@ -311,12 +312,6 @@ const IncomeDetail = () => {
     return (
         <React.Fragment>
             <Grid container spacing={2}>
-                <Grid item size={12}>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>รายได้</Typography>
-                </Grid>
-                <Grid item size={12}>
-                    <Divider sx={{ marginTop: -1 }} />
-                </Grid>
                 <Grid item size={editIncome ? 12 : 11}>
                     {
                         editIncome ?

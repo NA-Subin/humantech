@@ -23,10 +23,11 @@ import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import theme from "../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
-import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
+import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany, IconButtonError } from "../../../theme/style"
 import { HTTP } from "../../../server/axios";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -34,6 +35,9 @@ import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import dayjs from "dayjs";
 import { database } from "../../../server/firebase";
+import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import ThaiDateSelector from "../../../theme/ThaiDateSelector";
+import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
 
 const InternshipDetail = (props) => {
     const { menu, data } = props;
@@ -42,6 +46,9 @@ const InternshipDetail = (props) => {
     const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
     const [thailand, setThailand] = useState([]);
+    const [openDetail, setOpenDetail] = useState({});
+    const [hoveredEmployeename, setHoveredEmployeename] = useState(null);
+
     useEffect(() => {
         if (!database) return;
 
@@ -108,7 +115,7 @@ const InternshipDetail = (props) => {
 
     const internshipColumns = [
         { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: "10%" },
-        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true, width: "10%" },
+        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
         { label: "วันที่", key: "dateStart", type: "date" },
         { label: "จนถึง", key: "dateEnd", type: "date" },
         { label: "บริษัท", key: "company", type: "text" },
@@ -318,20 +325,20 @@ const InternshipDetail = (props) => {
                                     <TableHead>
                                         <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                             <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อ</TablecellHeader>
-                                            <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader>วันที่เริ่มต้น</TablecellHeader>
-                                            <TablecellHeader>จนถึงวันที่</TablecellHeader>
-                                            <TablecellHeader>ชื่อบริษัท</TablecellHeader>
-                                            <TablecellHeader>ตำบล</TablecellHeader>
-                                            <TablecellHeader>อำเภอ</TablecellHeader>
-                                            <TablecellHeader>จังหวัด</TablecellHeader>
-                                            <TablecellHeader>รหัสไปรณีย์</TablecellHeader>
-                                            <TablecellHeader>ตำแหน่งงาน</TablecellHeader>
-                                            <TablecellHeader>ประเภทงาน</TablecellHeader>
-                                            <TablecellHeader>ระดับ</TablecellHeader>
-                                            <TablecellHeader>เงินเดือน</TablecellHeader>
-                                            <TablecellHeader>รายละเอียดเพิ่มเติม</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 300 }}>ชื่อ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 200 }}>ตำแหน่ง</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 100 }}>วันที่เริ่มต้น</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 100 }}>จนถึงวันที่</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 250 }}>ชื่อบริษัท</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 150 }}>ตำบล</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 150 }}>อำเภอ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 150 }}>จังหวัด</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 150 }}>รหัสไปรณีย์</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 150 }}>ตำแหน่งงาน</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 150 }}>ประเภทงาน</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 100 }}>ระดับ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 150 }}>เงินเดือน</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 200 }}>รายละเอียดเพิ่มเติม</TablecellHeader>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -342,22 +349,31 @@ const InternshipDetail = (props) => {
                                                 </TableRow>
                                                 :
                                                 internship.map((row, index) => (
-                                                    <TableRow>
-                                                        <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.dateStart}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.dateEnd}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.company}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.tambon.split("-")[1]}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.amphure.split("-")[1]}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.province.split("-")[1]}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.zipCode}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.positionIntern}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.positionType}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.level}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.salary}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.note}</TableCell>
+                                                    <TableRow
+                                                        key={index}
+                                                        onClick={() => setOpenDetail(row)}
+                                                        onMouseEnter={() => setHoveredEmployeename(row.employname)}
+                                                        onMouseLeave={() => setHoveredEmployeename(null)}
+                                                        sx={{
+                                                            cursor: hoveredEmployeename === row.employname ? 'pointer' : 'default',
+                                                            backgroundColor: hoveredEmployeename === row.employname ? theme.palette.primary.light : 'inherit',
+                                                        }}
+                                                    >
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{index + 1}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.employname}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.position}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.dateStart}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.dateEnd}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.company}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.tambon.split("-")[1]}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.amphure.split("-")[1]}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.province.split("-")[1]}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.zipCode}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.positionIntern}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.positionType}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.level}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.salary}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.note}</TableCell>
                                                     </TableRow>
                                                 ))}
                                     </TableBody>
@@ -397,7 +413,203 @@ const InternshipDetail = (props) => {
                     <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                 </Box>
             }
-        </Box>
+
+            {
+                openDetail?.employname && (
+                    <Dialog
+                        open
+                        onClose={() => setOpenDetail({})}
+                        PaperProps={{
+                            sx: {
+                                borderRadius: 4, // ค่าตรงนี้คือความมน ยิ่งมากยิ่งมน (ค่า default คือ 1 หรือ 4px)
+                                width: "600px",
+                                height: "90vh", // <<< เท่ากับ Dialog หลัก
+                                position: "absolute",
+                            },
+                        }}
+                    >
+                        <DialogTitle
+                            sx={{
+                                textAlign: "center",
+                                fontWeight: "bold"
+                            }}
+                        >
+                            <Grid container spacing={2}>
+                                <Grid item size={10}>
+                                    <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลทั่วไป</Typography>
+                                </Grid>
+                                <Grid item size={2} sx={{ textAlign: "right" }}>
+                                    <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpenDetail({})}>
+                                        <CloseIcon />
+                                    </IconButtonError>
+                                </Grid>
+                            </Grid>
+                            <Divider sx={{ marginTop: 2, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                        </DialogTitle>
+                        <DialogContent
+                            sx={{
+                                position: "relative",
+                                overflow: "hidden",
+                                overflowY: 'auto',
+                                height: "300px", // หรือความสูง fixed ที่คุณใช้
+                            }}
+                        >
+                            <Grid container spacing={2} marginTop={2}>
+                                <Grid item size={3}>
+                                    <Typography variant="subtitle2" fontWeight="bold">ชื่อเล่น</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={
+                                            openDetail?.employname?.includes("(")
+                                                ? openDetail.employname.split(" (")[1].replace(")", "")
+                                                : ""
+                                        }
+                                        disabled
+                                    />
+                                </Grid>
+
+                                <Grid item size={4.5}>
+                                    <Typography variant="subtitle2" fontWeight="bold">ชื่อ</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={
+                                            openDetail?.employname?.split(" (")[0] || ""
+                                        }
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={4.5}>
+                                    <Typography variant="subtitle2" fontWeight="bold">ตำแหน่ง</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.position}
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <ThaiDateSelector
+                                        label="เริ่มตั้งแต่วันที่"
+                                        value={toDateObject(openDetail?.dateStart)}
+                                        disabled
+                                    //onChange={(val) => setDateStart(val)}
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <ThaiDateSelector
+                                        label="จนถึงวันที่"
+                                        value={toDateObject(openDetail?.dateEnd)}
+                                        disabled
+                                    //onChange={(val) => setDateEnd(val)}
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >ชื่อบริษัท</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.company}
+                                        disabled
+                                    // onChange={(e) => setInternshipCompany(e.target.value)}
+                                    // placeholder="กรุณากรอกชื่อบริษัท"
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >ที่อยู่</Typography>
+                                    <TextField
+                                        type="text"
+                                        size="small"
+                                        multiline
+                                        rows={3}
+                                        fullWidth
+                                        placeholder="กรุณากรอกที่อยู่"
+                                        disabled
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <ThaiAddressSelector
+                                        label="ที่อยู่ปัจจุบัน"
+                                        thailand={thailand}
+                                        value={openDetail}
+                                        disabled
+                                    // placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
+                                    // onChange={(val) => setInternshipAddress(val)}
+                                    />
+                                </Grid>
+                                <Grid item size={6}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >ตำแหน่งงาน</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.position}
+                                        disabled
+                                    // onChange={(e) => setInternshipPosition(e.target.value)}
+                                    // placeholder="กรุณากรอกตำแหน่งงาน"
+                                    />
+                                </Grid>
+                                <Grid item size={6}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >ประเภทงาน</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.positionType}
+                                        disabled
+                                    // onChange={(e) => setInternshipTypeP(e.target.value)}
+                                    // placeholder="กรุณากรอกประเภทงาน"
+                                    />
+                                </Grid>
+                                <Grid item size={6}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >ระดับ</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.level}
+                                        disabled
+                                    // onChange={(e) => setInternshipLevel(e.target.value)}
+                                    // placeholder="กรุณากรอกระดับ"
+                                    />
+                                </Grid>
+                                <Grid item size={6}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >เงินเดือน</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        value={openDetail?.salary}
+                                        disabled
+                                    // onChange={(e) => setInternshipSalary(e.target.value)}
+                                    // placeholder="กรุณากรอกเงินเดือน"
+                                    />
+                                </Grid>
+                                <Grid item size={12}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >รายละเอียด</Typography>
+                                    <TextField
+                                        type="text"
+                                        size="small"
+                                        value={openDetail?.note}
+                                        // onChange={(e) => setInternshipNote(e.target.value)}
+                                        multiline
+                                        rows={3}
+                                        fullWidth
+                                        placeholder="กรุณากรอกรายละเอียด"
+                                        disabled
+                                    />
+                                </Grid>
+                            </Grid>
+                        </DialogContent>
+                        {/* <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
+                            <Button variant="contained" color="error" onClick={() => setOpenDetail({})}>
+                                ยกเลิก
+                            </Button>
+                            <Button variant="contained" color="success" onClick={() => setOpenDetail({})}>
+                                บันทึก
+                            </Button>
+                        </DialogActions> */}
+                    </Dialog>
+                )
+            }
+        </Box >
     )
 }
 

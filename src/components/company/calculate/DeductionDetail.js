@@ -39,7 +39,8 @@ import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../theme/SearchEmployee";
 import dayjs from "dayjs";
 
-const DeductionDetail = () => {
+const DeductionDetail = (props) => {
+    const { month } = props;
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
@@ -144,7 +145,7 @@ const DeductionDetail = () => {
         { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
         ...deductionActive.map(inc => ({
             label: inc.name,
-            key: `income${inc.ID}`,
+            key: `deduction${inc.ID}`,
             type: "text"
         }))
     ];
@@ -225,7 +226,7 @@ const DeductionDetail = () => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(new Date).format("YYYY/MM")}`);
+        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(month).format("YYYY/MM")}`);
 
         const unsubscribe = onValue(documentRef, (snapshot) => {
             const documentData = snapshot.val();
@@ -239,39 +240,39 @@ const DeductionDetail = () => {
         });
 
         return () => unsubscribe();
-    }, [firebaseDB, companyId]);
+    }, [firebaseDB, companyId, month]);
 
     const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(new Date).format("YYYY/MM")}`);
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(month).format("YYYY/MM")}`);
 
         const invalidMessages = [];
 
         // ตรวจสอบ deductionRows (ที่กรอกจากตาราง)
-        deductionRows.forEach((row, rowIndex) => {
-            DeductionColumns.forEach((col) => {
-                const value = row[col.key];
+        // deductionRows.forEach((row, rowIndex) => {
+        //     DeductionColumns.forEach((col) => {
+        //         const value = row[col.key];
 
-                if (col.disabled) return; // ข้าม column ที่ disabled เช่น ชื่อ, ตำแหน่ง
+        //         if (col.disabled) return; // ข้าม column ที่ disabled เช่น ชื่อ, ตำแหน่ง
 
-                if (value === "" || value === undefined) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
-                    return;
-                }
+        //         if (value === "" || value === undefined) {
+        //             invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
+        //             return;
+        //         }
 
-                if (col.type === "number" && isNaN(Number(value))) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
-                    return;
-                }
+        //         if (col.type === "number" && isNaN(Number(value))) {
+        //             invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
+        //             return;
+        //         }
 
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
-            });
-        });
+        //         if (
+        //             col.type === "select" &&
+        //             !col.options?.some(opt => opt.value === value)
+        //         ) {
+        //             invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
+        //             return;
+        //         }
+        //     });
+        // });
 
         // ตรวจสอบซ้ำเฉพาะ field ที่ต้องการ เช่น employname หรือ deptname
         const names = deductionRows.map(row => row.employname?.trim()).filter(Boolean);
@@ -299,11 +300,11 @@ const DeductionDetail = () => {
     };
 
     const handleCancel = () => {
-        const incomeRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(new Date).format("YYYY/MM")}`);
+        const deductionRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(month).format("YYYY/MM")}`);
 
-        onValue(incomeRef, (snapshot) => {
-            const incomeData = snapshot.val() || [];
-            setDocument(incomeData);
+        onValue(deductionRef, (snapshot) => {
+            const deductionData = snapshot.val() || [];
+            setDocument(deductionData);
             setEditDeduction(false);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
@@ -311,12 +312,6 @@ const DeductionDetail = () => {
     return (
         <React.Fragment>
             <Grid container spacing={2}>
-                <Grid item size={12}>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>รายได้</Typography>
-                </Grid>
-                <Grid item size={12}>
-                    <Divider sx={{ marginTop: -1 }} />
-                </Grid>
                 <Grid item size={editDeduction ? 12 : 11}>
                     {
                         editDeduction ?

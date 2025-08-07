@@ -23,16 +23,21 @@ import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import theme from "../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
-import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
+import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany, IconButtonError } from "../../../theme/style"
 import { HTTP } from "../../../server/axios";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import dayjs from "dayjs";
+import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import { database } from "../../../server/firebase";
+import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
+import ThaiDateSelector from "../../../theme/ThaiDateSelector";
 
 const TrainingDetail = (props) => {
     const { menu, data } = props;
@@ -42,9 +47,12 @@ const TrainingDetail = (props) => {
     const companyId = companyName?.split(":")[0];
 
     const [edit, setEdit] = useState("");
-
+    const [openDetail, setOpenDetail] = useState("");
+    const [thailand, setThailand] = useState([]);
+    const [hoveredEmployeename, setHoveredEmployeename] = useState(null);
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
+
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
     const toDateString = (dateObj) => {
@@ -66,6 +74,25 @@ const TrainingDetail = (props) => {
             year: String(date.year() + 543),
         };
     };
+
+    useEffect(() => {
+        if (!database) return;
+
+        const thailandRef = ref(database, `thailand`);
+
+        const unsubscribe = onValue(thailandRef, (snapshot) => {
+            const thailandData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!thailandData) {
+                setThailand([{ ID: 0, name: '', employeenumber: '' }]);
+            } else {
+                setThailand(thailandData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [database]);
 
     const trainingRows = [];
 
@@ -133,32 +160,57 @@ const TrainingDetail = (props) => {
     const handleTraningChange = (updatedList) => {
         const empTrainingMap = {};
 
+        console.log("updatedList : ", updatedList);
+
         updatedList.forEach(row => {
-            const name = row.employname;
-            if (!empTrainingMap[name]) {
-                empTrainingMap[name] = [];
+            // แยกชื่อและชื่อเล่นจาก row.employname
+            const match = row.employname.match(/^(.*) \((.*)\)$/); // แยก "ชื่อ (ชื่อเล่น)"
+            if (!match) return;
+
+            const fullName = match[1].trim();     // เช่น "นราวิชญ์ สุบินนาม"
+            const nickname = match[2].trim();     // เช่น "อาร์ม"
+
+            const matchedEmp = employees.find(emp => {
+                return emp.employname.trim() === fullName && emp.nickname.trim() === nickname;
+            });
+
+            if (!matchedEmp) return; // ไม่เจอข้ามไปเลย
+
+            const key = `${matchedEmp.employname} (${matchedEmp.nickname})`;
+
+            console.log("1.key : ", key);
+            console.log("dateStart : ", row.dateStart);
+
+            if (!empTrainingMap[key]) {
+                empTrainingMap[key] = [];
             }
 
-            const institution = (row.institution || '').trim();
-            if (institution && institution !== '-') {
-                empTrainingMap[name].push({
-                    course: (row.course || '').trim(),
+            if (row.employname && row.employname !== '-') {
+                empTrainingMap[key].push({
+                    course: row.course,
                     dateStart: row.dateStart ? toDateObject(row.dateStart) : { day: '', month: '', year: '' },
                     dateEnd: row.dateEnd ? toDateObject(row.dateEnd) : { day: '', month: '', year: '' },
                     file: row.file || null,
-                    fileType: row.fileType, // ทำให้แน่ใจว่าเป็น boolean
-                    institution,
+                    fileType: row.fileType,
+                    institution: row.institution,
                 });
             }
         });
 
-        const merged = employees.map(emp => ({
-            ...emp,
-            trainingList: empTrainingMap[`${emp.employname} (${emp.nickname})`] || [],
-        }));
+        const merged = employees.map(emp => {
+            const key = `${emp.employname} (${emp.nickname})`;
+            console.log("2.key : ", key);
+            return {
+                ...emp,
+                trainingList: empTrainingMap[key] || [],
+            };
+        });
+
+        console.log("empTrainingMap : ", empTrainingMap);
 
         setEmployees(merged);
     };
+
 
     console.log("trainingRows : ", trainingRows);
 
@@ -299,18 +351,26 @@ const TrainingDetail = (props) => {
                                                 </TableRow>
                                                 :
                                                 trainingRows.map((row, index) => (
-                                                    <TableRow>
+                                                    <TableRow
+                                                        onClick={() => row.isFirst && setOpenDetail(row)}
+                                                        onMouseEnter={() => setHoveredEmployeename(row.employname)}
+                                                        onMouseLeave={() => setHoveredEmployeename(null)}
+                                                        sx={{
+                                                            cursor: hoveredEmployeename === row.employname ? 'pointer' : 'default',
+                                                            backgroundColor: hoveredEmployeename === row.employname ? theme.palette.primary.light : 'inherit',
+                                                        }}
+                                                    >
                                                         {row.isFirst && (
                                                             <>
-                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center" }}>{row.position}</TableCell>
+                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{index + 1}</TableCell>
+                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.employname}</TableCell>
+                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.position}</TableCell>
                                                             </>
                                                         )}
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.dateStart}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.dateEnd}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.institution}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.course}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.dateStart}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.dateEnd}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.institution}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.course}</TableCell>
                                                         {
                                                             row.fileType === "pdf" ?
                                                                 (
@@ -374,6 +434,161 @@ const TrainingDetail = (props) => {
                     <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                 </Box>
             }
+
+            {openDetail?.employname && openDetail?.isFirst && (
+                <Dialog
+                    open={true}
+                    onClose={() => setOpenDetail({})}
+                    PaperProps={{
+                        sx: {
+                            borderRadius: 4,
+                            width: "600px",
+                            height: "90vh",
+                            position: "absolute",
+                        },
+                    }}
+                >
+                    <DialogTitle sx={{ textAlign: "center", fontWeight: "bold" }}>
+                        <Grid container spacing={2}>
+                            <Grid item size={10}>
+                                <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลการฝึกอบรม</Typography>
+                            </Grid>
+                            <Grid item size={2} sx={{ textAlign: "right" }}>
+                                <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpenDetail({})}>
+                                    <CloseIcon />
+                                </IconButtonError>
+                            </Grid>
+                        </Grid>
+                        <Divider sx={{ marginTop: 2, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                    </DialogTitle>
+
+                    <DialogContent
+                        sx={{
+                            position: "relative",
+                            overflow: "hidden",
+                            overflowY: 'auto',
+                            height: "300px",
+                        }}
+                    >
+                        <Grid container spacing={2} marginTop={2}>
+                            <Grid item size={3}>
+                                <Typography variant="subtitle2" fontWeight="bold">ชื่อเล่น</Typography>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={
+                                        openDetail?.employname?.includes("(")
+                                            ? openDetail.employname.split(" (")[1].replace(")", "")
+                                            : ""
+                                    }
+                                    disabled
+                                />
+                            </Grid>
+
+                            <Grid item size={4.5}>
+                                <Typography variant="subtitle2" fontWeight="bold">ชื่อ</Typography>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={
+                                        openDetail?.employname?.split(" (")[0] || ""
+                                    }
+                                    disabled
+                                />
+                            </Grid>
+
+                            <Grid item size={4.5}>
+                                <Typography variant="subtitle2" fontWeight="bold">ตำแหน่ง</Typography>
+                                <TextField
+                                    fullWidth
+                                    size="small"
+                                    value={openDetail?.position}
+                                    disabled
+                                />
+                            </Grid>
+
+                            <Grid item size={12}>
+                                <Divider sx={{ marginTop: 1 }} />
+                            </Grid>
+
+                            {/* ดึงเฉพาะ row education ของคนนี้ทั้งหมด */}
+                            {trainingRows
+                                .filter((row) => row.employname === openDetail.employname)
+                                .map((row, idx) => (
+                                    <React.Fragment key={idx}>
+                                        <Grid item size={10}>
+                                            <Typography variant="subtitle1" color="warning.main" fontWeight="bold">
+                                                ลำดับที่ {idx + 1}
+                                            </Typography>
+                                        </Grid>
+                                        <Grid item size={2} textAlign="right">
+                                            {trainingRows.length > 1 && (
+                                                <Button
+                                                    variant="outlined"
+                                                    size="small"
+                                                    color="error"
+                                                //onClick={() => handleRemove(index)}
+                                                >
+                                                    ลบ
+                                                </Button>
+                                            )}
+                                        </Grid>
+
+                                        <Grid item size={12}>
+                                            <ThaiDateSelector
+                                                label="เริ่มตั้งแต่วันที่"
+                                                value={toDateObject(row.dateStart)}
+                                                disabled
+                                            // onChange={(val) =>
+                                            //     handleTrainingChange(index, "dateStart", val)
+                                            // }
+                                            />
+                                        </Grid>
+                                        <Grid item size={12}>
+                                            <ThaiDateSelector
+                                                label="จนถึง"
+                                                value={toDateObject(row.dateEnd)}
+                                                disabled
+                                            // onChange={(val) =>
+                                            //     handleTrainingChange(index, "dateEnd", val)
+                                            // }
+                                            />
+                                        </Grid>
+                                        <Grid item size={12}>
+                                            <Typography variant="subtitle2" fontWeight="bold" >สถาบัน</Typography>
+                                            <TextField
+                                                fullWidth
+                                                size="small"
+                                                value={row.institution}
+                                                disabled
+                                                // onChange={(e) =>
+                                                //     handleTrainingChange(index, "institution", e.target.value)
+                                                // }
+                                                placeholder="กรุณากรอกชื่อสถาบัน"
+                                            />
+                                        </Grid>
+                                        <Grid item size={12}>
+                                            <Typography variant="subtitle2" fontWeight="bold" >หลักสูตร</Typography>
+                                            <TextField
+                                                fullWidth
+                                                size="small"
+                                                value={row.course}
+                                                disabled
+                                                // onChange={(e) =>
+                                                //     handleTrainingChange(index, "course", e.target.value)
+                                                // }
+                                                placeholder="กรุณากรอกหลักสูตร"
+                                            />
+                                        </Grid>
+                                        <Grid item size={12}>
+                                            <Divider sx={{ marginTop: 1 }} />
+                                        </Grid>
+                                    </React.Fragment>
+                                ))}
+                        </Grid>
+                    </DialogContent>
+                </Dialog>
+            )}
         </Box>
     )
 }

@@ -97,9 +97,9 @@ const CalculateSalary = () => {
             case 'ยื่นเอกสาร':
                 return <DocumentDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'รายได้':
-                return <IncomeDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
+                return <IncomeDetail data={key} month={selectedDate} />;
             case 'รายจ่าย':
-                return <DeductionDetails data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
+                return <DeductionDetails data={key} month={selectedDate} />;
             case 'ตรวจสอบเงินเดือน':
                 return <SalaryDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'ปิดงบบัญชี':
@@ -320,20 +320,23 @@ const CalculateSalary = () => {
                         <Typography variant="subtitle1" fontWeight="bold" gutterBottom>{menu.split("-")[1]}</Typography>
                         <Divider sx={{ marginTop: 1, marginBottom: 2 }} />
                         <Box>
-                            <SelectEmployeeGroup
-                                department={department}
-                                setDepartment={setDepartment}
-                                departments={departments}
-                                section={section}
-                                setSection={setSection}
-                                sections={sections}
-                                position={position}
-                                setPosition={setPosition}
-                                positions={positions}
-                                employee={employee}
-                                setEmployee={setEmployee}
-                                employees={employees}
-                            />
+                            {!["2-รายได้", "3-รายจ่าย"].includes(menu) && (
+                                <SelectEmployeeGroup
+                                    department={department}
+                                    setDepartment={setDepartment}
+                                    departments={departments}
+                                    section={section}
+                                    setSection={setSection}
+                                    sections={sections}
+                                    position={position}
+                                    setPosition={setPosition}
+                                    positions={positions}
+                                    employee={employee}
+                                    setEmployee={setEmployee}
+                                    employees={employees}
+                                />
+                            )}
+
                             <Box sx={{ marginTop: 2 }}>
                                 {renderComponentByMenu(menu)}
                             </Box>

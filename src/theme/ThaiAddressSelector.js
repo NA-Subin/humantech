@@ -6,7 +6,8 @@ export default function ThaiAddressSelector({
   thailand = [],
   label = "",
   value = { province: "", amphure: "", tambon: "" },
-  onChange
+  onChange,
+  disabled
 }) {
   const [province, setProvince] = useState(value.province || "");
   const [amphure, setAmphure] = useState(value.amphure || "");
@@ -56,6 +57,7 @@ export default function ThaiAddressSelector({
             setTambon("");
           }}
           SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+          disabled={disabled}
         >
           {thailand
             .sort((a, b) => a.name_th.localeCompare(b.name_th, 'th')) // เรียงตามภาษาไทย
@@ -77,6 +79,7 @@ export default function ThaiAddressSelector({
             setTambon("");
           }}
           SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+          disabled={disabled}
         >
           {amphureList
           .sort((a, b) => a.name_th.localeCompare(b.name_th, 'th')) // เรียงตามภาษาไทย
@@ -95,6 +98,7 @@ export default function ThaiAddressSelector({
           value={tambon}
           onChange={(e) => setTambon(e.target.value)}
           SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+          disabled={disabled}
         >
           {tambonList
           .sort((a, b) => a.name_th.localeCompare(b.name_th, 'th')) // เรียงตามภาษาไทย

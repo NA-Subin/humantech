@@ -1126,14 +1126,14 @@ const Employee = () => {
                                                 </Grid>
                                             </Grid>
                                         </DialogContent>
-                                        <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
+                                        {/* <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
                                             <Button variant="contained" color="error" onClick={() => setOpenDetail({})}>
                                                 ยกเลิก
                                             </Button>
                                             <Button variant="contained" color="success" onClick={() => setOpenDetail({})}>
                                                 บันทึก
                                             </Button>
-                                        </DialogActions>
+                                        </DialogActions> */}
                                     </Dialog>
                                 ))
                             }
