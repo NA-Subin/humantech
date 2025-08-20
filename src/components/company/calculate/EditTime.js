@@ -52,7 +52,7 @@ dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.fo
 dayjs.extend(isSameOrBefore);
 
 const EditTimeDetail = (props) => {
-    const { department, section, position, employee, month } = props;
+    const { department, section, position, employee, month, onReturn } = props;
     console.log("Search : ", department, section, position, employee);
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
@@ -306,25 +306,6 @@ const EditTimeDetail = (props) => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
-
-        const unsubscribe = onValue(employeeRef, (snapshot) => {
-            const employeeData = snapshot.val();
-
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!employeeData) {
-                setEmployees([{ ID: 0, name: '' }]);
-            } else {
-                setEmployees(employeeData);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
-
-    useEffect(() => {
-        if (!firebaseDB || !companyId) return;
-
         const holidayRef = ref(firebaseDB, `workgroup/company/${companyId}/holiday`);
 
         const unsubscribe = onValue(holidayRef, (snapshot) => {
@@ -383,6 +364,15 @@ const EditTimeDetail = (props) => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
+    const handleChange = (value) => {
+        setDay(value);
+        onReturn?.(value === 1 ? "จัดการข้อมูลวันทำงานไม่มาทำงาน"
+            : value === 2 ? "จัดการข้อมูลลงเวลาไม่ครบคู่"
+                : value === 3 ? "จัดการข้อมูลสาย"
+                    : value === 4 ? "จัดการข้อมูลกลับก่อน"
+                        : ""); // 👈 ส่งค่าออกไปหาพ่อ
+    };
+
     return (
         <React.Fragment>
             <Box sx={{ marginTop: 5, width: "1080px" }}>
@@ -399,22 +389,22 @@ const EditTimeDetail = (props) => {
                         // }}
                         >
                             {/* <FormControlLabel control={<Checkbox defaultChecked />} label="ทั้งหมด" /> */}
-                            <FormControlLabel control={<Checkbox checked={day === 1} onClick={() => setDay(1)} />} label="วันทำงาน/ไม่มาทำงาน" />
-                            <FormControlLabel control={<Checkbox checked={day === 2} onClick={() => setDay(2)} />} label="ลงเวลาไม่ครบคู่" />
-                            <FormControlLabel control={<Checkbox checked={day === 3} onClick={() => setDay(3)} />} label="สาย" />
-                            <FormControlLabel control={<Checkbox checked={day === 4} onClick={() => setDay(4)} />} label="กลับก่อน" />
-                            <FormControlLabel control={<Checkbox checked={day === 6} onClick={() => setDay(5)} />} label="โอที" />
-                            <FormControlLabel control={<Checkbox checked={day === 7} onClick={() => setDay(6)} />} label="ลางาน" />
-                            <FormControlLabel control={<Checkbox checked={day === 8} onClick={() => setDay(7)} />} label="ทำงานในวันหยุด" />
+                            <FormControlLabel control={<Checkbox checked={day === 1} onClick={() => handleChange(1)} />} label="วันทำงานไม่มาทำงาน" />
+                            <FormControlLabel control={<Checkbox checked={day === 2} onClick={() => handleChange(2)} />} label="ลงเวลาไม่ครบคู่" />
+                            <FormControlLabel control={<Checkbox checked={day === 3} onClick={() => handleChange(3)} />} label="สาย" />
+                            <FormControlLabel control={<Checkbox checked={day === 4} onClick={() => handleChange(4)} />} label="กลับก่อน" />
+                            {/* <FormControlLabel control={<Checkbox checked={day === 5} onClick={() => handleChange(5)} />} label="โอที" />
+                            <FormControlLabel control={<Checkbox checked={day === 6} onClick={() => handleChange(6)} />} label="ลางาน" />
+                            <FormControlLabel control={<Checkbox checked={day === 7} onClick={() => handleChange(7)} />} label="ทำงานในวันหยุด" /> */}
                         </FormGroup>
                     </Grid>
-                    <Grid item size={12}>
-                        <Divider sx={{ marginTop: 1 }} />
+                    {/* <Grid item size={12}>
+                        <Divider sx={{ marginTop: -1 }} />
                     </Grid>
                     <Grid item size={12}>
                         <Typography variant="subtitle1" fontWeight="bold" sx={{ marginBottom: -1 }} gutterBottom>
                             {
-                                day === 1 ? "จัดการข้อมูลวันทำงาน/ไม่มาทำงาน"
+                                day === 1 ? "จัดการข้อมูลวันทำงานไม่มาทำงาน"
                                     : day === 2 ? "จัดการข้อมูลลงเวลาไม่ครบคู่"
                                         : day === 3 ? "จัดการข้อมูลสาย"
                                             : day === 4 ? "จัดการข้อมูลกลับก่อน"
@@ -424,16 +414,16 @@ const EditTimeDetail = (props) => {
                                                             : ""
                             }
                         </Typography>
-                    </Grid>
+                    </Grid> */}
                     {
                         day === 1 ? <MissingWorkDetail dateArray={dateArrayMap} month={month} />
                             : day === 2 ? <IncomepleteTime dateArray={dateArrayMap} month={month} />
                                 : day === 3 ? <LateDetail dateArray={dateArrayMap} month={month} />
                                     : day === 4 ? <LeaveEarly dateArray={dateArrayMap} month={month} />
-                                        : day === 5 ? <OTDetail dateArray={dateArrayMap} month={month} />
-                                            : day === 6 ? <LeaveDetail dateArray={dateArrayMap} month={month} />
-                                                : day === 7 ? <DayOffDetail dateArray={dateArrayMap} month={month} />
-                                                    : ""
+                                        // : day === 5 ? <OTDetail dateArray={dateArrayMap} month={month} />
+                                        //     : day === 6 ? <LeaveDetail dateArray={dateArrayMap} month={month} />
+                                        //         : day === 7 ? <DayOffDetail dateArray={dateArrayMap} month={month} />
+                                        : ""
                     }
                 </Grid>
             </Box>

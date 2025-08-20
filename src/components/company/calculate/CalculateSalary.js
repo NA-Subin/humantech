@@ -67,8 +67,15 @@ const CalculateSalary = () => {
     const [position, setPosition] = useState("");
     const [employee, setEmployee] = useState("");
     const [menu, setMenu] = useState('0-แก้ไขเวลา');
+    const [open, setOpen] = useState("0-แก้ไขเวลา");
 
     const [selectedDate, setSelectedDate] = useState(dayjs()); // ✅ เป็น dayjs object
+
+    const handleChildData = (value) => {
+        console.log("ได้ค่าจากลูก:", value);
+        setOpen(value); // เปลี่ยนค่า open ตามที่ได้รับจากลูก
+        // คุณสามารถ setState หรือทำ logic ต่อได้
+    };
 
     const handleDateChangeDate = (newValue) => {
         if (newValue) {
@@ -93,9 +100,9 @@ const CalculateSalary = () => {
 
         switch (key) {
             case 'แก้ไขเวลา':
-                return <EditTimeDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
+                return <EditTimeDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} onReturn={handleChildData} />;
             case 'ยื่นเอกสาร':
-                return <DocumentDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
+                return <DocumentDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} onReturn={handleChildData} />;
             case 'รายได้':
                 return <IncomeDetail data={key} month={selectedDate} />;
             case 'รายจ่าย':
@@ -229,13 +236,15 @@ const CalculateSalary = () => {
 
     return (
         <Container maxWidth="xl" sx={{ p: 5 }}>
-            <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
+            <Box sx={{ flexGrow: 1, p: 5, marginTop: 2, marginBottom: -2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
                         <Typography variant="h5" fontWeight="bold" gutterBottom>คำนวณเงินเดือน (Calculate Salary)</Typography>
+                        <Divider sx={{ marginBottom: 0.5 }} />
+                        <Typography variant="h6" fontWeight="bold" gutterBottom>{menu.split("-")[1]}{open !== "" && ` / ${open}`}</Typography>
                     </Grid>
-                    <Grid item size={12} sx={{ display: "flex", alignItems: "center", justifyContent: "right", marginTop: -8 }}>
-                        <Paper sx={{ width: "20%" }}>
+                    <Grid item size={12} sx={{ display: "flex", alignItems: "center", justifyContent: "right" }}>
+                        <Paper sx={{ width: "20%", marginTop: -15 }}>
                             <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
                                 <DatePicker
                                     openTo="month"
@@ -270,9 +279,9 @@ const CalculateSalary = () => {
                             </LocalizationProvider>
                         </Paper>
                     </Grid>
-                    <Grid item size={12}>
+                    {/* <Grid item size={12}>
                         <Divider />
-                    </Grid>
+                    </Grid> */}
                 </Grid>
             </Box>
             <Grid container spacing={2}>
@@ -305,7 +314,11 @@ const CalculateSalary = () => {
                                         fontSize: "13px",
                                         marginLeft: isSelected && 1
                                     }}
-                                    onClick={() => setMenu(value)}
+                                    onClick={() => {
+                                        setMenu(value);
+                                        setOpen("");
+                                    }}
+
                                 >
                                     {text}
                                 </Button>
@@ -317,8 +330,8 @@ const CalculateSalary = () => {
                 </Grid>
                 <Grid item size={11}>
                     <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
-                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>{menu.split("-")[1]}</Typography>
-                        <Divider sx={{ marginTop: 1, marginBottom: 2 }} />
+                        {/* <Typography variant="subtitle1" fontWeight="bold" gutterBottom>{menu.split("-")[1]}</Typography>
+                        <Divider sx={{ marginTop: 1, marginBottom: 2 }} /> */}
                         <Box>
                             {!["2-รายได้", "3-รายจ่าย"].includes(menu) && (
                                 <SelectEmployeeGroup

@@ -37,14 +37,22 @@ import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../theme/SearchEmployee";
+import OTDetail from "./document/OT";
+import LeaveDetail from "./document/Leave";
+import AddTimeDetail from "./document/AddTime";
+import DayOffDetail from "./document/DayOff";
+import WorkShiftDetail from "./document/WorkShift";
+import dayjs from "dayjs";
 
-const DocumentDetal = () => {
+const DocumentDetal = (props) => {
+    const { department, section, position, employee, month, onReturn } = props;
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     //const { companyName } = useParams();
     const [editLeave, setEditLeave] = useState(false);
     const [companies, setCompanies] = useState([]);
+    const [holiday, setHoliday] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [leave, setLeave] = useState([{ ID: 0, name: '' }]);
     const columns = [
@@ -52,13 +60,13 @@ const DocumentDetal = () => {
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
-    const [department, setDepartment] = useState("");
-    const [section, setSection] = useState("");
-    const [position, setPosition] = useState("");
-    const [employee, setEmployee] = useState("");
+    const [dateArrayMap, setDateArrayMap] = useState([]);
+    const [dateArray, setDateArray] = useState([]);
     const [menu, setMenu] = useState('0-แก้ไขเวลา');
+    const [doc, setDoc] = useState("");
 
-    console.log("Menu : ", menu);
+    console.log("dateArrayMap : ", dateArrayMap);
+    console.log("dateArray : ", dateArray);
 
     // ทุกครั้งที่ department, section หรือ position เปลี่ยน จะ reset employee
 
@@ -67,85 +75,160 @@ const DocumentDetal = () => {
     const [positions, setPositions] = useState([]);
     const [employees, setEmployees] = useState([]);
 
+    console.log("employees : ", employees);
+
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
 
-    useEffect(() => {
-        if (!firebaseDB || !companyId) return;
+    const dayNameMap = {
+        Sunday: "อาทิตย์",
+        Monday: "จันทร์",
+        Tuesday: "อังคาร",
+        Wednesday: "พุธ",
+        Thursday: "พฤหัสบดี",
+        Friday: "ศุกร์",
+        Saturday: "เสาร์",
+    };
 
-        const departmentRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
+    const generateFilteredDatesFromHistories = (
+        employeeID,
+        attendant,
+        employeecode,
+        nickname,
+        employname,
+        department,
+        section,
+        position,
+        workshifthistories,
+        filterYear,
+        filterMonth,
+        holidaysInMonth = []
+    ) => {
+        if (!Array.isArray(workshifthistories)) return {
+            employeeID,
+            attendant,
+            nickname,
+            employeecode,
+            department,
+            section,
+            position,
+            employname,
+            dateHistory: []
+        };
 
-        const unsubscribe = onValue(departmentRef, (snapshot) => {
-            const departmentData = snapshot.val();
+        const parseYear = (y) => y === "now" ? dayjs().year() : parseInt(y) > 2500 ? parseInt(y) - 543 : parseInt(y);
+        const parseMonth = (m) => m === "now" ? dayjs().month() : parseInt(m) - 1;
+        const parseDay = (d) => d === "now" ? dayjs().date() : parseInt(d);
 
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!departmentData) {
-                setDepartments([{ ID: 0, name: '' }]);
-            } else {
-                setDepartments(departmentData);
+        const holidayDatesSet = new Set(holidaysInMonth.map(h => h.date)); // เช่น "28/07/2025"
+        const allDates = [];
+
+        workshifthistories.forEach((history) => {
+            const shiftHolidays = history.holiday?.map(h => h.name) || [];
+
+            const startYear = parseYear(history.YYYYstart);
+            const startMonth = parseMonth(history.MMstart);
+            const startDay = parseDay(history.DDstart);
+
+            const endYear = parseYear(history.YYYYend);
+            const endMonth = parseMonth(history.MMend);
+            const endDay = parseDay(history.DDend);
+
+            let current = dayjs().year(startYear).month(startMonth).date(startDay);
+            const end = dayjs().year(endYear).month(endMonth).date(endDay);
+
+            while (current.isSameOrBefore(end, 'day')) {
+                const currentDateStr = current.format("DD/MM/YYYY");
+                const dayName = dayNameMap[current.format("dddd")]; // ex: "Sunday" → "อาทิตย์"
+
+                let holidayType = null;
+
+                if (shiftHolidays.includes(dayName)) {
+                    holidayType = "shift"; // หยุดจาก workshift
+                } else if (holidayDatesSet.has(currentDateStr)) {
+                    holidayType = "global"; // หยุดจาก global holiday
+                }
+
+                if (holidayType && current.year() === filterYear && current.month() === filterMonth) {
+                    allDates.push({
+                        date: currentDateStr,
+                        workshift: history.workshift || null,
+                        start: history.start || null,
+                        stop: history.stop || null,
+                        dayName,
+                        holidayType
+                    });
+                }
+
+                current = current.add(1, 'day');
             }
         });
 
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
+        allDates.sort((a, b) => dayjs(a.date, "DD/MM/YYYY").unix() - dayjs(b.date, "DD/MM/YYYY").unix());
 
+        return {
+            employeeID,
+            attendant,
+            employeecode,
+            nickname,
+            employname,
+            department,
+            section,
+            position,
+            dateHistory: allDates
+        };
+    };
+
+    // ---------------- useEffect ตัวอย่าง
     useEffect(() => {
-        if (!firebaseDB || !companyId) return;
+        if (!employees || employees.length === 0 || !month) return;
 
-        const sectionRef = ref(firebaseDB, `workgroup/company/${companyId}/section`);
+        let filteredEmployees = employees;
 
-        const unsubscribe = onValue(sectionRef, (snapshot) => {
-            const sectionData = snapshot.val();
+        if (department) {
+            filteredEmployees = filteredEmployees.filter(e => e.department === department);
+        }
 
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!sectionData) {
-                setSections([{ ID: 0, name: '' }]);
-            } else {
-                setSections(sectionData);
-            }
-        });
+        if (section) {
+            filteredEmployees = filteredEmployees.filter(e => e.section === section);
+        }
 
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
+        if (position) {
+            filteredEmployees = filteredEmployees.filter(e => e.position === position);
+        }
 
-    useEffect(() => {
-        if (!firebaseDB || !companyId) return;
+        if (employee) {
+            const empId = Number(employee.split("-")[0]);
+            filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
+        }
 
-        const positionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+        const year = month.year();   // จาก dayjs, เช่น 2025
+        const m = month.month();     // จาก dayjs, 0-11
 
-        const unsubscribe = onValue(positionRef, (snapshot) => {
-            const positionData = snapshot.val();
+        const holidaysInMonth = holiday.filter(h =>
+            parseInt(h.YYYY) === year && parseInt(h.MM) === m + 1
+        );
 
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!positionData) {
-                setPositions([{ ID: 0, name: '' }]);
-            } else {
-                setPositions(positionData);
-            }
-        });
+        const mapped = filteredEmployees.map(e =>
+            generateFilteredDatesFromHistories(
+                e.ID,
+                e.attendant?.[year]?.[m + 1], // ใน attendant ใช้ 1-based เดือน
+                e.employeecode,
+                e.nickname,
+                e.employname,
+                e.department,
+                e.section,
+                e.position,
+                e.workshifthistory,
+                year,
+                m,
+                holidaysInMonth
+            )
+        );
 
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
-
-    useEffect(() => {
-        if (!firebaseDB || !companyId) return;
-
-        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
-
-        const unsubscribe = onValue(employeeRef, (snapshot) => {
-            const employeeData = snapshot.val();
-
-            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!employeeData) {
-                setEmployees([{ ID: 0, name: '' }]);
-            } else {
-                setEmployees(employeeData);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
-
+        console.log("Mapped Employee Dates (filtered):", mapped);
+        setDateArray(mapped);
+    }, [employees, department, section, position, employee, month, holiday]);
 
     useEffect(() => {
         if (!firebaseDB) return;
@@ -172,192 +255,125 @@ const DocumentDetal = () => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
+        const holidayRef = ref(firebaseDB, `workgroup/company/${companyId}/holiday`);
 
-        const unsubscribe = onValue(leaveRef, (snapshot) => {
-            const leaveData = snapshot.val();
+        const unsubscribe = onValue(holidayRef, (snapshot) => {
+            const holidaysData = snapshot.val();
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-            if (!leaveData) {
-                setLeave([{ ID: 0, name: '' }]);
+            if (!holidaysData) {
+                setHoliday([{ ID: 0, name: '' }]);
             } else {
-                setLeave(leaveData);
+                setHoliday(holidaysData);
             }
         });
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-    const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
 
-        const invalidMessages = [];
+        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
-        leave.forEach((row, rowIndex) => {
-            columns.forEach((col) => {
-                const value = row[col.key];
+        const unsubscribe = onValue(employeeRef, (snapshot) => {
+            const employeeData = snapshot.val();
 
-                if (value === "") {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
-                    return;
-                }
-
-                if (col.type === "number" && isNaN(Number(value))) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
-                    return;
-                }
-
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
-            });
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!employeeData) {
+                setEmployees([{ ID: 0, name: '' }]);
+            } else {
+                setEmployees(employeeData);
+            }
         });
 
-        // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        const names = leave.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
-        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
-        if (duplicates.length > 0) {
-            invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!employees || employees.length === 0 || !month) return;
+
+        let filteredEmployees = employees;
+
+        if (department) {
+            filteredEmployees = filteredEmployees.filter(e => e.department === department);
         }
 
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
-        if (invalidMessages.length > 0) {
-            ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
-            return;
+        if (section) {
+            filteredEmployees = filteredEmployees.filter(e => e.section === section);
         }
 
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, leave)
-            .then(() => {
-                ShowSuccess("บันทึกข้อมูลสำเร็จ");
-                console.log("บันทึกสำเร็จ");
-                setEditLeave(false);
-            })
-            .catch((error) => {
-                ShowError("เกิดข้อผิดพลาดในการบันทึก");
-                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
-            });
-    };
+        if (position) {
+            filteredEmployees = filteredEmployees.filter(e => e.position === position);
+        }
 
-    const handleCancel = () => {
-        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
+        if (employee) {
+            const empId = Number(employee.split("-")[0]);
+            filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
+        }
 
-        onValue(leaveRef, (snapshot) => {
-            const leaveData = snapshot.val() || [{ ID: 0, name: '' }];
-            setLeave(leaveData);
-            setEditLeave(false);
-        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
+        console.log("Filtered Employees:", filteredEmployees);
+        setDateArrayMap(filteredEmployees);
+    }, [employees, department, section, position, employee]);
+
+    const handleChange = (value) => {
+        setDoc(value);
+        onReturn?.(value === 1 ? "เอกสารโอที"
+            : value === 2 ? "เอกสารลางาน"
+                : value === 3 ? "เอกสารเพิ่มเวลา"
+                    : value === 4 ? "เอกสารวันหยุด"
+                        : value === 5 ? "เอกสารกะการทำงาน"
+                            : ""); // 👈 ส่งค่าออกไปหาพ่อ
     };
 
     return (
         <React.Fragment>
-            <Grid container spacing={2}>
-                <Grid item size={4}>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>เอกสารและการอนุมัติ</Typography>
-                </Grid>
-                <Grid item size={8}>
-                    <FormGroup
-                        row
-                        sx={{
-                            display: "flex",
-                            justifyContent: "flex-end",
-                        }}
-                    >
-                        {/* <FormControlLabel control={<Checkbox defaultChecked />} label="ทั้งหมด" /> */}
-                        <FormControlLabel control={<Checkbox checked/>} label="โอที" />
-                        <FormControlLabel control={<Checkbox checked/>} label="ลางาน" />
-                        <FormControlLabel control={<Checkbox checked/>} label="เพิ่มเวลา" />
-                        <FormControlLabel control={<Checkbox checked/>} label="วันหยุด" />
-                        <FormControlLabel control={<Checkbox checked/>} label="กะการทำงาน" />
-                    </FormGroup>
-                </Grid>
-                <Grid item size={12}>
-                    <Divider sx={{ marginTop: -1 }} />
-                </Grid>
-                <Grid item size={editLeave ? 12 : 11}>
+            <Box sx={{ marginTop: 5, width: "1080px" }}>
+                <Grid container spacing={2}>
+                    {/* <Grid item size={4}>
+                        <Typography variant="subtitle1" fontWeight="bold" sx={{ marginTop: 1 }} gutterBottom>
+                            {
+                                doc === 1 ? "เอกสารโอที"
+                                    : doc === 2 ? "เอกสารลางาน"
+                                        : doc === 3 ? "เอกสารเพิ่มเวลา"
+                                            : doc === 4 ? "เอกสารวันหยุด"
+                                                : doc === 5 ? "เอกสารกะการทำงาน"
+                                                    : ""
+                            }
+                        </Typography>
+                    </Grid> */}
+                    <Grid item size={12}>
+                        <FormGroup
+                            row
+                            sx={{
+                                marginTop: -5
+                            }}
+                        // sx={{
+                        //     display: "flex",
+                        //     justifyContent: "flex-end",
+                        // }}
+                        >
+                            {/* <FormControlLabel control={<Checkbox defaultChecked />} label="ทั้งหมด" /> */}
+                            <FormControlLabel control={<Checkbox checked={doc === 1} onClick={() => handleChange(1)} />} label="โอที" />
+                            <FormControlLabel control={<Checkbox checked={doc === 2} onClick={() => handleChange(2)} />} label="ลางาน" />
+                            <FormControlLabel control={<Checkbox checked={doc === 3} onClick={() => handleChange(3)} />} label="เพิ่มเวลา" />
+                            <FormControlLabel control={<Checkbox checked={doc === 4} onClick={() => handleChange(4)} />} label="วันหยุด" />
+                            <FormControlLabel control={<Checkbox checked={doc === 5} onClick={() => handleChange(5)} />} label="กะการทำงาน" />
+                        </FormGroup>
+                    </Grid>
+                    {/* <Grid item size={12}>
+                        <Divider sx={{ marginTop: -1 }} />
+                    </Grid> */}
                     {
-                        editLeave ?
-                            <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                                <TableExcel
-                                    columns={columns}
-                                    initialData={department}
-                                    onDataChange={setDepartment}
-                                />
-                            </Paper>
-                            :
-                            <TableContainer component={Paper} textAlign="center">
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อ</TablecellHeader>
-                                            <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader>ประเภท</TablecellHeader>
-                                            <TablecellHeader>รายละเอียด</TablecellHeader>
-                                            <TablecellHeader>สถานะ</TablecellHeader>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {employees
-                                            .filter(emp => {
-                                                if (!department) return false;
-                                                if (section === "" && position === "" && employee === "") {
-                                                    return emp.department === department;
-                                                }
-                                                if (section !== "" && position === "" && employee === "") {
-                                                    return emp.department === department && emp.section === section;
-                                                }
-                                                if (section !== "" && position !== "" && employee === "") {
-                                                    return emp.department === department && emp.section === section && emp.position === position;
-                                                }
-                                                return false;
-                                            })
-                                            .map((emp, index) => (
-                                                <TableRow key={emp.ID ?? index}>
-                                                    <TableCell align="center">{index + 1}</TableCell>
-                                                    <TableCell align="center">{emp.name}</TableCell>
-                                                    <TableCell align="center">{emp.position}</TableCell>
-                                                    <TableCell align="center">{emp.salary}</TableCell>
-                                                    <TableCell align="center">{emp.earningsDeductions}</TableCell>
-                                                    <TableCell align="center">{emp.tax}</TableCell>
-                                                    <TableCell align="center">{emp.socialSecurity}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                    </TableBody>
-
-                                </Table>
-                            </TableContainer>
+                        doc === 1 ? <OTDetail dateArray={dateArrayMap} month={month} />
+                            : doc === 2 ? <LeaveDetail dateArray={dateArrayMap} month={month} />
+                                : doc === 3 ? <AddTimeDetail dateArray={dateArrayMap} month={month} />
+                                    : doc === 4 ? <DayOffDetail dateArray={dateArray} month={month} />
+                                        : doc === 5 ? <WorkShiftDetail dateArray={dateArrayMap} month={month} />
+                                            : ""
                     }
                 </Grid>
-                {
-                    !editLeave &&
-                    <Grid item size={1} textAlign="right">
-                        <Box display="flex" justifyContent="center" alignItems="center">
-                            <Button
-                                variant="contained"
-                                size="small"
-                                color="warning"
-                                fullWidth
-                                sx={{
-                                    height: "60px",
-                                    flexDirection: "column",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    textTransform: "none",
-                                }}
-                                onClick={() => setEditLeave(true)}
-                            >
-                                <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
-                                แก้ไข
-                            </Button>
-                        </Box>
-                    </Grid>
-                }
-            </Grid>
+            </Box>
         </React.Fragment>
     )
 }
