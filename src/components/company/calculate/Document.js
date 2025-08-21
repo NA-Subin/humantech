@@ -60,6 +60,22 @@ const DocumentDetal = (props) => {
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth); // อัพเดตค่าขนาดหน้าจอ
+        };
+
+        window.addEventListener('resize', handleResize); // เพิ่ม event listener
+
+        // ลบ event listener เมื่อ component ถูกทำลาย
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
+    console.log("windowWidth : ", windowWidth);
+
     const [dateArrayMap, setDateArrayMap] = useState([]);
     const [dateArray, setDateArray] = useState([]);
     const [menu, setMenu] = useState('0-แก้ไขเวลา');
@@ -137,6 +153,31 @@ const DocumentDetal = (props) => {
             let current = dayjs().year(startYear).month(startMonth).date(startDay);
             const end = dayjs().year(endYear).month(endMonth).date(endDay);
 
+            // while (current.isSameOrBefore(end, 'day')) {
+            //     const currentDateStr = current.format("DD/MM/YYYY");
+            //     const dayName = dayNameMap[current.format("dddd")]; // ex: "Sunday" → "อาทิตย์"
+
+            //     let holidayType = null;
+
+            //     if (shiftHolidays.includes(dayName)) {
+            //         holidayType = "shift"; // หยุดจาก workshift
+            //     } else if (holidayDatesSet.has(currentDateStr)) {
+            //         holidayType = "global"; // หยุดจาก global holiday
+            //     }
+
+            //     if (holidayType && current.year() === filterYear && current.month() === filterMonth) {
+            //         allDates.push({
+            //             date: currentDateStr,
+            //             workshift: history.workshift || null,
+            //             start: history.start || null,
+            //             stop: history.stop || null,
+            //             dayName,
+            //             holidayType
+            //         });
+            //     }
+
+            //     current = current.add(1, 'day');
+            // }
             while (current.isSameOrBefore(end, 'day')) {
                 const currentDateStr = current.format("DD/MM/YYYY");
                 const dayName = dayNameMap[current.format("dddd")]; // ex: "Sunday" → "อาทิตย์"
@@ -149,19 +190,35 @@ const DocumentDetal = (props) => {
                     holidayType = "global"; // หยุดจาก global holiday
                 }
 
-                if (holidayType && current.year() === filterYear && current.month() === filterMonth) {
-                    allDates.push({
-                        date: currentDateStr,
-                        workshift: history.workshift || null,
-                        start: history.start || null,
-                        stop: history.stop || null,
-                        dayName,
-                        holidayType
-                    });
+                if (holidayType) {
+                    // เก็บวันหยุด
+                    if (current.year() === filterYear && current.month() === filterMonth) {
+                        allDates.push({
+                            date: currentDateStr,
+                            workshift: history.workshift || null,
+                            start: history.start || null,
+                            stop: history.stop || null,
+                            dayName,
+                            holidayType
+                        });
+                    }
+                } else {
+                    // เก็บวันทำงาน (workshift)
+                    if (current.year() === filterYear && current.month() === filterMonth) {
+                        allDates.push({
+                            date: currentDateStr,
+                            workshift: history.workshift || null,
+                            start: history.start || null,
+                            stop: history.stop || null,
+                            dayName,
+                            holidayType: "work" // 👈 เพิ่ม type ใหม่
+                        });
+                    }
                 }
 
                 current = current.add(1, 'day');
             }
+
         });
 
         allDates.sort((a, b) => dayjs(a.date, "DD/MM/YYYY").unix() - dayjs(b.date, "DD/MM/YYYY").unix());
@@ -328,7 +385,7 @@ const DocumentDetal = (props) => {
 
     return (
         <React.Fragment>
-            <Box sx={{ marginTop: 5, width: "1080px" }}>
+            <Box sx={{ marginTop: 5, width: `${windowWidth - 500}px` }}>
                 <Grid container spacing={2}>
                     {/* <Grid item size={4}>
                         <Typography variant="subtitle1" fontWeight="bold" sx={{ marginTop: 1 }} gutterBottom>

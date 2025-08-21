@@ -51,6 +51,20 @@ const IncomeDetail = (props) => {
     const [document, setDocument] = useState([])
     const [documents, setDocuments] = useState([])
 
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth); // อัพเดตค่าขนาดหน้าจอ
+        };
+
+        window.addEventListener('resize', handleResize); // เพิ่ม event listener
+
+        // ลบ event listener เมื่อ component ถูกทำลาย
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     console.log("DOCUMENT : ", document);
     console.log("DOCUMENTs : ", documents);
 
@@ -311,87 +325,89 @@ const IncomeDetail = (props) => {
 
     return (
         <React.Fragment>
-            <Grid container spacing={2}>
-                <Grid item size={editIncome ? 12 : 11}>
-                    {
-                        editIncome ?
-                            <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                                <TableExcel
-                                    styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                    stylesTable={{ width: "1080px" }} // ✅ ส่งเป็น object
-                                    columns={IncomesColumns}
-                                    initialData={IncomesRows}
-                                    onDataChange={handleIncomeChange}
-                                />
-                            </Paper>
-                            :
-                            <TableContainer component={Paper} textAlign="center">
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อ</TablecellHeader>
-                                            <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                            {
-                                                income.map((row, index) => (
-                                                    row.status === 1 &&
-                                                    <TablecellHeader>{row.name}</TablecellHeader>
-                                                ))
-                                            }
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {IncomesRows.map((row, index) => (
-                                            <TableRow key={row.employid}>
-                                                <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
-                                                {income
-                                                    .filter(inc => inc.status === 1)
-                                                    .map(inc => (
-                                                        <TableCell key={inc.ID} sx={{ textAlign: "center" }}>
-                                                            {row[`income${inc.ID}`] ?? 0}
-                                                        </TableCell>
-                                                    ))}
+            <Box sx={{ marginTop: -3, width: `${windowWidth - 500}px` }}>
+                <Grid container spacing={2}>
+                    <Grid item size={editIncome ? 12 : 11}>
+                        {
+                            editIncome ?
+                                <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
+                                    <TableExcel
+                                        styles={{ height: "50vh" }} // ✅ ส่งเป็น object
+                                        stylesTable={{ width: "1080px" }} // ✅ ส่งเป็น object
+                                        columns={IncomesColumns}
+                                        initialData={IncomesRows}
+                                        onDataChange={handleIncomeChange}
+                                    />
+                                </Paper>
+                                :
+                                <TableContainer component={Paper} textAlign="center">
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                                        <TableHead>
+                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
+                                                <TablecellHeader>ชื่อ</TablecellHeader>
+                                                <TablecellHeader>ตำแหน่ง</TablecellHeader>
+                                                {
+                                                    income.map((row, index) => (
+                                                        row.status === 1 &&
+                                                        <TablecellHeader>{row.name}</TablecellHeader>
+                                                    ))
+                                                }
                                             </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                        </TableHead>
+                                        <TableBody>
+                                            {IncomesRows.map((row, index) => (
+                                                <TableRow key={row.employid}>
+                                                    <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                    <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
+                                                    <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
+                                                    {income
+                                                        .filter(inc => inc.status === 1)
+                                                        .map(inc => (
+                                                            <TableCell key={inc.ID} sx={{ textAlign: "center" }}>
+                                                                {row[`income${inc.ID}`] ?? 0}
+                                                            </TableCell>
+                                                        ))}
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                        }
+                    </Grid>
+                    {
+                        !editIncome &&
+                        <Grid item size={1} textAlign="right">
+                            <Box display="flex" justifyContent="center" alignItems="center">
+                                <Button
+                                    variant="contained"
+                                    size="small"
+                                    color="warning"
+                                    fullWidth
+                                    sx={{
+                                        height: "60px",
+                                        flexDirection: "column",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        textTransform: "none",
+                                    }}
+                                    onClick={() => setEditIncome(true)}
+                                >
+                                    <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
+                                    แก้ไข
+                                </Button>
+                            </Box>
+                        </Grid>
                     }
                 </Grid>
                 {
-                    !editIncome &&
-                    <Grid item size={1} textAlign="right">
-                        <Box display="flex" justifyContent="center" alignItems="center">
-                            <Button
-                                variant="contained"
-                                size="small"
-                                color="warning"
-                                fullWidth
-                                sx={{
-                                    height: "60px",
-                                    flexDirection: "column",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    textTransform: "none",
-                                }}
-                                onClick={() => setEditIncome(true)}
-                            >
-                                <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
-                                แก้ไข
-                            </Button>
-                        </Box>
-                    </Grid>
+                    editIncome &&
+                    <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                        <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                        <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
+                    </Box>
                 }
-            </Grid>
-            {
-                editIncome &&
-                <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
-                    <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
-                    <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
-                </Box>
-            }
+            </Box>
         </React.Fragment>
     )
 }

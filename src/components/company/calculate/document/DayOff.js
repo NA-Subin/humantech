@@ -57,6 +57,16 @@ const DayOffDetail = (props) => {
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
+    const dayColors = {
+        "จันทร์": "#FFFDE7",   // เหลืองพาสเทลอ่อนมาก
+        "อังคาร": "#FCE4EC",  // ชมพูพาสเทลอ่อนมาก
+        "พุธ": "#E8F5E9",      // เขียวพาสเทลอ่อนมาก
+        "พฤหัสบดี": "#FFF3E0", // ส้มพาสเทลอ่อนมาก
+        "ศุกร์": "#E1F5FE",    // ฟ้าพาสเทลอ่อนมาก
+        "เสาร์": "#F3E5F5",    // ม่วงพาสเทลอ่อนมาก
+        "อาทิตย์": "#FFEBEE"   // แดงพาสเทลอ่อนมาก
+    };
+
     console.log("workshift : ", workshift);
     const [employees, setEmployees] = useState([]);
 
@@ -65,53 +75,14 @@ const DayOffDetail = (props) => {
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
 
-    employees.forEach(emp => {
-        const position = emp.position.split("-")[1];
-        const department = emp.department.split("-")[1];
-        const section = emp.section.split("-")[1];
-        const year = dayjs().format("YYYY");
-        const month = dayjs().month() + 1; // ใช้เลขเดือนตรงกับ key
+    const DayOffDetail = dateArray.map((emp) => ({
+        ...emp,
+        dateHistory: emp.dateHistory.filter((d) => d.holidayType !== "work")
+    }));
 
-        const attendantList = emp.attendant?.[year]?.[month] || [];
-
-        attendantList.forEach((entry, idx) => {
-            attendantRows.push({
-                employname: `${emp.employname} (${emp.nickname})`,
-                position,
-                department,
-                section,
-                checkin: entry.checkin,
-                checkout: entry.checkout,
-                datein: entry.datein,
-                dateout: entry.dateout,
-                workshift: entry.shift,
-                isFirst: idx === 0,
-                rowSpan: attendantList.length,
-            });
-        });
-
-        // ถ้าไม่มีข้อมูลการเข้างาน
-        if (attendantList.length === 0) {
-            attendantRows.push({
-                employname: `${emp.employname} (${emp.nickname})`,
-                position,
-                department,
-                section,
-                checkin: "",
-                checkout: "",
-                datein: "",
-                dateout: "",
-                workshift: "",
-                isFirst: true,
-                rowSpan: 1,
-            });
-        }
-    });
-
-    console.log("dateArray : ", dateArray);
+    console.log("DayOffDetail : ", DayOffDetail);
 
     console.log("attendantRows : ", attendantRows);
-    console.log("employees : ", employees);
 
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -262,7 +233,7 @@ const DayOffDetail = (props) => {
                         </TableHead>
                         <TableBody>
                             {
-                                dateArray.map((emp, index) => (
+                                DayOffDetail.map((emp, index) => (
                                     <React.Fragment>
                                         <TableRow>
                                             <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
@@ -290,14 +261,19 @@ const DayOffDetail = (props) => {
                                                     <TableCell sx={{ textAlign: "center" }}>
                                                         {formatThaiShort(dayjs(date.date, "DD/MM/YYYY"))}
                                                     </TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>
+                                                    <TableCell
+                                                        sx={{
+                                                            textAlign: "center",
+                                                            backgroundColor: dayColors[date.dayName] || "transparent" // default ถ้าไม่เจอวัน
+                                                        }}
+                                                    >
                                                         {date.dayName}
                                                     </TableCell>
                                                     <TableCell sx={{ textAlign: "center" }}>
                                                         {date.holidayType === "shift" ? "หยุดตามกะการทำงาน" : "วันหยุดตามปฏิทินบริษัท"}
                                                     </TableCell>
                                                     <TableCell sx={{ textAlign: "center" }}>
-                                                         
+
                                                     </TableCell>
                                                 </TableRow>
                                             ))

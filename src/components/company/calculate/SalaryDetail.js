@@ -38,7 +38,7 @@ import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetal
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../theme/SearchEmployee";
 
-const Salary = () => {
+const SalaryDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
@@ -271,90 +271,59 @@ const Salary = () => {
         <React.Fragment>
             <Box sx={{ marginTop: 2, width: `${windowWidth - 500}px` }}>
                 <Grid container spacing={2}>
-                    <Grid item size={editLeave ? 12 : 11}>
-                        {
-                            editLeave ?
-                                <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                                    <TableExcel
-                                        columns={columns}
-                                        initialData={department}
-                                        onDataChange={setDepartment}
-                                    />
-                                </Paper>
-                                :
-                                <TableContainer component={Paper} textAlign="center">
-                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
-                                        <TableHead>
-                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                <TablecellHeader>ชื่อ</TablecellHeader>
-                                                <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                                <TablecellHeader>ฐานเงินเดือน</TablecellHeader>
-                                                <TablecellHeader>รายได้รายหัก</TablecellHeader>
-                                                <TablecellHeader>ภาษี</TablecellHeader>
-                                                <TablecellHeader>ประกันสังคม</TablecellHeader>
+                    <Grid item size={12}>
+                        <TableContainer component={Paper} textAlign="center">
+                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
+                                <TableHead>
+                                    <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                        <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
+                                        <TablecellHeader>รหัส</TablecellHeader>
+                                        <TablecellHeader>ชื่อพนักงาน</TablecellHeader>
+                                        <TablecellHeader>มาทำงาน</TablecellHeader>
+                                        <TablecellHeader>วันทำงาน</TablecellHeader>
+                                        <TablecellHeader>เงินเดือน</TablecellHeader>
+                                        <TablecellHeader>รวมรายรับ</TablecellHeader>
+                                        <TablecellHeader>รวมรายจ่าย</TablecellHeader>
+                                        <TablecellHeader>รวมยอด</TablecellHeader>
+                                        <TablecellHeader>เบิกล่วงหน้า</TablecellHeader>
+                                        <TablecellHeader>คงเหลือ</TablecellHeader>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {employees
+                                        .filter(emp => {
+                                            if (!department) return false;
+                                            if (section === "" && position === "" && employee === "") {
+                                                return emp.department === department;
+                                            }
+                                            if (section !== "" && position === "" && employee === "") {
+                                                return emp.department === department && emp.section === section;
+                                            }
+                                            if (section !== "" && position !== "" && employee === "") {
+                                                return emp.department === department && emp.section === section && emp.position === position;
+                                            }
+                                            return false;
+                                        })
+                                        .map((emp, index) => (
+                                            <TableRow key={emp.ID ?? index}>
+                                                <TableCell align="center">{index + 1}</TableCell>
+                                                <TableCell align="center">{emp.name}</TableCell>
+                                                <TableCell align="center">{emp.position}</TableCell>
+                                                <TableCell align="center">{emp.salary}</TableCell>
+                                                <TableCell align="center">{emp.earningsDeductions}</TableCell>
+                                                <TableCell align="center">{emp.tax}</TableCell>
+                                                <TableCell align="center">{emp.socialSecurity}</TableCell>
                                             </TableRow>
-                                        </TableHead>
-                                        <TableBody>
-                                            {employees
-                                                .filter(emp => {
-                                                    if (!department) return false;
-                                                    if (section === "" && position === "" && employee === "") {
-                                                        return emp.department === department;
-                                                    }
-                                                    if (section !== "" && position === "" && employee === "") {
-                                                        return emp.department === department && emp.section === section;
-                                                    }
-                                                    if (section !== "" && position !== "" && employee === "") {
-                                                        return emp.department === department && emp.section === section && emp.position === position;
-                                                    }
-                                                    return false;
-                                                })
-                                                .map((emp, index) => (
-                                                    <TableRow key={emp.ID ?? index}>
-                                                        <TableCell align="center">{index + 1}</TableCell>
-                                                        <TableCell align="center">{emp.name}</TableCell>
-                                                        <TableCell align="center">{emp.position}</TableCell>
-                                                        <TableCell align="center">{emp.salary}</TableCell>
-                                                        <TableCell align="center">{emp.earningsDeductions}</TableCell>
-                                                        <TableCell align="center">{emp.tax}</TableCell>
-                                                        <TableCell align="center">{emp.socialSecurity}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                        </TableBody>
+                                        ))}
+                                </TableBody>
 
-                                    </Table>
-                                </TableContainer>
-                        }
+                            </Table>
+                        </TableContainer>
                     </Grid>
-                    {
-                        !editLeave &&
-                        <Grid item size={1} textAlign="right">
-                            <Box display="flex" justifyContent="center" alignItems="center">
-                                <Button
-                                    variant="contained"
-                                    size="small"
-                                    color="warning"
-                                    fullWidth
-                                    sx={{
-                                        height: "60px",
-                                        flexDirection: "column",
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        textTransform: "none",
-                                    }}
-                                    onClick={() => setEditLeave(true)}
-                                >
-                                    <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
-                                    แก้ไข
-                                </Button>
-                            </Box>
-                        </Grid>
-                    }
                 </Grid>
             </Box>
         </React.Fragment>
     )
 }
 
-export default Salary
+export default SalaryDetail

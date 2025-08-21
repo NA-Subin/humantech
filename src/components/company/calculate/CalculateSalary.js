@@ -37,7 +37,7 @@ import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../theme/SearchEmployee";
-import SalaryDetail from "./Salary";
+import SalaryDetail from "./SalaryDetail";
 import EditTimeDetail from "./EditTime";
 import DocumentDetail from "./Document";
 import IncomeDetail from "./IncomeDetail";
@@ -48,6 +48,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { formatThaiFull, formatThaiMonth } from "../../../theme/DateTH";
 import dayjs from "dayjs";
 import "dayjs/locale/th";
+import Salary from "./Salary";
 
 const CalculateSalary = () => {
     const { firebaseDB, domainKey } = useFirebase();
@@ -108,6 +109,8 @@ const CalculateSalary = () => {
             case 'รายจ่าย':
                 return <DeductionDetails data={key} month={selectedDate} />;
             case 'ตรวจสอบเงินเดือน':
+                return <Salary data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
+            case 'สรุปผลการคำนวณ':
                 return <SalaryDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'ปิดงบบัญชี':
                 return <AccountDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
@@ -296,6 +299,7 @@ const CalculateSalary = () => {
                             'รายได้',
                             'รายจ่าย',
                             'ตรวจสอบเงินเดือน',
+                            'สรุปผลการคำนวณ',
                             'ปิดงบบัญชี',
                         ].map((text, index) => {
                             const value = `${index}-${text}`;

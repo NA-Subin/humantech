@@ -68,6 +68,20 @@ const EditTimeDetail = (props) => {
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth); // อัพเดตค่าขนาดหน้าจอ
+        };
+
+        window.addEventListener('resize', handleResize); // เพิ่ม event listener
+
+        // ลบ event listener เมื่อ component ถูกทำลาย
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     console.log("holiday : ", holiday);
     console.log("MOnth : ", month);
     console.log("department : ", department);
@@ -375,7 +389,7 @@ const EditTimeDetail = (props) => {
 
     return (
         <React.Fragment>
-            <Box sx={{ marginTop: 5, width: "1080px" }}>
+            <Box sx={{ marginTop: 5, width: `${windowWidth - 500}px` }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
                         <FormGroup
