@@ -1,6 +1,6 @@
 import React, { useState, useEffect, use } from "react";
 import '../../../../App.css'
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update } from "firebase/database";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -21,6 +21,9 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import DoneIcon from '@mui/icons-material/Done';
+import CloseIcon from '@mui/icons-material/Close';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import theme from "../../../../theme/theme";
@@ -29,12 +32,12 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../../theme/style"
 
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Checkbox, FormControlLabel, FormGroup, InputAdornment } from "@mui/material";
+import { Checkbox, FormControlLabel, FormGroup, InputAdornment, Tooltip } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
 import TableExcel from "../../../../theme/TableExcel";
-import { ShowError, ShowSuccess, ShowWarning } from "../../../../sweetalert/sweetalert";
+import { ShowConfirm, ShowError, ShowSuccess, ShowWarning } from "../../../../sweetalert/sweetalert";
 import { useFirebase } from "../../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../../theme/SearchEmployee";
 import dayjs from "dayjs";
@@ -112,69 +115,48 @@ const LeaveDetail = (props) => {
         return () => unsubscribe();
     }, [firebaseDB, companyId, year, m, dateArray]);
 
-    const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
-
-        const invalidMessages = [];
-
-        leave.forEach((row, rowIndex) => {
-            columns.forEach((col) => {
-                const value = row[col.key];
-
-                if (value === "") {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
-                    return;
-                }
-
-                if (col.type === "number" && isNaN(Number(value))) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
-                    return;
-                }
-
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
-            });
-        });
-
-        // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        const names = leave.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
-        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
-        if (duplicates.length > 0) {
-            invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
-        }
-
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
-        if (invalidMessages.length > 0) {
-            ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
-            return;
-        }
-
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, leave)
-            .then(() => {
-                ShowSuccess("บันทึกข้อมูลสำเร็จ");
-                console.log("บันทึกสำเร็จ");
-                setIncompleteTime(false);
-            })
-            .catch((error) => {
-                ShowError("เกิดข้อผิดพลาดในการบันทึก");
-                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
-            });
+    const handleApprove = (newID) => {
+        ShowConfirm(
+            "อนุมัติเอกสาร",
+            "คุณต้องการอนุมัติเอกสารนี้หรือไม่?",
+            () => {
+                const leaveRef = ref(
+                    firebaseDB,
+                    `workgroup/company/${companyId}/documentleave/${year}/${m + 1}/${newID}`
+                );
+                update(leaveRef, {
+                    status: "อนุมัติ",
+                    approveBy: "HR",
+                    approveDate: dayjs().format("DD/MM/YYYY"),
+                    approveTime: dayjs().format("HH:mm:ss")
+                });
+            },
+            () => {
+                console.log("ยกเลิกการอนุมัติ");
+            }
+        );
     };
 
-    const handleCancel = () => {
-        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
-
-        onValue(leaveRef, (snapshot) => {
-            const leaveData = snapshot.val() || [{ ID: 0, name: '' }];
-            setLeave(leaveData);
-            setIncompleteTime(false);
-        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
+    const handleCancel = (newID) => {
+        ShowConfirm(
+            "ไม่อนุมัติเอกสาร",
+            "คุณต้องการปฏิเสธเอกสารนี้หรือไม่?",
+            () => {
+                const leaveRef = ref(
+                    firebaseDB,
+                    `workgroup/company/${companyId}/documentleave/${year}/${m + 1}/${newID}`
+                );
+                update(leaveRef, {
+                    status: "ไม่อนุมัติ",
+                    approveBy: "HR",
+                    approveDate: dayjs().format("DD/MM/YYYY"),
+                    approveTime: dayjs().format("HH:mm:ss")
+                });
+            },
+            () => {
+                console.log("ยกเลิกการปฏิเสธ");
+            }
+        );
     };
 
     return (
@@ -191,12 +173,11 @@ const LeaveDetail = (props) => {
                             }}
                         >
                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                <TablecellHeader sx={{ width: 280 }}>วันที่และเวลา</TablecellHeader>
-                                <TablecellHeader sx={{ width: 100 }}>จำนวน</TablecellHeader>
-                                <TablecellHeader sx={{ width: 180 }}>ประเภท</TablecellHeader>
-                                <TablecellHeader sx={{ width: 190 }}>สถานะ</TablecellHeader>
-                                <TablecellHeader sx={{ width: 250 }}>หมายเหตุ</TablecellHeader>
+                                <TablecellHeader sx={{ width: 60 }}>ลำดับ</TablecellHeader>
+                                <TablecellHeader sx={{ width: 500 }}>วันที่และเวลา</TablecellHeader>
+                                <TablecellHeader sx={{ width: 140 }}>จำนวน</TablecellHeader>
+                                <TablecellHeader sx={{ width: 160 }}>ประเภท</TablecellHeader>
+                                <TablecellHeader sx={{ width: 230 }}>สถานะ</TablecellHeader>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -226,9 +207,11 @@ const LeaveDetail = (props) => {
                                             emp.documentLeave.map((date, index) => (
                                                 <TableRow key={index}>
                                                     <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                        <Typography variant="subtitle2" gutterBottom>ตั้งแต่วันที่ {formatThaiShort(dayjs(date.datestart, "DD/MM/YYYY"))} เวลา {date.timestart} </Typography>
-                                                        <Typography variant="subtitle2" sx={{ marginTop: -0.5 }} gutterBottom>ถึงวันที่ {formatThaiShort(dayjs(date.dateend, "DD/MM/YYYY"))} เวลา {date.timeend}</Typography>
+                                                    <TableCell sx={{ textAlign: "left" }}>
+                                                        <Box sx={{ marginLeft: 2, marginRight: 2 }}>
+                                                            <Typography variant="subtitle2" gutterBottom>ขอลางาน: ตั้งแต่วันที่ {formatThaiShort(dayjs(date.datestart, "DD/MM/YYYY"))} เวลา {date.timestart} ถึงวันที่ {formatThaiShort(dayjs(date.dateend, "DD/MM/YYYY"))} เวลา {date.timeend}</Typography>
+                                                            <Typography variant="subtitle2" sx={{ marginTop: -0.5 }} gutterBottom>หมายเหตุ: {date.note}</Typography>
+                                                        </Box>
                                                     </TableCell>
                                                     <TableCell sx={{ textAlign: "center" }}>
                                                         {date.day} วัน
@@ -236,11 +219,44 @@ const LeaveDetail = (props) => {
                                                     <TableCell sx={{ textAlign: "center" }}>
                                                         {date.leave}
                                                     </TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                        {date.status}
-                                                    </TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>
-
+                                                    <TableCell sx={{ textAlign: "left" }}>
+                                                        <Box sx={{ marginLeft: 2, marginRight: 2, marginTop: date.status === "รออนุมัติ" && 1.5 }}>
+                                                            <Box display="flex" justifyContent="left" alignItems="center">
+                                                                <Typography variant="subtitle2" gutterBottom>สถานะ : </Typography>
+                                                                <Typography
+                                                                    variant="subtitle2"
+                                                                    sx={{
+                                                                        fontWeight: "bold",
+                                                                        marginLeft: 1,
+                                                                        color: date.status === "รออนุมัติ" ? theme.palette.warning.main
+                                                                            : date.status === "อนุมัติ" ? theme.palette.success.main
+                                                                                : theme.palette.error.main
+                                                                    }}
+                                                                    gutterBottom
+                                                                >
+                                                                    {date.status}
+                                                                </Typography>
+                                                            </Box>
+                                                            {
+                                                                date.status === "รออนุมัติ" ?
+                                                                    <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center ", marginTop: -4.5 }}>
+                                                                        <Tooltip title="ไม่อนุมัติ" placement="top">
+                                                                            <IconButton size="small" onClick={() => handleCancel(date.ID)} >
+                                                                                <InsertDriveFileIcon sx={{ color: theme.palette.error.main, fontSize: "28px" }} />
+                                                                                <CloseIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                        <Tooltip title="อนุมัติ" placement="top">
+                                                                            <IconButton size="small" onClick={() => handleApprove(date.ID)} >
+                                                                                <InsertDriveFileIcon sx={{ color: theme.palette.primary.main, fontSize: "28px" }} />
+                                                                                <DoneIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                    </Box>
+                                                                    :
+                                                                    <Typography variant="subtitle2" sx={{ marginTop: -0.5 }} gutterBottom>อนุมัติโดย : {date.approveBy}</Typography>
+                                                            }
+                                                        </Box>
                                                     </TableCell>
                                                 </TableRow>
                                             ))
