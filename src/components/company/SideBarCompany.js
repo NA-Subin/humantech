@@ -1478,7 +1478,7 @@ export default function SideBarCompany() {
                             {[
                                 'ขอลา',
                                 'ขอโอที',
-                                'ขอแก้ไขเวลา',
+                                'ขอเพิ่มเวลา',
                                 'ขอทำงานนอกสถานที่'
                             ].map((text, index) => {
                                 const isSelected = selectedMenu === text;

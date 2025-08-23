@@ -201,19 +201,19 @@ const EditTimeDetail = (props) => {
 
         let filteredEmployees = employees;
 
-        if (department) {
+        if (department && department !== "all-ทั้งหมด") {
             filteredEmployees = filteredEmployees.filter(e => e.department === department);
         }
 
-        if (section) {
+        if (section && section !== "all-ทั้งหมด") {
             filteredEmployees = filteredEmployees.filter(e => e.section === section);
         }
 
-        if (position) {
+        if (position && position !== "all-ทั้งหมด") {
             filteredEmployees = filteredEmployees.filter(e => e.position === position);
         }
 
-        if (employee) {
+        if (employee && employee !== "all-ทั้งหมด") {
             const empId = Number(employee.split("-")[0]);
             filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
         }

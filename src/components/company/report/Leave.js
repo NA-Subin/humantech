@@ -1,6 +1,6 @@
 import React, { useState, useEffect, use } from "react";
 import '../../../App.css'
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update } from "firebase/database";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -27,22 +27,39 @@ import theme from "../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
-
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import DoneIcon from '@mui/icons-material/Done';
+import CloseIcon from '@mui/icons-material/Close';
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { InputAdornment, MenuItem } from "@mui/material";
+import { InputAdornment, MenuItem, Tooltip } from "@mui/material";
 import { HotTable } from '@handsontable/react';
 import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
 import TableExcel from "../../../theme/TableExcel";
-import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
+import { ShowConfirm, ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../theme/SearchEmployee";
+import dayjs from "dayjs";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { formatThaiShort } from "../../../theme/DateTH";
 
 const ReportLeave = () => {
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     //const { companyName } = useParams();
+    const [editIncomepleteTime, setIncompleteTime] = useState(false);
+    const [companies, setCompanies] = useState([]);
+    const [selectedCompany, setSelectedCompany] = useState(null);
+    const [leave, setLeave] = useState([{ ID: 0, name: '' }]);
+    const [docLeave, setDocLeave] = useState([]);
+    const columns = [
+        { label: "ประเภทการลา", key: "name", type: "text" },
+        { label: "จำนวนวัน", key: "max", type: "text" }
+    ];
+
+    const [dateArray, setDateArray] = useState([]);
     const [department, setDepartment] = useState("");
     const [section, setSection] = useState("");
     const [position, setPosition] = useState("");
@@ -51,45 +68,15 @@ const ReportLeave = () => {
     const [sections, setSections] = useState([]);
     const [positions, setPositions] = useState([]);
     const [employees, setEmployees] = useState([]);
-
-    const [editLeave, setEditLeave] = useState(false);
-    const [companies, setCompanies] = useState([]);
-    const [selectedCompany, setSelectedCompany] = useState(null);
-    const [leave, setLeave] = useState([{ ID: 0, name: '' }]);
-    const columns = [
-        { label: "ประเภทการลา", key: "name", type: "text" },
-        { label: "จำนวนวัน", key: "max", type: "text" }
-    ];
-
-    console.log("Departments:", department);
-    console.log("Sections:", section);
-    console.log("Positions:", position);
-    console.log("Employees:", employee);
+    const [month, setMonth] = useState(dayjs()); // ✅ เป็น dayjs object
+    const handleDateChangeDate = (newValue) => {
+        if (newValue) {
+            setMonth(newValue); // ✅ newValue เป็น dayjs อยู่แล้ว
+        }
+    };
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
-
-    useEffect(() => {
-        if (!firebaseDB) return;
-
-        const companiesRef = ref(firebaseDB, "workgroup/company");
-        const unsubscribe = onValue(companiesRef, (snapshot) => {
-            const data = snapshot.exists() ? snapshot.val() : {};
-            const list = Object.entries(data).map(([key, value]) => ({
-                id: key,
-                ...value,
-            }));
-            setCompanies(list);
-
-            // ค้นหา company ตาม companyId
-            const found = list.find((item, index) => String(index) === companyId);
-            if (found) {
-                setSelectedCompany(found);
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
 
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -167,69 +154,126 @@ const ReportLeave = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-    const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/section`);
+    useEffect(() => {
+        if (!employees || employees.length === 0 || !month) return;
 
-        const invalidMessages = [];
+        let filteredEmployees = employees;
 
-        leave.forEach((row, rowIndex) => {
-            columns.forEach((col) => {
-                const value = row[col.key];
+        if (department && department !== "all-ทั้งหมด") {
+            filteredEmployees = filteredEmployees.filter(e => e.department === department);
+        }
 
-                if (value === "") {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
-                    return;
-                }
+        if (section && section !== "all-ทั้งหมด") {
+            filteredEmployees = filteredEmployees.filter(e => e.section === section);
+        }
 
-                if (col.type === "number" && isNaN(Number(value))) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
-                    return;
-                }
+        if (position && position !== "all-ทั้งหมด") {
+            filteredEmployees = filteredEmployees.filter(e => e.position === position);
+        }
 
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
-            });
+        if (employee && employee !== "all-ทั้งหมด") {
+            const empId = Number(employee.split("-")[0]);
+            filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
+        }
+
+        console.log("Filtered Employees:", filteredEmployees);
+        setDateArray(filteredEmployees);
+    }, [employees, department, section, position, employee]);
+
+    const year = month.year();   // จาก dayjs, เช่น 2025
+    const m = month.month();     // จาก dayjs, 0-11
+
+    useEffect(() => {
+        if (!firebaseDB) return;
+
+        const companiesRef = ref(firebaseDB, "workgroup/company");
+        const unsubscribe = onValue(companiesRef, (snapshot) => {
+            const data = snapshot.exists() ? snapshot.val() : {};
+            const list = Object.entries(data).map(([key, value]) => ({
+                id: key,
+                ...value,
+            }));
+            setCompanies(list);
+
+            // ค้นหา company ตาม companyId
+            const found = list.find((item, index) => String(index) === companyId);
+            if (found) {
+                setSelectedCompany(found);
+            }
         });
 
-        // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        const names = leave.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
-        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
-        if (duplicates.length > 0) {
-            invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
-        }
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
 
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
-        if (invalidMessages.length > 0) {
-            ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
-            return;
-        }
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
 
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, leave)
-            .then(() => {
-                ShowSuccess("บันทึกข้อมูลสำเร็จ");
-                console.log("บันทึกสำเร็จ");
-                setEditLeave(false);
-            })
-            .catch((error) => {
-                ShowError("เกิดข้อผิดพลาดในการบันทึก");
-                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+        const docLeaveRef = ref(firebaseDB, `workgroup/company/${companyId}/documentleave/${year}/${m + 1}`);
+
+        const unsubscribe = onValue(docLeaveRef, (snapshot) => {
+            const docLeaveData = snapshot.val() || {};
+
+            // เอา dateArray มารวมกับข้อมูลลา
+            const merged = dateArray.map((emp) => {
+                // หา leave records ของพนักงานจาก deptid
+                const empLeave = Object.values(docLeaveData).filter(
+                    (leave) => leave.empid === emp.ID
+                );
+
+                return {
+                    ...emp,
+                    documentLeave: empLeave.length > 0 ? empLeave : []  // เก็บ documentLeave ลงไป
+                };
             });
+
+            setDocLeave(merged);
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId, year, m, dateArray]);
+
+    const handleApprove = (newID) => {
+        ShowConfirm(
+            "อนุมัติเอกสาร",
+            "คุณต้องการอนุมัติเอกสารนี้หรือไม่?",
+            () => {
+                const leaveRef = ref(
+                    firebaseDB,
+                    `workgroup/company/${companyId}/documentleave/${year}/${m + 1}/${newID}`
+                );
+                update(leaveRef, {
+                    status: "อนุมัติ",
+                    approveBy: "HR",
+                    approveDate: dayjs().format("DD/MM/YYYY"),
+                    approveTime: dayjs().format("HH:mm:ss")
+                });
+            },
+            () => {
+                console.log("ยกเลิกการอนุมัติ");
+            }
+        );
     };
 
-    const handleCancel = () => {
-        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
-
-        onValue(leaveRef, (snapshot) => {
-            const leaveData = snapshot.val() || [{ ID: 0, name: '' }];
-            setLeave(leaveData);
-            setEditLeave(false);
-        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
+    const handleCancel = (newID) => {
+        ShowConfirm(
+            "ไม่อนุมัติเอกสาร",
+            "คุณต้องการปฏิเสธเอกสารนี้หรือไม่?",
+            () => {
+                const leaveRef = ref(
+                    firebaseDB,
+                    `workgroup/company/${companyId}/documentleave/${year}/${m + 1}/${newID}`
+                );
+                update(leaveRef, {
+                    status: "ไม่อนุมัติ",
+                    approveBy: "HR",
+                    approveDate: dayjs().format("DD/MM/YYYY"),
+                    approveTime: dayjs().format("HH:mm:ss")
+                });
+            },
+            () => {
+                console.log("ยกเลิกการปฏิเสธ");
+            }
+        );
     };
 
     return (
@@ -238,6 +282,42 @@ const ReportLeave = () => {
                 <Grid container spacing={2}>
                     <Grid item size={12}>
                         <Typography variant="h5" fontWeight="bold" gutterBottom>เอกสารขอลา (Documents requesting Leave)</Typography>
+                    </Grid>
+                    <Grid item size={12} sx={{ display: "flex", alignItems: "center", justifyContent: "right" }}>
+                        <Paper sx={{ width: "20%", marginTop: -10 }}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
+                                <DatePicker
+                                    openTo="month"
+                                    views={["year", "month"]}
+                                    value={month}
+                                    format="MMMM"
+                                    onChange={handleDateChangeDate}
+                                    slotProps={{
+                                        textField: {
+                                            size: "small",
+                                            fullWidth: true,
+                                            inputProps: {
+                                                value: month ? month.format("MMMM") : "",
+                                                readOnly: true,
+                                            },
+                                            InputProps: {
+                                                startAdornment: (
+                                                    <InputAdornment position="start" sx={{ marginRight: 2 }}>
+                                                        <b>เลือกเดือน :</b>
+                                                    </InputAdornment>
+                                                ),
+                                                sx: {
+                                                    fontSize: "16px",
+                                                    height: "40px",
+                                                    padding: "10px",
+                                                    fontWeight: "bold",
+                                                },
+                                            },
+                                        },
+                                    }}
+                                />
+                            </LocalizationProvider>
+                        </Paper>
                     </Grid>
                 </Grid>
             </Box>
@@ -257,70 +337,117 @@ const ReportLeave = () => {
                         setEmployee={setEmployee}
                         employees={employees}
                     />
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลเอกสารขอลา</Typography>
-                    <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
+                    {/* <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลเอกสารขอลา</Typography>
+                    <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} /> */}
                     <Grid container spacing={2}>
-                        <Grid item size={editLeave ? 12 : 11}>
-                            {
-                                editLeave ?
-                                    <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                                        <TableExcel
-                                            columns={columns}
-                                            initialData={department}
-                                            onDataChange={setDepartment}
-                                        />
-                                    </Paper>
-
-                                    :
-                                    <TableContainer component={Paper} textAlign="center">
-                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
-                                            <TableHead>
-                                                <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                    <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                    <TablecellHeader>ชื่อ</TablecellHeader>
-                                                    <TablecellHeader>วันที่</TablecellHeader>
-                                                    <TablecellHeader>จนถึงวันที่</TablecellHeader>
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                 
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
-                            }
-                        </Grid>
-                        {
-                            !editLeave &&
-                            <Grid item size={1} textAlign="right">
-                                <Box display="flex" justifyContent="center" alignItems="center">
-                                    <Button
-                                        variant="contained"
-                                        size="small"
-                                        color="warning"
-                                        fullWidth
+                        <Grid item size={12}>
+                            <TableContainer component={Paper} textAlign="center">
+                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
+                                    <TableHead
                                         sx={{
-                                            height: "60px",
-                                            flexDirection: "column",
-                                            justifyContent: "center",
-                                            alignItems: "center",
-                                            textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                            position: "sticky",
+                                            top: 0,
+                                            zIndex: 2,
+                                            backgroundColor: theme.palette.primary.dark,
                                         }}
-                                        onClick={() => setEditLeave(true)}
                                     >
-                                        <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
-                                        แก้ไข
-                                    </Button>
-                                </Box>
-                            </Grid>
-                        }
+                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                            <TablecellHeader sx={{ width: 60 }}>ลำดับ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 550 }}>วันที่และเวลา</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 140 }}>จำนวน</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 160 }}>ประเภท</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 290 }}>สถานะ</TablecellHeader>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {
+                                            docLeave.map((emp, index) => (
+                                                <React.Fragment>
+                                                    <TableRow>
+                                                        <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
+                                                            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
+                                                                    ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
+                                                                        ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
+                                                                        : emp.department.split("-")[1]}
+                                                                </Typography>
+                                                                {
+                                                                    emp.section.split("-")[1] !== "ไม่มี" &&
+                                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
+                                                                }
+                                                                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
+                                                            </Box>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                    {
+                                                        emp.documentLeave.map((date, index) => (
+                                                            <TableRow key={index}>
+                                                                <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                <TableCell sx={{ textAlign: "left" }}>
+                                                                    <Box sx={{ marginLeft: 2, marginRight: 2 }}>
+                                                                        <Typography variant="subtitle2" gutterBottom>ขอลางาน: ตั้งแต่วันที่ {formatThaiShort(dayjs(date.datestart, "DD/MM/YYYY"))} เวลา {date.timestart} ถึงวันที่ {formatThaiShort(dayjs(date.dateend, "DD/MM/YYYY"))} เวลา {date.timeend}</Typography>
+                                                                        <Typography variant="subtitle2" sx={{ marginTop: -0.5 }} gutterBottom>หมายเหตุ: {date.note}</Typography>
+                                                                    </Box>
+                                                                </TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>
+                                                                    {date.day} วัน
+                                                                </TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>
+                                                                    {date.leave}
+                                                                </TableCell>
+                                                                <TableCell sx={{ textAlign: "left" }}>
+                                                                    <Box sx={{ marginLeft: 2, marginRight: 2, marginTop: date.status === "รออนุมัติ" && 1.5 }}>
+                                                                        <Box display="flex" justifyContent="left" alignItems="center">
+                                                                            <Typography variant="subtitle2" gutterBottom>สถานะ : </Typography>
+                                                                            <Typography
+                                                                                variant="subtitle2"
+                                                                                sx={{
+                                                                                    fontWeight: "bold",
+                                                                                    marginLeft: 1,
+                                                                                    color: date.status === "รออนุมัติ" ? theme.palette.warning.main
+                                                                                        : date.status === "อนุมัติ" ? theme.palette.success.main
+                                                                                            : theme.palette.error.main
+                                                                                }}
+                                                                                gutterBottom
+                                                                            >
+                                                                                {date.status}
+                                                                            </Typography>
+                                                                        </Box>
+                                                                        {
+                                                                            date.status === "รออนุมัติ" ?
+                                                                                <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center ", marginTop: -4.5 }}>
+                                                                                    <Tooltip title="ไม่อนุมัติ" placement="top">
+                                                                                        <IconButton size="small" onClick={() => handleCancel(date.ID)} >
+                                                                                            <InsertDriveFileIcon sx={{ color: theme.palette.error.main, fontSize: "28px" }} />
+                                                                                            <CloseIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
+                                                                                        </IconButton>
+                                                                                    </Tooltip>
+                                                                                    <Tooltip title="อนุมัติ" placement="top">
+                                                                                        <IconButton size="small" onClick={() => handleApprove(date.ID)} >
+                                                                                            <InsertDriveFileIcon sx={{ color: theme.palette.primary.main, fontSize: "28px" }} />
+                                                                                            <DoneIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
+                                                                                        </IconButton>
+                                                                                    </Tooltip>
+                                                                                </Box>
+                                                                                :
+                                                                                <Typography variant="subtitle2" sx={{ marginTop: -0.5 }} gutterBottom>อนุมัติโดย : {date.approveBy}</Typography>
+                                                                        }
+                                                                    </Box>
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))
+                                                    }
+                                                </React.Fragment>
+                                            ))
+                                        }
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        </Grid>
                     </Grid>
-                    {
-                        editLeave &&
-                        <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
-                            <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
-                            <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
-                        </Box>
-                    }
                 </Box>
             </Paper>
         </Container>
