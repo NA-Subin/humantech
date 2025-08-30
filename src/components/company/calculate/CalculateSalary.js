@@ -68,7 +68,7 @@ const CalculateSalary = () => {
     const [position, setPosition] = useState("");
     const [employee, setEmployee] = useState("");
     const [menu, setMenu] = useState('0-แก้ไขเวลา');
-    const [open, setOpen] = useState("0-แก้ไขเวลา");
+    const [open, setOpen] = useState("");
 
     const [selectedDate, setSelectedDate] = useState(dayjs()); // ✅ เป็น dayjs object
 

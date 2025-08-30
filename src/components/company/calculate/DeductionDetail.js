@@ -72,42 +72,64 @@ const DeductionDetail = (props) => {
 
     let deductionRows = [];
 
-    if (!document || document.length === 0) {
-        // กรณี document ว่าง
-        employees.forEach((emp, index) => {
-            const position = emp.position.split("-")[1];
+    employees.forEach((emp) => {
+        const position = emp.position.split("-")[1];
 
-            const row = {
-                employid: emp.ID,
-                employname: `${emp.employname} (${emp.nickname})`,
-                position
-            };
+        // หา document ที่ employid ตรงกับ emp.ID
+        const matchedDoc = document.find(doc => doc.employid === emp.ID);
 
-            deductionActive.forEach(inc => {
-                row[`deduction${inc.ID}`] = 0;
-            });
+        // base row
+        const row = {
+            employid: emp.ID,
+            employname: `${emp.employname} (${emp.nickname})`,
+            position,
+        };
 
-            deductionRows.push(row);
+        // ใส่ income0, income1, income2 ...
+        deductionActive.forEach((inc) => {
+            const docDeduction = matchedDoc?.deduction.find(item => item.ID === inc.ID);
+            row[`deduction${inc.ID}`] = docDeduction?.deduction || 0;
         });
-    } else {
-        // กรณี document มีข้อมูล
-        deductionRows = document.map(emp => {
-            const row = {
-                employid: emp.employid,
-                employname: emp.employname,
-                position: emp.position
-            };
 
-            deductionActive.forEach(inc => {
-                const found = Array.isArray(emp.deduction)
-                    ? emp.deduction.find(i => i.deductionID === inc.ID)
-                    : null;
-                row[`deduction${inc.ID}`] = found ? Number(found.deduction) : 0;
-            });
+        deductionRows.push(row);
+    });
 
-            return row;
-        });
-    }
+    // if (!document || document.length === 0) {
+    //     // กรณี document ว่าง
+    //     employees.forEach((emp, index) => {
+    //         const position = emp.position.split("-")[1];
+
+    //         const row = {
+    //             employid: emp.ID,
+    //             employname: `${emp.employname} (${emp.nickname})`,
+    //             position
+    //         };
+
+    //         deductionActive.forEach(inc => {
+    //             row[`deduction${inc.ID}`] = 0;
+    //         });
+
+    //         deductionRows.push(row);
+    //     });
+    // } else {
+    //     // กรณี document มีข้อมูล
+    //     deductionRows = document.map(emp => {
+    //         const row = {
+    //             employid: emp.employid,
+    //             employname: emp.employname,
+    //             position: emp.position
+    //         };
+
+    //         deductionActive.forEach(inc => {
+    //             const found = Array.isArray(emp.deduction)
+    //                 ? emp.deduction.find(i => i.deductionID === inc.ID)
+    //                 : null;
+    //             row[`deduction${inc.ID}`] = found ? Number(found.deduction) : 0;
+    //         });
+
+    //         return row;
+    //     });
+    // }
 
     // const deductionRows = [];
 

@@ -107,62 +107,68 @@ const DomainLoginAdmin = () => {
                     <Box sx={{ width: "80%" }}>
                         <Divider sx={{ marginTop: 2 }} />
                         <CardContent>
-                            <Grid container spacing={1}>
-                                <Grid item size={12}>
-                                    <TextField
-                                        type="text"
-                                        size="small"
-                                        fullWidth
-                                        placeholder="กรุณากรอก user"
-                                        value={userID}
-                                        onChange={(e) => setUserID(e.target.value)}
-                                        margin="normal"
-                                        InputProps={{
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                                        UserID :
-                                                    </Typography>
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                    />
-                                </Grid>
-
-                                <Grid item size={12}>
-                                    <TextField
-                                        type="password"
-                                        size="small"
-                                        fullWidth
-                                        placeholder="กรุณากรอกรหัสผ่าน"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        margin="normal"
-                                        InputProps={{
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                                        Password :
-                                                    </Typography>
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                    />
-                                </Grid>
-                            </Grid>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={handleLogin} // ✅ เรียกตรง
-                                fullWidth
-                                sx={{
-                                    marginTop: 2,
-                                    borderRadius: 15,
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault(); // กันไม่ให้รีเฟรชหน้า
+                                    handleLogin();      // เรียกฟังก์ชันเข้าสู่ระบบ
                                 }}
                             >
-                                เข้าสู่ระบบ
-                            </Button>
+                                <Grid container spacing={1}>
+                                    <Grid item size={12}>
+                                        <TextField
+                                            type="text"
+                                            size="small"
+                                            fullWidth
+                                            placeholder="กรุณากรอก user"
+                                            value={userID}
+                                            onChange={(e) => setUserID(e.target.value)}
+                                            margin="normal"
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
+                                                            UserID :
+                                                        </Typography>
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+                                    </Grid>
 
+                                    <Grid item size={12}>
+                                        <TextField
+                                            type="password"
+                                            size="small"
+                                            fullWidth
+                                            placeholder="กรุณากรอกรหัสผ่าน"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            margin="normal"
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
+                                                            Password :
+                                                        </Typography>
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+                                    </Grid>
+                                </Grid>
+                                <Button
+                                    type="submit"   // เปลี่ยนเป็น submit
+                                    variant="contained"
+                                    color="primary"
+                                    fullWidth
+                                    sx={{
+                                        marginTop: 2,
+                                        borderRadius: 15,
+                                    }}
+                                >
+                                    เข้าสู่ระบบ
+                                </Button>
+                            </form>
                             <Divider sx={{ marginTop: 2 }} />
                             <Button variant="contained" color="error" onClick={() => navigate("/")} fullWidth sx={{
                                 marginTop: 2,

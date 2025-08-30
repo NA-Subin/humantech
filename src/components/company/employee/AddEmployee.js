@@ -76,6 +76,7 @@ const AddEmployee = () => {
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     const [open, setOpen] = React.useState(false);
+    const [salary, setSalary] = React.useState("")
 
     const [nickname, setNickname] = React.useState("");
     const [name, setName] = React.useState("");
@@ -805,6 +806,7 @@ const AddEmployee = () => {
                 department: checkPosition.deptid,
                 position: `${checkPosition.ID}-${checkPosition.positionname}`,
                 employname: `${name} ${lastName}`,
+                salary: salary,
                 personal: personal,
                 educationList: educationList,
                 internship: Internship,
@@ -861,6 +863,16 @@ const AddEmployee = () => {
                                     ))
                                 }
                             </TextField>
+                        </Grid>
+                        <Grid item size={12}>
+                            <Typography variant="subtitle2" fontWeight="bold" >เงินเดือน</Typography>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={salary}
+                                SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+                                onChange={(e) => setSalary(e.target.value)}
+                            />
                         </Grid>
                         <Grid item size={12}>
                             <Typography variant="subtitle2" fontWeight="bold" >ตำแหน่งพนักงาน</Typography>

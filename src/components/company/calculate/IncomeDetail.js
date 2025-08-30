@@ -70,44 +70,100 @@ const IncomeDetail = (props) => {
 
     const incomeActive = income.filter(row => row.status === 1);
 
-    let IncomesRows = [];
+    const IncomesRows = [];
 
-    if (!document || document.length === 0) {
-        // กรณี document ว่าง
-        employees.forEach((emp, index) => {
-            const position = emp.position.split("-")[1];
+    employees.forEach((emp) => {
+        const position = emp.position.split("-")[1];
 
-            const row = {
-                employid: emp.ID,
-                employname: `${emp.employname} (${emp.nickname})`,
-                position
-            };
+        // หา document ที่ employid ตรงกับ emp.ID
+        const matchedDoc = document.find(doc => doc.employid === emp.ID);
 
-            incomeActive.forEach(inc => {
-                row[`income${inc.ID}`] = 0;
-            });
+        // base row
+        const row = {
+            employid: emp.ID,
+            employname: `${emp.employname} (${emp.nickname})`,
+            position,
+        };
 
-            IncomesRows.push(row);
+        // ใส่ income0, income1, income2 ...
+        incomeActive.forEach((inc) => {
+            const docIncome = matchedDoc?.income.find(item => item.ID === inc.ID);
+            row[`income${inc.ID}`] = docIncome?.income || 0;
         });
-    } else {
-        // กรณี document มีข้อมูล
-        IncomesRows = document.map(emp => {
-            const row = {
-                employid: emp.employid,
-                employname: emp.employname,
-                position: emp.position
-            };
 
-            incomeActive.forEach(inc => {
-                const found = Array.isArray(emp.income)
-                    ? emp.income.find(i => i.incomeID === inc.ID)
-                    : null;
-                row[`income${inc.ID}`] = found ? Number(found.income) : 0;
-            });
+        IncomesRows.push(row);
+    });
 
-            return row;
-        });
-    }
+
+    // employees.forEach((emp, index) => {
+    //     const position = emp.position.split("-")[1];
+
+    //     const row = {
+    //         employid: emp.ID,
+    //         employname: `${emp.employname} (${emp.nickname})`,
+    //         position
+    //     };
+
+    //     incomeActive.forEach(inc => {
+    //         row[`income${inc.ID}`] = 0;
+    //     });
+
+    //     IncomesRows.push(row);
+    // });
+
+    // employees.forEach((emp, index) => {
+    //     const position = emp.position.split("-")[1];
+
+    //     // หาว่าพนักงานนี้มีใน document หรือไม่
+    //     const doc = document.find(d => d.employid === emp.ID);
+
+    //     const row = {
+    //         employid: emp.ID,
+    //         employname: `${emp.employname} (${emp.nickname})`,
+    //         position,
+    //         income: doc?.income || 0,
+    //     };
+
+    //     IncomesRows.push(row);
+    // });
+
+
+    // if (!document || document.length === 0) {
+    //     // กรณี document ว่าง
+    //     employees.forEach((emp, index) => {
+    //         const position = emp.position.split("-")[1];
+
+    //         const row = {
+    //             employid: emp.ID,
+    //             employname: `${emp.employname} (${emp.nickname})`,
+    //             position
+    //         };
+
+    //         incomeActive.forEach(inc => {
+    //             row[`income${inc.ID}`] = 0;
+    //         });
+
+    //         IncomesRows.push(row);
+    //     });
+    // } else {
+    //     // กรณี document มีข้อมูล
+    //     IncomesRows = document.map(emp => {
+    //         const row = {
+    //             employid: emp.employid,
+    //             employname: emp.employname,
+    //             position: emp.position
+    //         };
+
+    //         incomeActive.forEach(inc => {
+    //             const found = Array.isArray(emp.income)
+    //                 ? emp.income.find(i => i.incomeID === inc.ID)
+    //                 : null;
+    //             row[`income${inc.ID}`] = found ? Number(found.income) : 0;
+    //         });
+
+    //         return row;
+    //     });
+    // }
 
     // const IncomesRows = [];
 

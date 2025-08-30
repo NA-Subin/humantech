@@ -303,92 +303,99 @@ const AdminApproveDomainForm = () => {
                     <Typography variant="h5" fontWeight="bold" gutterBottom>จัดการ Domain</Typography>
                     <Box sx={{ width: "80%" }}>
                         <CardContent>
-                            <Grid container spacing={2}>
-                                <Grid item size={12}>
-                                    <Typography variant="subtitle2" sx={{ color: "red", textAlign: "center", marginBottom: -2 }}>
-                                        *เลือก Domain ที่รออนุมัติ*
-                                    </Typography>
+                            <form
+                                onSubmit={(e) => {
+                                    e.preventDefault(); // กันไม่ให้รีเฟรชหน้า
+                                    handleApprove();      // เรียกฟังก์ชันเข้าสู่ระบบ
+                                }}
+                            >
+                                <Grid container spacing={2}>
+                                    <Grid item size={12}>
+                                        <Typography variant="subtitle2" sx={{ color: "red", textAlign: "center", marginBottom: -2 }}>
+                                            *เลือก Domain ที่รออนุมัติ*
+                                        </Typography>
+                                    </Grid>
+                                    <Grid item size={12}>
+                                        <TextField
+                                            select
+                                            size="small"
+                                            value={selectedDomain}
+                                            onChange={handleSelectDomain}
+                                            fullWidth
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>
+                                                            เลือก domain :
+                                                        </Typography>
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        >
+                                            {Object.keys(requests).map((key) => {
+                                                const originalDomain = `${requests[key].id}:${requests[key].Domain}`;
+                                                return (
+                                                    <MenuItem key={key} value={originalDomain}>
+                                                        {originalDomain.split(":")[1]}
+                                                    </MenuItem>
+                                                );
+                                            })}
+                                        </TextField>
+                                    </Grid>
                                 </Grid>
-                                <Grid item size={12}>
-                                    <TextField
-                                        select
-                                        size="small"
-                                        value={selectedDomain}
-                                        onChange={handleSelectDomain}
-                                        fullWidth
-                                        InputProps={{
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <Typography sx={{ fontSize: "16px", fontWeight: "bold" }}>
-                                                        เลือก domain :
-                                                    </Typography>
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                    >
-                                        {Object.keys(requests).map((key) => {
-                                            const originalDomain = `${requests[key].id}:${requests[key].Domain}`;
-                                            return (
-                                                <MenuItem key={key} value={originalDomain}>
-                                                    {originalDomain.split(":")[1]}
-                                                </MenuItem>
-                                            );
-                                        })}
-                                    </TextField>
-                                </Grid>
-                            </Grid>
-                            <Grid container spacing={1}>
-                                <Grid item size={12}>
-                                    <TextField
-                                        type="text"
-                                        size="small"
-                                        fullWidth
-                                        placeholder="yourdomain.humantech.com"
-                                        value={domainKey}
-                                        onChange={(e) => setDomainKey(e.target.value)}
-                                        margin="normal"
-                                        InputProps={{
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                                        Domain Key :
-                                                    </Typography>
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                    />
-                                </Grid>
+                                <Grid container spacing={1}>
+                                    <Grid item size={12}>
+                                        <TextField
+                                            type="text"
+                                            size="small"
+                                            fullWidth
+                                            placeholder="yourdomain"
+                                            value={domainKey}
+                                            onChange={(e) => setDomainKey(e.target.value)}
+                                            margin="normal"
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
+                                                            Domain Key :
+                                                        </Typography>
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+                                    </Grid>
 
-                                <Grid item size={12}>
-                                    <TextField
-                                        type="text"
-                                        size="small"
-                                        multiline
-                                        rows={10}
-                                        fullWidth
-                                        placeholder={`{\n  apiKey: "xxx",\n  authDomain: "xxx", \n  databaseURL: "xxx"\n  projectId: "xxx"\n  storageBucket: "xxx"\n  messagingSenderId: "xxx"\n  appId: "xxx"\n  measurementId: "xxx"\n}`}
-                                        value={configRaw}
-                                        onChange={(e) => setConfigRaw(e.target.value)}
-                                        margin="normal"
-                                        InputProps={{
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                                        เพิ่ม Firebase Config :
-                                                    </Typography>
-                                                </InputAdornment>
-                                            ),
-                                        }}
-                                    />
+                                    <Grid item size={12}>
+                                        <TextField
+                                            type="text"
+                                            size="small"
+                                            multiline
+                                            rows={10}
+                                            fullWidth
+                                            placeholder={`{\n  apiKey: "xxx",\n  authDomain: "xxx", \n  databaseURL: "xxx"\n  projectId: "xxx"\n  storageBucket: "xxx"\n  messagingSenderId: "xxx"\n  appId: "xxx"\n  measurementId: "xxx"\n}`}
+                                            value={configRaw}
+                                            onChange={(e) => setConfigRaw(e.target.value)}
+                                            margin="normal"
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
+                                                            เพิ่ม Firebase Config :
+                                                        </Typography>
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                        />
+                                    </Grid>
                                 </Grid>
-                            </Grid>
-                            <Divider sx={{ marginTop: 1, marginBottom: 1 }} />
-                            <Button variant="contained" color="primary" onClick={handleApprove} fullWidth sx={{
-                                marginTop: 2,
-                                borderRadius: 15,
-                            }}>
-                                บันทึกข้อมูล
-                            </Button>
+                                <Divider sx={{ marginTop: 1, marginBottom: 1 }} />
+                                <Button type="submit" variant="contained" color="primary" fullWidth sx={{
+                                    marginTop: 2,
+                                    borderRadius: 15,
+                                }}>
+                                    บันทึกข้อมูล
+                                </Button>
+                            </form>
                             <Divider sx={{ marginTop: 2 }} />
                             <Button variant="contained" color="error" onClick={handleLogout} fullWidth sx={{
                                 marginTop: 2,

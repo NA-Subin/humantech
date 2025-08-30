@@ -2,6 +2,7 @@ import { useState } from "react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { Link, useNavigate } from "react-router-dom";  // เปลี่ยนตรงนี้
 import { auth, database } from "../../../server/firebase";
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import Button from '@mui/material/Button';
 import Typography from "@mui/material/Typography";
 import TextField from "@mui/material/TextField";
@@ -12,9 +13,9 @@ import Grid from "@mui/material/Grid";
 import Divider from "@mui/material/Divider";
 import CardContent from "@mui/material/CardContent";
 import theme from "../../../theme/theme";
-import { Card, InputAdornment } from "@mui/material";
+import { Card, IconButton, InputAdornment, Tooltip } from "@mui/material";
 import Logo from '../../../img/Humantech.png';
-import { ref, get } from "firebase/database";  // ✅ เพิ่ม ref & get จาก modular API
+import { ref, get, set } from "firebase/database";  // ✅ เพิ่ม ref & get จาก modular API
 import { saveEncryptedCookie } from "../../../server/cookieUtils";
 import { ShowAccessLogin } from "../../../sweetalert/sweetalert";
 
@@ -51,6 +52,7 @@ const DomainLogin = () => {
 
             if (foundEntry) {
                 setDomainData(foundEntry);
+                setDomainKey(foundEntry?.domainKey || "");
             } else {
                 setError("❌ ไม่พบโดเมนนี้ในระบบ กรุณาตรวจสอบอีกครั้ง");
                 setDomainData(null);
@@ -62,6 +64,10 @@ const DomainLogin = () => {
             setLoading(false);
         }
     };
+
+    console.log("Domain Input:", domain);
+    console.log("Domain Data:", domainData);
+    console.log("Domain Key Input:", domainKey);
 
     // สร้าง secret key แบบสุ่ม 32 ตัว
     // const generateSecret = () => {
@@ -134,11 +140,11 @@ const DomainLogin = () => {
                     alignItems: 'center',
                     p: 2
                 }}>
-                    <Typography variant="h5" fontWeight="bold" gutterBottom>เข้าสู่ระบบโดเมน</Typography>
+                    <Typography variant="h5" fontWeight="bold" gutterBottom>เข้าสู่ระบบ</Typography>
                     <Box sx={{ width: "80%" }}>
                         <CardContent>
                             <Grid container spacing={2}>
-                                <Grid item size={9}>
+                                <Grid item size={9.5}>
                                     <TextField
                                         type="text"
                                         size="small"
@@ -151,21 +157,21 @@ const DomainLogin = () => {
                                             startAdornment: (
                                                 <InputAdornment position="start">
                                                     <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                                        Domain :
+                                                        https://happysoftth.humantech.asia/?domain=
                                                     </Typography>
                                                 </InputAdornment>
                                             ),
-                                            endAdornment: (
-                                                <InputAdornment position="start">
-                                                    <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                                        .humantech.com
-                                                    </Typography>
-                                                </InputAdornment>
-                                            ),
+                                            // endAdornment: (
+                                            //     <InputAdornment position="start">
+                                            //         <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
+                                            //             .humantech.com
+                                            //         </Typography>
+                                            //     </InputAdornment>
+                                            // ),
                                         }}
                                     />
                                 </Grid>
-                                <Grid item size={3}>
+                                <Grid item size={2.5}>
                                     <Button variant="contained" color="success" fullWidth sx={{ marginTop: 2 }} onClick={handleCheckDomain} disabled={loading}>
                                         ตรวจสอบ
                                     </Button>
@@ -174,60 +180,72 @@ const DomainLogin = () => {
                             <Divider sx={{ marginTop: 1, marginBottom: 1 }} />
                             {domainData && (
                                 <>
-                                    <Grid container spacing={1}>
-                                        <Grid item size={12}>
-                                            <TextField
-                                                type="text"
-                                                size="small"
-                                                fullWidth
-                                                placeholder="yourdomain.humantech.com"
-                                                value={domainKey}
-                                                onChange={(e) => setDomainKey(e.target.value)}
-                                                margin="normal"
-                                                InputProps={{
-                                                    startAdornment: (
-                                                        <InputAdornment position="start">
-                                                            <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                                                Domain Key :
-                                                            </Typography>
-                                                        </InputAdornment>
-                                                    ),
-                                                }}
-                                            />
-                                        </Grid>
+                                    <form
+                                        onSubmit={(e) => {
+                                            e.preventDefault(); // กันไม่ให้รีเฟรชหน้า
+                                            handleLogin();      // เรียกฟังก์ชันเข้าสู่ระบบ
+                                        }}
+                                    >
+                                        <Grid container spacing={1}>
+                                            <Grid item size={12}>
+                                                <TextField
+                                                    type="text"
+                                                    size="small"
+                                                    fullWidth
+                                                    placeholder="กรุณากรอก Domain Key"
+                                                    value={domainKey}
+                                                    onChange={(e) => setDomainKey(e.target.value)}
+                                                    margin="normal"
+                                                    InputProps={{
+                                                        startAdornment: (
+                                                            <InputAdornment position="start">
+                                                                <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
+                                                                    Domain Key :
+                                                                </Typography>
+                                                            </InputAdornment>
+                                                        ),
+                                                    }}
+                                                />
+                                            </Grid>
 
-                                        <Grid item size={12}>
-                                            <TextField
-                                                type="password"
-                                                size="small"
-                                                fullWidth
-                                                placeholder="กรุณากรอกรหัส Domain"
-                                                value={password}
-                                                onChange={(e) => setPassword(e.target.value)}
-                                                margin="normal"
-                                                InputProps={{
-                                                    startAdornment: (
-                                                        <InputAdornment position="start">
-                                                            <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                                                Password :
-                                                            </Typography>
-                                                        </InputAdornment>
-                                                    ),
-                                                }}
-                                            />
+                                            <Grid item size={12}>
+                                                <TextField
+                                                    type="password"
+                                                    size="small"
+                                                    fullWidth
+                                                    placeholder="กรุณากรอกรหัส Domain"
+                                                    value={password}
+                                                    onChange={(e) => setPassword(e.target.value)}
+                                                    margin="normal"
+                                                    InputProps={{
+                                                        startAdornment: (
+                                                            <InputAdornment position="start">
+                                                                <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
+                                                                    Password :
+                                                                </Typography>
+                                                            </InputAdornment>
+                                                        ),
+                                                    }}
+                                                />
+                                            </Grid>
                                         </Grid>
-                                    </Grid>
-                                    <Button variant="contained" color="primary" onClick={handleLogin} fullWidth sx={{
-                                        marginTop: 2,
-                                        borderRadius: 15,
-                                    }}>
-                                        เข้าสู่ระบบ
-                                    </Button>
+                                        <Button
+                                            type="submit"   // เปลี่ยนเป็น submit
+                                            variant="contained"
+                                            color="primary"
+                                            fullWidth
+                                            sx={{
+                                                marginTop: 2,
+                                                borderRadius: 15,
+                                            }}>
+                                            เข้าสู่ระบบ
+                                        </Button>
+                                    </form>
                                 </>
                             )}
 
                             {error && <Typography variant="subtitle1" sx={{ color: "red", textAlign: "center" }}>{error}</Typography>}
-
+                            <Divider sx={{ marginTop: 2 }} />
                             <Button variant="contained" color="error" onClick={() => navigate("/register-domain")} fullWidth sx={{
                                 marginTop: 2,
                                 borderRadius: 15,
@@ -238,13 +256,18 @@ const DomainLogin = () => {
                     </Box>
                 </Box>
                 <Box textAlign="right">
-                    <Typography
+                    {/* <Typography
                         variant="subtitle2"
                         sx={{ padding: 2, cursor: "pointer", color: "blue", textDecoration: "underline" }}
                         onClick={() => navigate("/login-admin")}
                     >
                         สำหรับ Admin
-                    </Typography>
+                    </Typography> */}
+                    <Tooltip title="สำหรับ Admin" placement="bottom">
+                        <IconButton onClick={() => navigate("/login-admin")}>
+                            <AdminPanelSettingsIcon sx={{ marginTop: 1 }} />
+                        </IconButton>
+                    </Tooltip>
                 </Box>
             </Card>
         </Container>

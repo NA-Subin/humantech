@@ -203,6 +203,7 @@ const Employee = () => {
             type: "select",
             options: employeetype,
         },
+        { label: "ชื่อ", key: "salary", type: "number" },
     ];
 
     useEffect(() => {
@@ -679,7 +680,7 @@ const Employee = () => {
     // console.log("Dates : ",dayjs(dates, "DD/MM/YYYY"));
     // console.log("Dates s : ",dayjs(toDateString(workshiftDate), "DD/MM/YYYY"));
 
-    console.log("date : ",workshiftDate);
+    console.log("date : ", workshiftDate);
 
     const handleSaveWorkshift = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${opendetail.ID}`);
@@ -885,6 +886,7 @@ const Employee = () => {
                                                             <TablecellHeader sx={{ width: "15%" }}>ส่วนงาน</TablecellHeader>
                                                             <TablecellHeader sx={{ width: "15%" }}>ตำแหน่ง</TablecellHeader>
                                                             <TablecellHeader sx={{ width: "15%" }}>ประเภทการจ้าง</TablecellHeader>
+                                                            <TablecellHeader sx={{ width: "15%" }}>เงินเดือน</TablecellHeader>
                                                         </TableRow>
                                                     </TableHead>
                                                     <TableBody>
@@ -911,7 +913,7 @@ const Employee = () => {
                                                                         <TableCell sx={{ textAlign: "center" }}>
                                                                             {row.employeetype?.includes("-") ? row.employeetype.split("-")[1] : row.employeetype}
                                                                         </TableCell>
-
+                                                                        <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.salary)}</TableCell>
                                                                     </TableRow>
                                                                 ))}
                                                     </TableBody>
