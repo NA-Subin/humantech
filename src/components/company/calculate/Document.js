@@ -338,7 +338,7 @@ const DocumentDetal = (props) => {
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
             if (!employeeData) {
-                setEmployees([{ ID: 0, name: '' }]);
+                setEmployees([]);
             } else {
                 setEmployees(employeeData);
             }
@@ -348,7 +348,10 @@ const DocumentDetal = (props) => {
     }, [firebaseDB, companyId]);
 
     useEffect(() => {
-        if (!employees || employees.length === 0 || !month) return;
+        if (!employees || employees.length === 0 || !month) {
+            setDateArrayMap([]); // ถ้าไม่มี employee หรือเดือน -> clear เป็น array ว่าง
+            return;
+        }
 
         let filteredEmployees = employees;
 
@@ -370,8 +373,10 @@ const DocumentDetal = (props) => {
         }
 
         console.log("Filtered Employees:", filteredEmployees);
-        setDateArrayMap(filteredEmployees);
-    }, [employees, department, section, position, employee]);
+
+        // ถ้า filter แล้วไม่เหลือใคร -> ให้เป็น array ว่าง
+        setDateArrayMap(filteredEmployees.length > 0 ? filteredEmployees : []);
+    }, [employees, department, section, position, employee, month]);
 
     const handleChange = (value) => {
         setDoc(value);

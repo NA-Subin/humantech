@@ -26,7 +26,7 @@ export default function InsertCompany() {
     const [thailand, setThailand] = React.useState([]);
     const [address, setAddress] = React.useState({});
     const [lat, setLat] = React.useState("");
-    const [lng,setLng] = React.useState("");
+    const [lng, setLng] = React.useState("");
     const [addressAll, setAddressAll] = React.useState("");
     const leave = [
         {
@@ -375,37 +375,37 @@ export default function InsertCompany() {
         let backendId = "";
         let databackendID = {};
 
-        // try {
-        //     const snapshot = await get(groupsRef);
-        //     if (snapshot.exists()) {
-        //         databackendID = snapshot.val(); // สมมติ backenid เป็น string เช่น "abc123"
-        //     } else {
-        //         throw new Error("ไม่พบค่า backenid ใน Firebase");
-        //     }
+        try {
+            const snapshot = await get(groupsRef);
+            if (snapshot.exists()) {
+                databackendID = snapshot.val(); // สมมติ backenid เป็น string เช่น "abc123"
+            } else {
+                throw new Error("ไม่พบค่า backenid ใน Firebase");
+            }
 
-        //     console.log("backend Id : ", databackendID.backendid);
+            console.log("backend Id : ", databackendID.backendid);
 
-        //     const response = await fetch(`http://upload.happysoftth.com/humantech/${databackendID.backendid}/company`, {
-        //         method: "POST",
-        //         headers: {
-        //             "Content-Type": "application/json",
-        //         },
-        //         body: JSON.stringify({ company: companyName }),
-        //     });
+            const response = await fetch(`http://upload.happysoftth.com/humantech/${databackendID.backendid}/company`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ company: companyName }),
+            });
 
-        //     if (!response.ok) {
-        //         const text = await response.text();
-        //         console.error("Backend error response:", text);
-        //         throw new Error(`HTTP error! status: ${response.status}`);
-        //     }
+            if (!response.ok) {
+                const text = await response.text();
+                console.error("Backend error response:", text);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-        //     const data = await response.json();
-        //     backendId = data.id; // สมมติ response json มี field ชื่อ id
-        // } catch (error) {
-        //     console.error("Error post group to backend:", error);
-        //     alert("เกิดข้อผิดพลาดขณะส่งข้อมูลไป backend");
-        //     return;
-        // }
+            const data = await response.json();
+            backendId = data.id; // สมมติ response json มี field ชื่อ id
+        } catch (error) {
+            console.error("Error post group to backend:", error);
+            alert("เกิดข้อผิดพลาดขณะส่งข้อมูลไป backend");
+            return;
+        }
 
         try {
             const snapshot = await get(companiesRef);
@@ -422,7 +422,7 @@ export default function InsertCompany() {
                         lat: lat,
                         lng: lng,
                         name: "บริษัท",
-                        ID : 0
+                        ID: 0
                     }
                 ],
                 email: email,

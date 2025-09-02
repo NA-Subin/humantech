@@ -224,7 +224,7 @@ const OtherDetail = (props) => {
                                         {
                                             other.length === 0 ?
                                                 <TableRow>
-                                                    <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                    <TablecellNoData colSpan={10}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                 </TableRow>
                                                 :
                                                 other.map((row, index) => (

@@ -345,7 +345,7 @@ const InternshipDetail = (props) => {
                                         {
                                             internship.length === 0 ?
                                                 <TableRow>
-                                                    <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                    <TablecellNoData colSpan={15}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                 </TableRow>
                                                 :
                                                 internship.map((row, index) => (

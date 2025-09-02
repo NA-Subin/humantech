@@ -75,7 +75,12 @@ const SalaryDetail = (props) => {
     const [deduction, setDeduction] = useState([]);
     const [documentincome, setDocumentIncome] = useState([]);
     const [documentdeduction, setDocumentDeduction] = useState([]);
+    const [documentleave, setDocumentLeave] = useState([]);
+    const [documentot, setDocumentOT] = useState([]);
     const [holiday, setHoliday] = useState([]);
+
+    console.log("Leave : ", documentleave);
+    console.log("OT : ", documentot);
 
     const year = month.year();
     const m = month.month();
@@ -97,7 +102,7 @@ const SalaryDetail = (props) => {
     const deductionActive = deduction.filter(row => row.status === 1);
 
     // 1️⃣ กรอง employees ตาม props
-    let filteredEmployees = employees;
+    let filteredEmployees = employees.length !== 0 ? employees : [];
 
     if (department && department !== "all-ทั้งหมด") {
         filteredEmployees = filteredEmployees.filter(e => e.department === department);
@@ -116,6 +121,98 @@ const SalaryDetail = (props) => {
         filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
     }
 
+    const dayNameMap = {
+        Sunday: "อาทิตย์",
+        Monday: "จันทร์",
+        Tuesday: "อังคาร",
+        Wednesday: "พุธ",
+        Thursday: "พฤหัสบดี",
+        Friday: "ศุกร์",
+        Saturday: "เสาร์",
+    };
+
+    const generateHolidayDatesFromHistories = (
+        employeeID,
+        employeecode,
+        nickname,
+        employname,
+        department,
+        section,
+        position,
+        workshifthistories,
+        filterYear,
+        filterMonth
+    ) => {
+        if (!Array.isArray(workshifthistories)) return {
+            employeeID,
+            employeecode,
+            nickname,
+            employname,
+            department,
+            section,
+            position,
+            holidayDates: []
+        };
+
+        const parseYear = (y) =>
+            y === "now" ? dayjs().year() : parseInt(y) > 2500 ? parseInt(y) - 543 : parseInt(y);
+        const parseMonth = (m) =>
+            m === "now" ? dayjs().month() : parseInt(m) - 1;
+        const parseDay = (d) =>
+            d === "now" ? dayjs().date() : parseInt(d);
+
+        const allHolidayDates = [];
+
+        workshifthistories.forEach((history) => {
+            const holidays = history.holiday?.map(h => h.name) || [];
+
+            const startYear = parseYear(history.YYYYstart);
+            const startMonth = parseMonth(history.MMstart);
+            const startDay = parseDay(history.DDstart);
+
+            const endYear = parseYear(history.YYYYend);
+            const endMonth = parseMonth(history.MMend);
+            const endDay = parseDay(history.DDend);
+
+            let current = dayjs().year(startYear).month(startMonth).date(startDay);
+            const end = dayjs().year(endYear).month(endMonth).date(endDay);
+
+            while (current.isSameOrBefore(end, "day")) {
+                const currentDateStr = current.format("DD/MM/YYYY");
+                const dayName = dayNameMap[current.format("dddd")];
+
+                // ✅ ใช้ holiday ของช่วงนั้นเท่านั้น
+                if (holidays.includes(dayName)) {
+                    if (current.year() === filterYear && current.month() === filterMonth) {
+                        allHolidayDates.push({
+                            date: currentDateStr,
+                            dayName,
+                            workshift: history.workshift || null,
+                            periodID: history.ID,
+                        });
+                    }
+                }
+
+                current = current.add(1, "day");
+            }
+        });
+
+        allHolidayDates.sort((a, b) =>
+            dayjs(a.date, "DD/MM/YYYY").unix() - dayjs(b.date, "DD/MM/YYYY").unix()
+        );
+
+        return {
+            employeeID,
+            employeecode,
+            nickname,
+            employname,
+            department,
+            section,
+            position,
+            holidayDates: allHolidayDates
+        };
+    };
+
     // 3️⃣ สร้าง Rows จาก filteredEmployees
     const Rows = filteredEmployees.map(emp => {
         const docIncome = documentincome.find(doc => doc.employid === emp.ID);
@@ -124,9 +221,45 @@ const SalaryDetail = (props) => {
             Number(item.status) === 2
         ).length ?? 0;
 
+        const leave = documentleave.filter((doc) => doc.empid === emp.ID);
+
+        let otHours = 0; // ตัวแปรเก็บผลรวมชั่วโมง OT
+
+        const ot = documentot.filter(doc => doc.empid === emp.ID);
+
+        ot.forEach(doc => {
+            let start = dayjs(doc.timestart, "HH:mm");
+            let end = dayjs(doc.timeend, "HH:mm");
+
+            // ถ้า OT ข้ามวัน (end < start) → บวกเพิ่ม 1 วัน
+            if (end.isBefore(start)) {
+                end = end.add(1, "day");
+            }
+
+            // คำนวณชั่วโมง OT
+            const hours = end.diff(start, "minute") / 60;
+
+            // รวมเข้ากับ otHours
+            otHours += hours;
+        });
+
+        // ✅ generate holidayDates ของพนักงานคนนี้
+        const holidayResult = generateHolidayDatesFromHistories(
+            emp.ID,
+            emp.employeecode,
+            emp.nickname,
+            emp.employname,
+            emp.department,
+            emp.section,
+            emp.position,
+            emp.workshifthistory,
+            year,
+            m
+        );
+
         const row = {
             employeecode: emp.employeecode,
-            employeetype: emp.employeetype,
+            employeetype: emp.employmenttype,
             department: emp.department,
             section: emp.section,
             position: emp.position,
@@ -134,10 +267,15 @@ const SalaryDetail = (props) => {
             salary: Number(emp.salary),
             employid: emp.ID,
             employname: `${emp.employname} (${emp.nickname})`,
-            workday: emp.employeetype.split("-")[1] === "รายเดือน" ? workingDays : 0,
+            workday: emp.employmenttype.split("-")[1] === "รายเดือน" ? workingDays : 0,
             attendantCount: attendantCount,
-            totalIncome: 0,    // จะเก็บผลรวม income
-            totalDeduction: 0,  // จะเก็บผลรวม deduction
+            holidayCount: holidayResult.holidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
+            holiday: holidayResult.holidayDates, // ✅ เพิ่มจำนวนวันหยุด
+            leaveCount: leave.length,
+            otHours: otHours,
+            missingWork: (emp.employmenttype.split("-")[1] === "รายเดือน" ? workingDays : 0) - (attendantCount + holidayResult.holidayDates.length + leave.length),
+            totalIncome: 0,
+            totalDeduction: 0,
             total: 0
         };
 
@@ -146,7 +284,7 @@ const SalaryDetail = (props) => {
             const docIncomes = docIncome?.income?.find(item => item.ID === inc.ID);
             const incomeValue = docIncomes?.income || 0;
             row[`income${inc.ID}`] = incomeValue;
-            row.totalIncome += incomeValue;   // รวมผลรวม income
+            row.totalIncome += incomeValue;
         });
 
         // deduction flat
@@ -154,10 +292,10 @@ const SalaryDetail = (props) => {
             const docDeductions = docDeduction?.deduction?.find(item => item.ID === ded.ID);
             const deductionValue = docDeductions?.deduction || 0;
             row[`deduction${ded.ID}`] = deductionValue;
-            row.totalDeduction += deductionValue; // รวมผลรวม deduction
+            row.totalDeduction += deductionValue;
         });
 
-        row.total = (Number(emp.salary) + row.totalIncome) - row.totalDeduction
+        row.total = (Number(emp.salary) + row.totalIncome) - row.totalDeduction;
 
         return row;
     });
@@ -244,7 +382,7 @@ const SalaryDetail = (props) => {
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
             if (!employeeData) {
-                setEmployees([{ ID: 0, name: '' }]);
+                setEmployees([]);
             } else {
                 setEmployees(employeeData);
             }
@@ -294,7 +432,7 @@ const SalaryDetail = (props) => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(month).format("YYYY/MM")}`);
+        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(month).format("YYYY/M")}`);
 
         const unsubscribe = onValue(documentRef, (snapshot) => {
             const documentData = snapshot.val();
@@ -313,7 +451,7 @@ const SalaryDetail = (props) => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(month).format("YYYY/MM")}`);
+        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(month).format("YYYY/M")}`);
 
         const unsubscribe = onValue(documentRef, (snapshot) => {
             const documentData = snapshot.val();
@@ -323,6 +461,44 @@ const SalaryDetail = (props) => {
             } else {
                 const documentArray = Object.values(documentData);
                 setDocumentDeduction(documentArray); // default: แสดงทั้งหมด
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId, month]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/documentleave/${dayjs(month).format("YYYY/M")}`);
+
+        const unsubscribe = onValue(leaveRef, (snapshot) => {
+            const leaveData = snapshot.val();
+
+            if (!leaveData) {
+                setDocumentLeave([]);
+            } else {
+                const documentArray = Object.values(leaveData);
+                setDocumentLeave(documentArray); // default: แสดงทั้งหมด
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId, month]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const OTRef = ref(firebaseDB, `workgroup/company/${companyId}/documentot/${dayjs(month).format("YYYY/M")}`);
+
+        const unsubscribe = onValue(OTRef, (snapshot) => {
+            const OTData = snapshot.val();
+
+            if (!OTData) {
+                setDocumentOT([]);
+            } else {
+                const documentArray = Object.values(OTData);
+                setDocumentOT(documentArray); // default: แสดงทั้งหมด
             }
         });
 
@@ -441,15 +617,19 @@ const SalaryDetail = (props) => {
                 <Grid container spacing={2}>
                     <Grid item size={12}>
                         <TableContainer component={Paper}>
-                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1400px" }}>
+                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                         {/* <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader> */}
-                                        <TablecellHeader sx={{ width: 100 }}>รหัส</TablecellHeader>
-                                        <TablecellHeader sx={{ width: 300 }}>ชื่อ</TablecellHeader>
-                                        <TablecellHeader sx={{ width: 150 }}>มาทำงาน</TablecellHeader>
-                                        <TablecellHeader sx={{ width: 150 }}>วันทำงาน</TablecellHeader>
-                                        <TablecellHeader sx={{ width: 150 }}>เงินเดือน</TablecellHeader>
+                                        <TablecellHeader sx={{ width: 60 }}>รหัส</TablecellHeader>
+                                        <TablecellHeader sx={{ width: 200 }}>ชื่อ</TablecellHeader>
+                                        <TablecellHeader sx={{ width: 100 }}>มาทำงาน</TablecellHeader>
+                                        <TablecellHeader sx={{ width: 100 }}>วันหยุดตามกะ</TablecellHeader>
+                                        <TablecellHeader sx={{ width: 100 }}>ลางาน</TablecellHeader>
+                                        <TablecellHeader sx={{ width: 100 }}>ขาดงาน</TablecellHeader>
+                                        <TablecellHeader sx={{ width: 100 }}>โอที</TablecellHeader>
+                                        <TablecellHeader sx={{ width: 100 }}>วันทำงาน</TablecellHeader>
+                                        <TablecellHeader sx={{ width: 100 }}>เงินเดือน</TablecellHeader>
 
                                         {visibleIncome.map(inc => (
                                             <TablecellHeader key={inc.ID} sx={{ width: 150 }}>{inc.name}</TablecellHeader>
@@ -461,130 +641,142 @@ const SalaryDetail = (props) => {
                                             <TablecellHeader key={ded.ID} sx={{ width: 150 }}>{ded.name}</TablecellHeader>
                                         ))}
 
-                                        {visibleDeduction.length !== 0 && <TablecellHeader sx={{ width: 200 }}>คงเหลือ</TablecellHeader>}
+                                        {visibleDeduction.length !== 0 && <TablecellHeader sx={{ width: 200 }}>รวมรายจ่าย</TablecellHeader>}
 
                                         <TablecellHeader sx={{ width: 150 }}>รวมทั้งหมด</TablecellHeader>
                                     </TableRow>
                                 </TableHead>
 
                                 <TableBody>
-                                    {Object.entries(groupedRows).map(([dept, secObj]) => (
-                                        <>
-                                            {/* ✅ แถวแรก ฝ่ายงาน */}
+                                    {
+                                        Object.entries(groupedRows).length === 0 ?
                                             <TableRow>
-                                                <TableCell
-                                                    colSpan={2}
-                                                    sx={{
-                                                        fontWeight: "bold",
-                                                        backgroundColor: "#b2dfdb",
-                                                        position: "sticky",
-                                                        left: 0
-                                                    }}
-                                                >
-                                                    ฝ่ายงาน: {dept.split("-")[1]}
-                                                </TableCell>
-                                                <TableCell
-                                                    colSpan={(visibleIncome.length !== 0 && visibleDeduction.length !== 0 ? 6 : visibleIncome.length === 0 && visibleDeduction.length === 0 ? 4 : 5) + visibleIncome.length + visibleDeduction.length}
-                                                    sx={{
-                                                        fontWeight: "bold",
-                                                        backgroundColor: "#b2dfdb",
-                                                    }}
-                                                />
+                                                <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                             </TableRow>
-
-                                            {Object.entries(secObj).map(([sec, posObj]) => (
+                                            :
+                                            Object.entries(groupedRows).map(([dept, secObj]) => (
                                                 <>
-                                                    {/* ✅ แถวสอง ส่วนงาน */}
-                                                    {
-                                                        sec.split("-")[1] !== "ไม่มี" &&
-                                                        <TableRow>
-                                                            <TableCell
-                                                                colSpan={2}
-                                                                sx={{
-                                                                    fontWeight: "bold",
-                                                                    background: "#cee8e7ff",
-                                                                    position: "sticky",
-                                                                    left: 0
-                                                                }}
-                                                            >
-                                                                ส่วนงาน: {sec.split("-")[1]}
-                                                            </TableCell>
-                                                            <TableCell
-                                                                colSpan={(visibleIncome.length !== 0 && visibleDeduction.length !== 0 ? 6 : visibleIncome.length === 0 && visibleDeduction.length === 0 ? 4 : 5) + visibleIncome.length + visibleDeduction.length}
-                                                                sx={{
-                                                                    fontWeight: "bold",
-                                                                    background: "#cee8e7ff",
-                                                                }}
-                                                            />
-                                                        </TableRow>
-                                                    }
+                                                    {/* ✅ แถวแรก ฝ่ายงาน */}
+                                                    <TableRow>
+                                                        <TableCell
+                                                            colSpan={2}
+                                                            sx={{
+                                                                fontWeight: "bold",
+                                                                backgroundColor: "#b2dfdb",
+                                                                position: "sticky",
+                                                                left: 0
+                                                            }}
+                                                        >
+                                                            ฝ่ายงาน: {dept.split("-")[1]}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            colSpan={(visibleIncome.length !== 0 && visibleDeduction.length !== 0 ? 10 : visibleIncome.length === 0 && visibleDeduction.length === 0 ? 8 : 9) + visibleIncome.length + visibleDeduction.length}
+                                                            sx={{
+                                                                fontWeight: "bold",
+                                                                backgroundColor: "#b2dfdb",
+                                                            }}
+                                                        />
+                                                    </TableRow>
 
-                                                    {Object.entries(posObj).map(([pos, empList]) => (
+                                                    {Object.entries(secObj).map(([sec, posObj]) => (
                                                         <>
-                                                            {/* ✅ แถวสาม ตำแหน่ง */}
-                                                            <TableRow>
-                                                                <TableCell
-                                                                    colSpan={2}
-                                                                    sx={{
-                                                                        fontWeight: "bold",
-                                                                        background: "#e5f4f3ff",
-                                                                        position: "sticky",
-                                                                        left: 0
-                                                                    }}
-                                                                >
-                                                                    ตำแหน่ง: {pos.split("-")[1]}
-                                                                </TableCell>
-                                                                <TableCell
-                                                                    colSpan={(visibleIncome.length !== 0 && visibleDeduction.length !== 0 ? 6 : visibleIncome.length === 0 && visibleDeduction.length === 0 ? 4 : 5) + visibleIncome.length + visibleDeduction.length}
-                                                                    sx={{
-                                                                        fontWeight: "bold",
-                                                                        background: "#e5f4f3ff",
-                                                                    }}
-                                                                />
-                                                            </TableRow>
-
-                                                            {/* ✅ รายชื่อพนักงานในตำแหน่ง */}
-                                                            {empList.map((row, index) => (
-                                                                <TableRow key={row.employid}>
-                                                                    {/* <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell> */}
-                                                                    <TableCell sx={{ textAlign: "center" }}>{row.employeecode}</TableCell>
-                                                                    <TableCell sx={{ textAlign: "center", position: "sticky", left: 0, backgroundColor: "white" }}>{row.employname}</TableCell>
-                                                                    <TableCell sx={{ textAlign: "center" }}>{row.attendantCount}</TableCell>
-                                                                    <TableCell sx={{ textAlign: "center" }}>{row.workday}</TableCell>
-                                                                    <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.salary)}</TableCell>
-
-                                                                    {visibleIncome.map(inc => (
-                                                                        <TableCell key={inc.ID} sx={{ textAlign: "center" }}>
-                                                                            {row[`income${inc.ID}`] ? row[`income${inc.ID}`] : "-"}
-                                                                        </TableCell>
-                                                                    ))}
-
-                                                                    {visibleIncome.length !== 0 && <TableCell sx={{ textAlign: "center" }}>{row.totalIncome ? row.totalIncome : "-"}</TableCell>}
-
-                                                                    {visibleDeduction.map(ded => (
-                                                                        <TableCell key={ded.ID} sx={{ textAlign: "center" }}>
-                                                                            {row[`deduction${ded.ID}`]
-                                                                                ? -Math.abs(row[`deduction${ded.ID}`])
-                                                                                : "-"
-                                                                            }
-                                                                        </TableCell>
-                                                                    ))}
-
-                                                                    {visibleDeduction.length !== 0 && <TableCell sx={{ textAlign: "center" }}>
-                                                                        {row.totalDeduction
-                                                                            ? -Math.abs(row.totalDeduction)
-                                                                            : "-"
-                                                                        }</TableCell>}
-
-                                                                    <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.total)}</TableCell>
+                                                            {/* ✅ แถวสอง ส่วนงาน */}
+                                                            {
+                                                                sec.split("-")[1] !== "ไม่มี" &&
+                                                                <TableRow>
+                                                                    <TableCell
+                                                                        colSpan={2}
+                                                                        sx={{
+                                                                            fontWeight: "bold",
+                                                                            background: "#cee8e7ff",
+                                                                            position: "sticky",
+                                                                            left: 0
+                                                                        }}
+                                                                    >
+                                                                        ส่วนงาน: {sec.split("-")[1]}
+                                                                    </TableCell>
+                                                                    <TableCell
+                                                                        colSpan={(visibleIncome.length !== 0 && visibleDeduction.length !== 0 ? 10 : visibleIncome.length === 0 && visibleDeduction.length === 0 ? 8 : 9) + visibleIncome.length + visibleDeduction.length}
+                                                                        sx={{
+                                                                            fontWeight: "bold",
+                                                                            background: "#cee8e7ff",
+                                                                        }}
+                                                                    />
                                                                 </TableRow>
+                                                            }
+
+                                                            {Object.entries(posObj).map(([pos, empList]) => (
+                                                                <>
+                                                                    {/* ✅ แถวสาม ตำแหน่ง */}
+                                                                    <TableRow>
+                                                                        <TableCell
+                                                                            colSpan={2}
+                                                                            sx={{
+                                                                                fontWeight: "bold",
+                                                                                background: "#e5f4f3ff",
+                                                                                position: "sticky",
+                                                                                left: 0
+                                                                            }}
+                                                                        >
+                                                                            ตำแหน่ง: {pos.split("-")[1]}
+                                                                        </TableCell>
+                                                                        <TableCell
+                                                                            colSpan={(visibleIncome.length !== 0 && visibleDeduction.length !== 0 ? 10 : visibleIncome.length === 0 && visibleDeduction.length === 0 ? 8 : 9) + visibleIncome.length + visibleDeduction.length}
+                                                                            sx={{
+                                                                                fontWeight: "bold",
+                                                                                background: "#e5f4f3ff",
+                                                                            }}
+                                                                        />
+                                                                    </TableRow>
+
+                                                                    {/* ✅ รายชื่อพนักงานในตำแหน่ง */}
+                                                                    {empList.map((row, index) => (
+                                                                        <TableRow key={row.employid}>
+                                                                            {/* <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell> */}
+                                                                            <TableCell sx={{ textAlign: "center" }}>{row.employeecode}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center", position: "sticky", left: 0, backgroundColor: "white" }}>{row.employname}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>{row.attendantCount !== 0 ? `${row.attendantCount} วัน` : "-"}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>{row.holidayCount !== 0 ? `${row.holidayCount} วัน` : "-"}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>{row.leaveCount !== 0 ? `${row.leaveCount} วัน` : "-"}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>{row.missingWork !== 0 ? `${row.missingWork} วัน` : "-"}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>{row.otHours !== 0 ? `${row.otHours} ชม.` : "-"}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>{row.workday !== 0 ? `${row.workday} วัน` : "-"}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.salary)}</TableCell>
+
+                                                                            {visibleIncome.map(inc => (
+                                                                                <TableCell key={inc.ID} sx={{ textAlign: "center" }}>
+                                                                                    {row[`income${inc.ID}`] ? new Intl.NumberFormat("en-US").format(row[`income${inc.ID}`]) : "-"}
+                                                                                </TableCell>
+                                                                            ))}
+
+                                                                            {visibleIncome.length !== 0 && <TableCell sx={{ textAlign: "center" }}>{row.totalIncome ? new Intl.NumberFormat("en-US").format(row.totalIncome) : "-"}</TableCell>}
+
+                                                                            {visibleDeduction.map(ded => (
+                                                                                <TableCell key={ded.ID} sx={{ textAlign: "center" }}>
+                                                                                    {row[`deduction${ded.ID}`]
+                                                                                        ? new Intl.NumberFormat("en-US").format(-Math.abs(row[`deduction${ded.ID}`]))
+                                                                                        : "-"
+                                                                                    }
+                                                                                </TableCell>
+                                                                            ))}
+
+                                                                            {visibleDeduction.length !== 0 && <TableCell sx={{ textAlign: "center" }}>
+                                                                                {row.totalDeduction
+                                                                                    ? new Intl.NumberFormat("en-US").format(-Math.abs(row.totalDeduction))
+                                                                                    : "-"
+                                                                                }
+                                                                            </TableCell>
+                                                                            }
+
+                                                                            <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.total)}</TableCell>
+                                                                        </TableRow>
+                                                                    ))}
+                                                                </>
                                                             ))}
                                                         </>
                                                     ))}
                                                 </>
                                             ))}
-                                        </>
-                                    ))}
                                 </TableBody>
                             </Table>
                         </TableContainer>

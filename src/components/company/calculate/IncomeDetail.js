@@ -296,7 +296,7 @@ const IncomeDetail = (props) => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(month).format("YYYY/MM")}`);
+        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(month).format("YYYY/M")}`);
 
         const unsubscribe = onValue(documentRef, (snapshot) => {
             const documentData = snapshot.val();
@@ -313,7 +313,7 @@ const IncomeDetail = (props) => {
     }, [firebaseDB, companyId, month]);
 
     const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(month).format("YYYY/MM")}`);
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(month).format("YYYY/M")}`);
 
         const invalidMessages = [];
 
@@ -370,7 +370,7 @@ const IncomeDetail = (props) => {
     };
 
     const handleCancel = () => {
-        const incomeRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(month).format("YYYY/MM")}`);
+        const incomeRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(month).format("YYYY/M")}`);
 
         onValue(incomeRef, (snapshot) => {
             const incomeData = snapshot.val() || [];
@@ -412,20 +412,26 @@ const IncomeDetail = (props) => {
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                            {IncomesRows.map((row, index) => (
-                                                <TableRow key={row.employid}>
-                                                    <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
-                                                    {income
-                                                        .filter(inc => inc.status === 1)
-                                                        .map(inc => (
-                                                            <TableCell key={inc.ID} sx={{ textAlign: "center" }}>
-                                                                {row[`income${inc.ID}`] ?? 0}
-                                                            </TableCell>
-                                                        ))}
-                                                </TableRow>
-                                            ))}
+                                            {
+                                                IncomesRows.length === 0 ?
+                                                    <TableRow>
+                                                        <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                    </TableRow>
+                                                    :
+                                                    IncomesRows.map((row, index) => (
+                                                        <TableRow key={row.employid}>
+                                                            <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
+                                                            {income
+                                                                .filter(inc => inc.status === 1)
+                                                                .map(inc => (
+                                                                    <TableCell key={inc.ID} sx={{ textAlign: "center" }}>
+                                                                        {row[`income${inc.ID}`] ?? 0}
+                                                                    </TableCell>
+                                                                ))}
+                                                        </TableRow>
+                                                    ))}
                                         </TableBody>
                                     </Table>
                                 </TableContainer>

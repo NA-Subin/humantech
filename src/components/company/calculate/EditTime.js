@@ -197,7 +197,10 @@ const EditTimeDetail = (props) => {
     };
 
     useEffect(() => {
-        if (!employees || employees.length === 0 || !month) return;
+        if (!employees || employees.length === 0 || !month) {
+            setDateArrayMap([]); // ถ้าไม่มี employee หรือเดือน ให้เคลียร์เป็นว่าง
+            return;
+        }
 
         let filteredEmployees = employees;
 
@@ -218,8 +221,14 @@ const EditTimeDetail = (props) => {
             filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
         }
 
-        const year = month.year();   // จาก dayjs, เช่น 2025
-        const m = month.month();     // จาก dayjs, 0-11
+        // ถ้า filter แล้วไม่เหลือพนักงาน
+        if (filteredEmployees.length === 0) {
+            setDateArrayMap([]);
+            return;
+        }
+
+        const year = month.year();   // เช่น 2025
+        const m = month.month();     // 0-11
 
         const holidaysInMonth = holiday.filter(h =>
             parseInt(h.YYYY) === year && parseInt(h.MM) === m + 1
@@ -228,7 +237,7 @@ const EditTimeDetail = (props) => {
         const mapped = filteredEmployees.map(e =>
             generateFilteredDatesFromHistories(
                 e.ID,
-                e.attendant?.[year]?.[m + 1], // ใน attendant ใช้ 1-based เดือน
+                e.attendant?.[year]?.[m + 1],
                 e.employeecode,
                 e.nickname,
                 e.employname,
@@ -247,11 +256,11 @@ const EditTimeDetail = (props) => {
     }, [employees, department, section, position, employee, month, holiday]);
 
     employees.forEach(emp => {
-        const position = emp.position.split("-")[1];
-        const department = emp.department.split("-")[1];
-        const section = emp.section.split("-")[1];
-        const year = dayjs().format("YYYY");
-        const month = dayjs().month() + 1; // ใช้เลขเดือนตรงกับ key
+        const position = emp.position ? emp.position.split("-")[1] : "";
+        const department = emp.department ? emp.department.split("-")[1] : "";
+        const section = emp.section ? emp.section.split("-")[1] : "";
+        const year = dayjs().format("YYYY") || "";
+        const month = (dayjs().month() + 1) || ""; // ใช้เลขเดือนตรงกับ key
         //setDateArray(generateFilteredDates(workshift));
 
         const attendantList = emp.attendant?.[year]?.[month] || [];
@@ -308,7 +317,7 @@ const EditTimeDetail = (props) => {
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
             if (!employeeData) {
-                setEmployees([{ ID: 0, name: '' }]);
+                setEmployees([]);
             } else {
                 setEmployees(employeeData);
             }

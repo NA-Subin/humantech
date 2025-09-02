@@ -464,7 +464,7 @@ const PersonalDetail = (props) => {
                                         {
                                             personal.length === 0 ?
                                                 <TableRow>
-                                                    <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                    <TablecellNoData colSpan={18}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                 </TableRow>
                                                 :
                                                 personal.map((row, index) => (

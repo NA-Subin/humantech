@@ -240,98 +240,103 @@ const WorkShiftDetail = (props) => {
                         </TableHead>
                         <TableBody>
                             {
-                                dateArray.map((emp, index) => {
-                                    const allDays = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
+                                dateArray.length === 0 ?
+                                    <TableRow>
+                                        <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                    </TableRow>
+                                    :
+                                    dateArray.map((emp, index) => {
+                                        const allDays = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
 
-                                    return (
-                                        <React.Fragment key={index}>
-                                            <TableRow>
-                                                <TableCell
-                                                    sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }}
-                                                    colSpan={6}
-                                                >
-                                                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>
-                                                            รหัสพนักงาน : {emp.employeecode}
-                                                        </Typography>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
-                                                            {emp.employname} ({emp.nickname})
-                                                        </Typography>
-                                                        <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                                                            ฝ่ายงาน {emp.department.split("-")[1].replace("ฝ่าย", "").trim()}
-                                                        </Typography>
-                                                    </Box>
-                                                </TableCell>
-                                            </TableRow>
+                                        return (
+                                            <React.Fragment key={index}>
+                                                <TableRow>
+                                                    <TableCell
+                                                        sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }}
+                                                        colSpan={6}
+                                                    >
+                                                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>
+                                                                รหัสพนักงาน : {emp.employeecode}
+                                                            </Typography>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
+                                                                {emp.employname} ({emp.nickname})
+                                                            </Typography>
+                                                            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                                                                ฝ่ายงาน {emp.department.split("-")[1].replace("ฝ่าย", "").trim()}
+                                                            </Typography>
+                                                        </Box>
+                                                    </TableCell>
+                                                </TableRow>
 
-                                            {
-                                                emp.workshifthistory
-                                                    .filter(shift => {
-                                                        // สร้าง dayjs จาก DD/MM/YYYY/YY ของ shift
-                                                        const shiftStart = dayjs(`${shift.YYYYstart}-${shift.MMstart}-${shift.DDstart}`, "YYYY-M-D");
-                                                        const shiftEnd = shift.DDend === "now"
-                                                            ? monthEnd
-                                                            : dayjs(`${shift.YYYYend}-${shift.MMend}-${shift.DDend}`, "YYYY-M-D");
+                                                {
+                                                    emp.workshifthistory
+                                                        .filter(shift => {
+                                                            // สร้าง dayjs จาก DD/MM/YYYY/YY ของ shift
+                                                            const shiftStart = dayjs(`${shift.YYYYstart}-${shift.MMstart}-${shift.DDstart}`, "YYYY-M-D");
+                                                            const shiftEnd = shift.DDend === "now"
+                                                                ? monthEnd
+                                                                : dayjs(`${shift.YYYYend}-${shift.MMend}-${shift.DDend}`, "YYYY-M-D");
 
-                                                        // ตรวจสอบ overlap กับเดือน
-                                                        return shiftEnd.isAfter(monthStart) && shiftStart.isBefore(monthEnd);
-                                                    })
-                                                    .map((shift, i) => {
-                                                        const holidayNames = shift.holiday?.map(h => h.name) || [];
-                                                        const workingDays = allDays.filter(day => !holidayNames.includes(day));
+                                                            // ตรวจสอบ overlap กับเดือน
+                                                            return shiftEnd.isAfter(monthStart) && shiftStart.isBefore(monthEnd);
+                                                        })
+                                                        .map((shift, i) => {
+                                                            const holidayNames = shift.holiday?.map(h => h.name) || [];
+                                                            const workingDays = allDays.filter(day => !holidayNames.includes(day));
 
-                                                        const rowSpanCount = workingDays.length;
+                                                            const rowSpanCount = workingDays.length;
 
-                                                        return workingDays.map((day, j) => (
-                                                            <TableRow key={`${i}-${j}`}>
-                                                                <TableCell
-                                                                    sx={{
-                                                                        textAlign: "center",
-                                                                        borderTop: j === workingDays.length - 1 && `2px solid lightgray`
-                                                                    }}
-                                                                >
-                                                                    {j + 1}
-                                                                </TableCell>
+                                                            return workingDays.map((day, j) => (
+                                                                <TableRow key={`${i}-${j}`}>
+                                                                    <TableCell
+                                                                        sx={{
+                                                                            textAlign: "center",
+                                                                            borderTop: j === workingDays.length - 1 && `2px solid lightgray`
+                                                                        }}
+                                                                    >
+                                                                        {j + 1}
+                                                                    </TableCell>
 
-                                                                <TableCell
-                                                                    sx={{
-                                                                        textAlign: "center",
-                                                                        backgroundColor: dayColors[day] || "transparent",
-                                                                        borderTop: j === workingDays.length - 1 && `2px solid lightgray`
-                                                                    }}
-                                                                >
-                                                                    {day}
-                                                                </TableCell>
+                                                                    <TableCell
+                                                                        sx={{
+                                                                            textAlign: "center",
+                                                                            backgroundColor: dayColors[day] || "transparent",
+                                                                            borderTop: j === workingDays.length - 1 && `2px solid lightgray`
+                                                                        }}
+                                                                    >
+                                                                        {day}
+                                                                    </TableCell>
 
-                                                                {j === 0 && (
-                                                                    <>
-                                                                        <TableCell sx={{ textAlign: "center", borderTop: `2px solid lightgray` }} rowSpan={rowSpanCount}>
-                                                                            {shift.workshift.split("-")[1]}
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ textAlign: "center", borderTop: `2px solid lightgray` }} rowSpan={rowSpanCount}>
-                                                                            {`วันที่ ${dayjs(`${shift.YYYYstart}-${shift.MMstart}-${shift.DDstart}`, "YYYY-M-D").isBefore(monthStart)
-                                                                                ? formatThaiShort(monthStart)
-                                                                                : formatThaiShort(dayjs(`${shift.YYYYstart}-${shift.MMstart}-${shift.DDstart}`, "YYYY-M-D"))
-                                                                                } ถึงวันที่ ${shift.DDend === "now"
-                                                                                    ? formatThaiShort(monthEnd)
-                                                                                    : formatThaiShort(dayjs(`${shift.YYYYend}-${shift.MMend}-${shift.DDend}`, "YYYY-M-D"))
-                                                                                }`}
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ textAlign: "center", borderTop: `2px solid lightgray` }} rowSpan={rowSpanCount}>
-                                                                            {shift.start} - {shift.stop} น.
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ textAlign: "center", borderTop: `2px solid lightgray` }} rowSpan={rowSpanCount}>
-                                                                            {shift.note || "ไม่มีหมายเหตุ"}
-                                                                        </TableCell>
-                                                                    </>
-                                                                )}
-                                                            </TableRow>
-                                                        ));
-                                                    })
-                                            }
-                                        </React.Fragment>
-                                    );
-                                })
+                                                                    {j === 0 && (
+                                                                        <>
+                                                                            <TableCell sx={{ textAlign: "center", borderTop: `2px solid lightgray` }} rowSpan={rowSpanCount}>
+                                                                                {shift.workshift.split("-")[1]}
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ textAlign: "center", borderTop: `2px solid lightgray` }} rowSpan={rowSpanCount}>
+                                                                                {`วันที่ ${dayjs(`${shift.YYYYstart}-${shift.MMstart}-${shift.DDstart}`, "YYYY-M-D").isBefore(monthStart)
+                                                                                    ? formatThaiShort(monthStart)
+                                                                                    : formatThaiShort(dayjs(`${shift.YYYYstart}-${shift.MMstart}-${shift.DDstart}`, "YYYY-M-D"))
+                                                                                    } ถึงวันที่ ${shift.DDend === "now"
+                                                                                        ? formatThaiShort(monthEnd)
+                                                                                        : formatThaiShort(dayjs(`${shift.YYYYend}-${shift.MMend}-${shift.DDend}`, "YYYY-M-D"))
+                                                                                    }`}
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ textAlign: "center", borderTop: `2px solid lightgray` }} rowSpan={rowSpanCount}>
+                                                                                {shift.start} - {shift.stop} น.
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ textAlign: "center", borderTop: `2px solid lightgray` }} rowSpan={rowSpanCount}>
+                                                                                {shift.note || "ไม่มีหมายเหตุ"}
+                                                                            </TableCell>
+                                                                        </>
+                                                                    )}
+                                                                </TableRow>
+                                                            ));
+                                                        })
+                                                }
+                                            </React.Fragment>
+                                        );
+                                    })
                             }
                         </TableBody>
                     </Table>

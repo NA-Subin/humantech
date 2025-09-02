@@ -287,85 +287,90 @@ const AddTimeDetail = (props) => {
                         </TableHead>
                         <TableBody>
                             {
-                                docLeave.map((emp, index) => (
-                                    <React.Fragment>
-                                        <TableRow>
-                                            <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
-                                                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
-                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
-                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
-                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
-                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
-                                                        ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
-                                                            ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
-                                                            : emp.department.split("-")[1]}
-                                                    </Typography>
-                                                    {
-                                                        emp.section.split("-")[1] !== "ไม่มี" &&
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
-                                                    }
-                                                    <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
-                                                </Box>
-                                            </TableCell>
-                                        </TableRow>
-                                        {
-                                            emp.documentLeave.map((date, index) => (
-                                                <TableRow key={index}>
-                                                    <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>วันที่ {formatThaiShort(dayjs(date.datein, "DD/MM/YYYY"))}</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                        {date.timerequesttype === "ขอแก้ไขเวลาเข้างาน" ? date.checkin : date.timerequesttype === "ขอแก้ไขเวลาเลิกงาน" ? date.checkout : ""} น.
-                                                    </TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                        {date.timerequesttype}
-                                                    </TableCell>
-                                                    <TableCell sx={{ textAlign: "left" }}>
-                                                        <Box sx={{ marginLeft: 2, marginRight: 2, marginTop: date.status === "รออนุมัติ" && 1.5 }}>
-                                                            <Box display="flex" justifyContent="left" alignItems="center">
-                                                                <Typography variant="subtitle2" gutterBottom>สถานะ : </Typography>
-                                                                <Typography
-                                                                    variant="subtitle2"
-                                                                    sx={{
-                                                                        fontWeight: "bold",
-                                                                        marginLeft: 1,
-                                                                        color: date.status === "รออนุมัติ" ? theme.palette.warning.main
-                                                                            : date.status === "อนุมัติ" ? theme.palette.success.main
-                                                                                : theme.palette.error.main
-                                                                    }}
-                                                                    gutterBottom
-                                                                >
-                                                                    {date.status}
-                                                                </Typography>
+                                docLeave.length === 0 ?
+                                    <TableRow>
+                                        <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                    </TableRow>
+                                    :
+                                    docLeave.map((emp, index) => (
+                                        <React.Fragment>
+                                            <TableRow>
+                                                <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
+                                                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
+                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
+                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
+                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
+                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
+                                                            ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
+                                                                ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
+                                                                : emp.department.split("-")[1]}
+                                                        </Typography>
+                                                        {
+                                                            emp.section.split("-")[1] !== "ไม่มี" &&
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
+                                                        }
+                                                        <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
+                                                    </Box>
+                                                </TableCell>
+                                            </TableRow>
+                                            {
+                                                emp.documentLeave.map((date, index) => (
+                                                    <TableRow key={index}>
+                                                        <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>วันที่ {formatThaiShort(dayjs(date.datein, "DD/MM/YYYY"))}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                            {date.timerequesttype === "ขอแก้ไขเวลาเข้างาน" ? date.checkin : date.timerequesttype === "ขอแก้ไขเวลาเลิกงาน" ? date.checkout : ""} น.
+                                                        </TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                            {date.timerequesttype}
+                                                        </TableCell>
+                                                        <TableCell sx={{ textAlign: "left" }}>
+                                                            <Box sx={{ marginLeft: 2, marginRight: 2, marginTop: date.status === "รออนุมัติ" && 1.5 }}>
+                                                                <Box display="flex" justifyContent="left" alignItems="center">
+                                                                    <Typography variant="subtitle2" gutterBottom>สถานะ : </Typography>
+                                                                    <Typography
+                                                                        variant="subtitle2"
+                                                                        sx={{
+                                                                            fontWeight: "bold",
+                                                                            marginLeft: 1,
+                                                                            color: date.status === "รออนุมัติ" ? theme.palette.warning.main
+                                                                                : date.status === "อนุมัติ" ? theme.palette.success.main
+                                                                                    : theme.palette.error.main
+                                                                        }}
+                                                                        gutterBottom
+                                                                    >
+                                                                        {date.status}
+                                                                    </Typography>
+                                                                </Box>
+                                                                {
+                                                                    date.status === "รออนุมัติ" ?
+                                                                        <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center ", marginTop: -4.5 }}>
+                                                                            <Tooltip title="ไม่อนุมัติ" placement="top">
+                                                                                <IconButton size="small" onClick={() => handleCancel(date.ID, date.datein, date.timerequesttype, date.checkin, date.checkout, emp.ID, date.attendantID, emp.workshift)} >
+                                                                                    <InsertDriveFileIcon sx={{ color: theme.palette.error.main, fontSize: "28px" }} />
+                                                                                    <CloseIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
+                                                                                </IconButton>
+                                                                            </Tooltip>
+                                                                            <Tooltip title="อนุมัติ" placement="top">
+                                                                                <IconButton size="small" onClick={() => handleApprove(date.ID, date.datein, date.timerequesttype, date.checkin, date.checkout, emp.ID, date.attendantID, emp.workshift)} >
+                                                                                    <InsertDriveFileIcon sx={{ color: theme.palette.primary.main, fontSize: "28px" }} />
+                                                                                    <DoneIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
+                                                                                </IconButton>
+                                                                            </Tooltip>
+                                                                        </Box>
+                                                                        :
+                                                                        <Typography variant="subtitle2" sx={{ marginTop: -0.5 }} gutterBottom>อนุมัติโดย : {date.approveBy}</Typography>
+                                                                }
                                                             </Box>
-                                                            {
-                                                                date.status === "รออนุมัติ" ?
-                                                                    <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center ", marginTop: -4.5 }}>
-                                                                        <Tooltip title="ไม่อนุมัติ" placement="top">
-                                                                            <IconButton size="small" onClick={() => handleCancel(date.ID, date.datein, date.timerequesttype, date.checkin, date.checkout, emp.ID, date.attendantID, emp.workshift)} >
-                                                                                <InsertDriveFileIcon sx={{ color: theme.palette.error.main, fontSize: "28px" }} />
-                                                                                <CloseIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
-                                                                            </IconButton>
-                                                                        </Tooltip>
-                                                                        <Tooltip title="อนุมัติ" placement="top">
-                                                                            <IconButton size="small" onClick={() => handleApprove(date.ID, date.datein, date.timerequesttype, date.checkin, date.checkout, emp.ID, date.attendantID, emp.workshift)} >
-                                                                                <InsertDriveFileIcon sx={{ color: theme.palette.primary.main, fontSize: "28px" }} />
-                                                                                <DoneIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
-                                                                            </IconButton>
-                                                                        </Tooltip>
-                                                                    </Box>
-                                                                    :
-                                                                    <Typography variant="subtitle2" sx={{ marginTop: -0.5 }} gutterBottom>อนุมัติโดย : {date.approveBy}</Typography>
-                                                            }
-                                                        </Box>
-                                                    </TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                        {date.note}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
-                                        }
-                                    </React.Fragment>
-                                ))
+                                                        </TableCell>
+                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                            {date.note}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            }
+                                        </React.Fragment>
+                                    ))
                             }
                         </TableBody>
                     </Table>

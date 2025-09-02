@@ -268,18 +268,24 @@ const OTDetail = (props) => {
                                     </TableRow>
                                 </TableHead>
                                 <TableBody>
-                                    {attendantRows
-                                        .map((emp, index) => (
-                                            <TableRow key={emp.ID ?? index}>
-                                                <TableCell align="center">{index + 1}</TableCell>
-                                                <TableCell align="center">{emp.employname}</TableCell>
-                                                <TableCell align="center">{emp.position}</TableCell>
-                                                <TableCell align="center">{`${emp.datein} - ${emp.dateout}`}</TableCell>
-                                                <TableCell align="center">{emp.workshift}</TableCell>
-                                                <TableCell align="center">{`${emp.checkin} - ${emp.checkout}`}</TableCell>
-                                                <TableCell align="center">{emp.socialSecurity}</TableCell>
+                                    {
+                                        attendantRows.length === 0 ?
+                                            <TableRow>
+                                                <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                             </TableRow>
-                                        ))}
+                                            :
+                                            attendantRows
+                                                .map((emp, index) => (
+                                                    <TableRow key={emp.ID ?? index}>
+                                                        <TableCell align="center">{index + 1}</TableCell>
+                                                        <TableCell align="center">{emp.employname}</TableCell>
+                                                        <TableCell align="center">{emp.position}</TableCell>
+                                                        <TableCell align="center">{`${emp.datein} - ${emp.dateout}`}</TableCell>
+                                                        <TableCell align="center">{emp.workshift}</TableCell>
+                                                        <TableCell align="center">{`${emp.checkin} - ${emp.checkout}`}</TableCell>
+                                                        <TableCell align="center">{emp.socialSecurity}</TableCell>
+                                                    </TableRow>
+                                                ))}
                                 </TableBody>
 
                             </Table>

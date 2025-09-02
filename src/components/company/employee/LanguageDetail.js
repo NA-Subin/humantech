@@ -292,7 +292,7 @@ const LanguageDetail = (props) => {
                                         {
                                             languageRows.length === 0 ?
                                                 <TableRow>
-                                                    <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                    <TablecellNoData colSpan={7}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                 </TableRow>
                                                 :
                                                 (

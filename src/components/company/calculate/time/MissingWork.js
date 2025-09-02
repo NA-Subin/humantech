@@ -295,227 +295,234 @@ const MissingWorkDetail = (props) => {
                             </TableHead>
                             <TableBody>
                                 {
-                                    result.map((emp, index) => (
-                                        <React.Fragment>
-                                            <TableRow>
-                                                <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
-                                                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
-                                                            ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
-                                                                ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
-                                                                : emp.department.split("-")[1]}
-                                                        </Typography>
-                                                        {
-                                                            emp.section.split("-")[1] !== "ไม่มี" &&
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
-                                                        }
-                                                        <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
-                                                    </Box>
-                                                </TableCell>
-                                            </TableRow>
-                                            {
-                                                emp.dateHistory
-                                                    .filter(date => date.message === "ขาดงาน")
-                                                    .map((date, index) => (
-                                                        <TableRow>
-                                                            <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center" }}>{formatThaiShort(dayjs(date.date, "DD/MM/YYYY"))}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center" }}>
-                                                                {typeof date.workshift === "string" && date.workshift.includes("-")
-                                                                    ? date.workshift.split("-")[1]
-                                                                    : ""}
-                                                            </TableCell>
-                                                            <TableCell sx={{ textAlign: "center" }}>{`${date.start} - ${date.stop}`}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center" }}>
-                                                                {
-                                                                    empID === emp.employeeID && empDate === formatThaiShort(dayjs(date.date, "DD/MM/YYYY")) ?
-                                                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                                                            <Grid container spacing={1}>
-                                                                                <Grid item size={5}>
-                                                                                    <TimePicker
-                                                                                        label="เข้างาน"
-                                                                                        value={dayjs(checkin, 'HH:mm:ss')}
-                                                                                        onChange={(newValue) => setCheckin(newValue.format('HH:mm:ss'))}
-                                                                                        views={['hours', 'minutes', 'seconds']}
-                                                                                        ampm={false}
-                                                                                        slotProps={{
-                                                                                            textField: {
-                                                                                                size: 'small',
-                                                                                                fullWidth: true,
-                                                                                                sx: {
-                                                                                                    '& .MuiOutlinedInput-root': {
-                                                                                                        height: 25, // ปรับความสูงที่นี่
-                                                                                                    },
-                                                                                                    '& .MuiInputBase-input': {
-                                                                                                        height: '100%',
-                                                                                                        padding: "0 8px",
-                                                                                                        fontSize: "14px",
-                                                                                                    },
-                                                                                                    '& .MuiInputLabel-root': {
-                                                                                                        fontSize: "14px",
-                                                                                                    },
-                                                                                                },
-                                                                                            },
-                                                                                        }}
-                                                                                    />
-                                                                                </Grid>
-                                                                                <Grid item size={5}>
-                                                                                    <TimePicker
-                                                                                        label="ออกงาน"
-                                                                                        value={dayjs(checkout, 'HH:mm:ss')}
-                                                                                        onChange={(newValue) => setCheckout(newValue.format('HH:mm:ss'))}
-                                                                                        views={['hours', 'minutes', 'seconds']}
-                                                                                        ampm={false}
-                                                                                        slotProps={{
-                                                                                            textField: {
-                                                                                                size: 'small',
-                                                                                                fullWidth: true,
-                                                                                                sx: {
-                                                                                                    '& .MuiOutlinedInput-root': {
-                                                                                                        height: 25, // ปรับความสูงที่นี่
-                                                                                                    },
-                                                                                                    '& .MuiInputBase-input': {
-                                                                                                        height: '100%',
-                                                                                                        padding: "0 8px",
-                                                                                                        fontSize: "14px",
-                                                                                                    },
-                                                                                                    '& .MuiInputLabel-root': {
-                                                                                                        fontSize: "14px",
-                                                                                                    },
-                                                                                                },
-                                                                                            },
-                                                                                        }}
-                                                                                    />
-                                                                                </Grid>
-                                                                                <Grid item size={2}>
-                                                                                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                                                                        <IconButton onClick={() => handleSave(emp.employeeID, date)}>
-                                                                                            <SaveIcon color="success" />
-                                                                                        </IconButton>
-                                                                                        <IconButton onClick={() => handleCancel()}>
-                                                                                            <DisabledByDefaultIcon color="error" />
-                                                                                        </IconButton>
-                                                                                    </Box>
-                                                                                </Grid>
-                                                                            </Grid>
-                                                                        </LocalizationProvider>
-                                                                        // <Grid container spacing={2}>
-                                                                        //     <Grid item size={5} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                                                        //         <TextField
-                                                                        //             type="time"
-                                                                        //             size="small"
-                                                                        //             fullWidth
-                                                                        //             InputProps={{
-                                                                        //                 startAdornment: (
-                                                                        //                     <InputAdornment
-                                                                        //                         position="start"
-                                                                        //                         sx={{ display: "flex", alignItems: "center", ml: 1 }}
-                                                                        //                     >
-                                                                        //                         <Typography
-                                                                        //                             variant="body1"
-                                                                        //                             fontWeight="bold"
-                                                                        //                             sx={{ whiteSpace: "nowrap", fontSize: "14px" }}
-                                                                        //                         >
-                                                                        //                             เข้างาน :
-                                                                        //                         </Typography>
-                                                                        //                     </InputAdornment>
-                                                                        //                 ),
-                                                                        //                 sx: {
-                                                                        //                     height: 30, // ปรับความสูง input
-                                                                        //                     padding: 0,
-                                                                        //                     '& input': {
-                                                                        //                         height: 30,
-                                                                        //                         padding: "0 8px", // ปรับให้พอดีช่อง
-                                                                        //                         fontSize: 14,
-                                                                        //                     }
-                                                                        //                 }
-                                                                        //             }}
-                                                                        //             sx={{
-                                                                        //                 '& .MuiOutlinedInput-root': {
-                                                                        //                     height: 30,
-                                                                        //                     fontSize: 14,
-                                                                        //                 }
-                                                                        //             }}
-                                                                        //         />
-                                                                        //     </Grid>
-                                                                        //     <Grid item size={5} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                                                        //         <TextField
-                                                                        //             type="time"
-                                                                        //             size="small"
-                                                                        //             fullWidth
-                                                                        //             InputProps={{
-                                                                        //                 startAdornment: (
-                                                                        //                     <InputAdornment
-                                                                        //                         position="start"
-                                                                        //                         sx={{ display: "flex", alignItems: "center", ml: 1 }}
-                                                                        //                     >
-                                                                        //                         <Typography
-                                                                        //                             variant="body1"
-                                                                        //                             fontWeight="bold"
-                                                                        //                             sx={{ whiteSpace: "nowrap", fontSize: "14px" }}
-                                                                        //                         >
-                                                                        //                             ออกงาน :
-                                                                        //                         </Typography>
-                                                                        //                     </InputAdornment>
-                                                                        //                 ),
-                                                                        //                 sx: {
-                                                                        //                     height: 30, // ปรับความสูง input
-                                                                        //                     padding: 0,
-                                                                        //                     '& input': {
-                                                                        //                         height: 30,
-                                                                        //                         padding: "0 8px", // ปรับให้พอดีช่อง
-                                                                        //                         fontSize: 14,
-                                                                        //                     }
-                                                                        //                 }
-                                                                        //             }}
-                                                                        //             sx={{
-                                                                        //                 '& .MuiOutlinedInput-root': {
-                                                                        //                     height: 30,
-                                                                        //                     fontSize: 14,
-                                                                        //                 }
-                                                                        //             }}
-                                                                        //         />
-                                                                        //     </Grid>
-                                                                        //     <Grid item size={2}>
-                                                                        //         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                                                        //             <IconButton onClick={() => handleSave(emp.employeeID, date)}>
-                                                                        //                 <SaveIcon color="success" />
-                                                                        //             </IconButton>
-                                                                        //             <IconButton onClick={() => handleCancel()}>
-                                                                        //                 <DisabledByDefaultIcon color="error" />
-                                                                        //             </IconButton>
-                                                                        //         </Box>
-                                                                        //     </Grid>
-                                                                        // </Grid>
-                                                                        :
-                                                                        <Box>
-                                                                            {
-                                                                                (date.checkin === "" && date.checkout === "") ?
-                                                                                    ""
-                                                                                    : date.checkin === "" ?
-                                                                                        `ลงชื่อออก ${date.checkout}`
-                                                                                        : date.checkout === "" ?
-                                                                                            `ลงชื่อเข้า ${date.checkin}`
-                                                                                            :
-                                                                                            `เข้า ${date.checkin} - ออก ${date.checkout}`
-                                                                            }
-                                                                            <Tooltip title="เพิ่มเวลา" placement="right">
-                                                                                <IconButton onClick={() => handleUpdateTime(emp.employeeID, formatThaiShort(dayjs(date.date, "DD/MM/YYYY")), date.checkin, date.checkout)}>
-                                                                                    <AddAlarmIcon color="warning" />
-                                                                                </IconButton>
-                                                                            </Tooltip>
-                                                                        </Box>
+                                    result.length === 0 ?
+                                        <TableRow>
+                                            <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                        </TableRow>
+                                        :
+                                        result.map((emp, index) => (
+                                            <React.Fragment>
+                                                <TableRow>
+                                                    <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
+                                                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
+                                                                ฝ่ายงาน {
+                                                                    emp.department?.split("-")[1]?.startsWith("ฝ่าย")
+                                                                        ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
+                                                                        : emp.department?.split("-")[1] || ""
                                                                 }
-                                                            </TableCell>
-                                                            <TableCell sx={{ textAlign: "center", color: theme.palette.error.main, fontWeight: "bold" }}>{date.message}</TableCell>
-                                                        </TableRow>
-                                                    ))
-                                            }
-                                        </React.Fragment>
-                                    ))
+                                                            </Typography>
+                                                            {
+                                                                emp.section.split("-")[1] !== "ไม่มี" &&
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
+                                                            }
+                                                            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
+                                                        </Box>
+                                                    </TableCell>
+                                                </TableRow>
+                                                {
+                                                    emp.dateHistory
+                                                        .filter(date => date.message === "ขาดงาน")
+                                                        .map((date, index) => (
+                                                            <TableRow>
+                                                                <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{formatThaiShort(dayjs(date.date, "DD/MM/YYYY"))}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>
+                                                                    {typeof date.workshift === "string" && date.workshift.includes("-")
+                                                                        ? date.workshift.split("-")[1]
+                                                                        : ""}
+                                                                </TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{`${date.start} - ${date.stop}`}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>
+                                                                    {
+                                                                        empID === emp.employeeID && empDate === formatThaiShort(dayjs(date.date, "DD/MM/YYYY")) ?
+                                                                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                                                <Grid container spacing={1}>
+                                                                                    <Grid item size={5}>
+                                                                                        <TimePicker
+                                                                                            label="เข้างาน"
+                                                                                            value={dayjs(checkin, 'HH:mm:ss')}
+                                                                                            onChange={(newValue) => setCheckin(newValue.format('HH:mm:ss'))}
+                                                                                            views={['hours', 'minutes', 'seconds']}
+                                                                                            ampm={false}
+                                                                                            slotProps={{
+                                                                                                textField: {
+                                                                                                    size: 'small',
+                                                                                                    fullWidth: true,
+                                                                                                    sx: {
+                                                                                                        '& .MuiOutlinedInput-root': {
+                                                                                                            height: 25, // ปรับความสูงที่นี่
+                                                                                                        },
+                                                                                                        '& .MuiInputBase-input': {
+                                                                                                            height: '100%',
+                                                                                                            padding: "0 8px",
+                                                                                                            fontSize: "14px",
+                                                                                                        },
+                                                                                                        '& .MuiInputLabel-root': {
+                                                                                                            fontSize: "14px",
+                                                                                                        },
+                                                                                                    },
+                                                                                                },
+                                                                                            }}
+                                                                                        />
+                                                                                    </Grid>
+                                                                                    <Grid item size={5}>
+                                                                                        <TimePicker
+                                                                                            label="ออกงาน"
+                                                                                            value={dayjs(checkout, 'HH:mm:ss')}
+                                                                                            onChange={(newValue) => setCheckout(newValue.format('HH:mm:ss'))}
+                                                                                            views={['hours', 'minutes', 'seconds']}
+                                                                                            ampm={false}
+                                                                                            slotProps={{
+                                                                                                textField: {
+                                                                                                    size: 'small',
+                                                                                                    fullWidth: true,
+                                                                                                    sx: {
+                                                                                                        '& .MuiOutlinedInput-root': {
+                                                                                                            height: 25, // ปรับความสูงที่นี่
+                                                                                                        },
+                                                                                                        '& .MuiInputBase-input': {
+                                                                                                            height: '100%',
+                                                                                                            padding: "0 8px",
+                                                                                                            fontSize: "14px",
+                                                                                                        },
+                                                                                                        '& .MuiInputLabel-root': {
+                                                                                                            fontSize: "14px",
+                                                                                                        },
+                                                                                                    },
+                                                                                                },
+                                                                                            }}
+                                                                                        />
+                                                                                    </Grid>
+                                                                                    <Grid item size={2}>
+                                                                                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                                                            <IconButton onClick={() => handleSave(emp.employeeID, date)}>
+                                                                                                <SaveIcon color="success" />
+                                                                                            </IconButton>
+                                                                                            <IconButton onClick={() => handleCancel()}>
+                                                                                                <DisabledByDefaultIcon color="error" />
+                                                                                            </IconButton>
+                                                                                        </Box>
+                                                                                    </Grid>
+                                                                                </Grid>
+                                                                            </LocalizationProvider>
+                                                                            // <Grid container spacing={2}>
+                                                                            //     <Grid item size={5} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                                            //         <TextField
+                                                                            //             type="time"
+                                                                            //             size="small"
+                                                                            //             fullWidth
+                                                                            //             InputProps={{
+                                                                            //                 startAdornment: (
+                                                                            //                     <InputAdornment
+                                                                            //                         position="start"
+                                                                            //                         sx={{ display: "flex", alignItems: "center", ml: 1 }}
+                                                                            //                     >
+                                                                            //                         <Typography
+                                                                            //                             variant="body1"
+                                                                            //                             fontWeight="bold"
+                                                                            //                             sx={{ whiteSpace: "nowrap", fontSize: "14px" }}
+                                                                            //                         >
+                                                                            //                             เข้างาน :
+                                                                            //                         </Typography>
+                                                                            //                     </InputAdornment>
+                                                                            //                 ),
+                                                                            //                 sx: {
+                                                                            //                     height: 30, // ปรับความสูง input
+                                                                            //                     padding: 0,
+                                                                            //                     '& input': {
+                                                                            //                         height: 30,
+                                                                            //                         padding: "0 8px", // ปรับให้พอดีช่อง
+                                                                            //                         fontSize: 14,
+                                                                            //                     }
+                                                                            //                 }
+                                                                            //             }}
+                                                                            //             sx={{
+                                                                            //                 '& .MuiOutlinedInput-root': {
+                                                                            //                     height: 30,
+                                                                            //                     fontSize: 14,
+                                                                            //                 }
+                                                                            //             }}
+                                                                            //         />
+                                                                            //     </Grid>
+                                                                            //     <Grid item size={5} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                                            //         <TextField
+                                                                            //             type="time"
+                                                                            //             size="small"
+                                                                            //             fullWidth
+                                                                            //             InputProps={{
+                                                                            //                 startAdornment: (
+                                                                            //                     <InputAdornment
+                                                                            //                         position="start"
+                                                                            //                         sx={{ display: "flex", alignItems: "center", ml: 1 }}
+                                                                            //                     >
+                                                                            //                         <Typography
+                                                                            //                             variant="body1"
+                                                                            //                             fontWeight="bold"
+                                                                            //                             sx={{ whiteSpace: "nowrap", fontSize: "14px" }}
+                                                                            //                         >
+                                                                            //                             ออกงาน :
+                                                                            //                         </Typography>
+                                                                            //                     </InputAdornment>
+                                                                            //                 ),
+                                                                            //                 sx: {
+                                                                            //                     height: 30, // ปรับความสูง input
+                                                                            //                     padding: 0,
+                                                                            //                     '& input': {
+                                                                            //                         height: 30,
+                                                                            //                         padding: "0 8px", // ปรับให้พอดีช่อง
+                                                                            //                         fontSize: 14,
+                                                                            //                     }
+                                                                            //                 }
+                                                                            //             }}
+                                                                            //             sx={{
+                                                                            //                 '& .MuiOutlinedInput-root': {
+                                                                            //                     height: 30,
+                                                                            //                     fontSize: 14,
+                                                                            //                 }
+                                                                            //             }}
+                                                                            //         />
+                                                                            //     </Grid>
+                                                                            //     <Grid item size={2}>
+                                                                            //         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                                                            //             <IconButton onClick={() => handleSave(emp.employeeID, date)}>
+                                                                            //                 <SaveIcon color="success" />
+                                                                            //             </IconButton>
+                                                                            //             <IconButton onClick={() => handleCancel()}>
+                                                                            //                 <DisabledByDefaultIcon color="error" />
+                                                                            //             </IconButton>
+                                                                            //         </Box>
+                                                                            //     </Grid>
+                                                                            // </Grid>
+                                                                            :
+                                                                            <Box>
+                                                                                {
+                                                                                    (date.checkin === "" && date.checkout === "") ?
+                                                                                        ""
+                                                                                        : date.checkin === "" ?
+                                                                                            `ลงชื่อออก ${date.checkout}`
+                                                                                            : date.checkout === "" ?
+                                                                                                `ลงชื่อเข้า ${date.checkin}`
+                                                                                                :
+                                                                                                `เข้า ${date.checkin} - ออก ${date.checkout}`
+                                                                                }
+                                                                                <Tooltip title="เพิ่มเวลา" placement="right">
+                                                                                    <IconButton onClick={() => handleUpdateTime(emp.employeeID, formatThaiShort(dayjs(date.date, "DD/MM/YYYY")), date.checkin, date.checkout)}>
+                                                                                        <AddAlarmIcon color="warning" />
+                                                                                    </IconButton>
+                                                                                </Tooltip>
+                                                                            </Box>
+                                                                    }
+                                                                </TableCell>
+                                                                <TableCell sx={{ textAlign: "center", color: theme.palette.error.main, fontWeight: "bold" }}>{date.message}</TableCell>
+                                                            </TableRow>
+                                                        ))
+                                                }
+                                            </React.Fragment>
+                                        ))
                                 }
                             </TableBody>
 

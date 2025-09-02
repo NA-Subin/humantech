@@ -287,31 +287,37 @@ const AccountDetail = () => {
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {employees
-                                            .filter(emp => {
-                                                if (!department) return false;
-                                                if (section === "" && position === "" && employee === "") {
-                                                    return emp.department === department;
-                                                }
-                                                if (section !== "" && position === "" && employee === "") {
-                                                    return emp.department === department && emp.section === section;
-                                                }
-                                                if (section !== "" && position !== "" && employee === "") {
-                                                    return emp.department === department && emp.section === section && emp.position === position;
-                                                }
-                                                return false;
-                                            })
-                                            .map((emp, index) => (
-                                                <TableRow key={emp.ID ?? index}>
-                                                    <TableCell align="center">{index + 1}</TableCell>
-                                                    <TableCell align="center">{emp.name}</TableCell>
-                                                    <TableCell align="center">{emp.position}</TableCell>
-                                                    <TableCell align="center">{emp.salary}</TableCell>
-                                                    <TableCell align="center">{emp.earningsDeductions}</TableCell>
-                                                    <TableCell align="center">{emp.tax}</TableCell>
-                                                    <TableCell align="center">{emp.socialSecurity}</TableCell>
+                                        {
+                                            employees.length === 0 ?
+                                                <TableRow>
+                                                    <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                 </TableRow>
-                                            ))}
+                                                :
+                                                employees
+                                                    .filter(emp => {
+                                                        if (!department) return false;
+                                                        if (section === "" && position === "" && employee === "") {
+                                                            return emp.department === department;
+                                                        }
+                                                        if (section !== "" && position === "" && employee === "") {
+                                                            return emp.department === department && emp.section === section;
+                                                        }
+                                                        if (section !== "" && position !== "" && employee === "") {
+                                                            return emp.department === department && emp.section === section && emp.position === position;
+                                                        }
+                                                        return false;
+                                                    })
+                                                    .map((emp, index) => (
+                                                        <TableRow key={emp.ID ?? index}>
+                                                            <TableCell align="center">{index + 1}</TableCell>
+                                                            <TableCell align="center">{emp.name}</TableCell>
+                                                            <TableCell align="center">{emp.position}</TableCell>
+                                                            <TableCell align="center">{emp.salary}</TableCell>
+                                                            <TableCell align="center">{emp.earningsDeductions}</TableCell>
+                                                            <TableCell align="center">{emp.tax}</TableCell>
+                                                            <TableCell align="center">{emp.socialSecurity}</TableCell>
+                                                        </TableRow>
+                                                    ))}
                                     </TableBody>
 
                                 </Table>

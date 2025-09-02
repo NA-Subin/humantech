@@ -199,7 +199,7 @@ const Employee = () => {
         },
         {
             label: "ประเภทการจ้าง",
-            key: "employeetype",
+            key: "employmenttype",
             type: "select",
             options: employeetype,
         },
@@ -893,7 +893,7 @@ const Employee = () => {
                                                         {
                                                             employees.length === 0 ?
                                                                 <TableRow>
-                                                                    <TablecellNoData colSpan={3}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                                    <TablecellNoData colSpan={8}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                                 </TableRow>
                                                                 :
                                                                 employees.map((row, index) => (
@@ -911,7 +911,7 @@ const Employee = () => {
                                                                             {row.position?.includes("-") ? row.position.split("-")[1] : row.position}
                                                                         </TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>
-                                                                            {row.employeetype?.includes("-") ? row.employeetype.split("-")[1] : row.employeetype}
+                                                                            {row.employmenttype?.includes("-") ? row.employmenttype.split("-")[1] : row.employmenttype}
                                                                         </TableCell>
                                                                         <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.salary)}</TableCell>
                                                                     </TableRow>

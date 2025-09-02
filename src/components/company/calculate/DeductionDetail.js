@@ -262,7 +262,7 @@ const DeductionDetail = (props) => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(month).format("YYYY/MM")}`);
+        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(month).format("YYYY/M")}`);
 
         const unsubscribe = onValue(documentRef, (snapshot) => {
             const documentData = snapshot.val();
@@ -279,7 +279,7 @@ const DeductionDetail = (props) => {
     }, [firebaseDB, companyId, month]);
 
     const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(month).format("YYYY/MM")}`);
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(month).format("YYYY/M")}`);
 
         const invalidMessages = [];
 
@@ -336,7 +336,7 @@ const DeductionDetail = (props) => {
     };
 
     const handleCancel = () => {
-        const deductionRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(month).format("YYYY/MM")}`);
+        const deductionRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(month).format("YYYY/M")}`);
 
         onValue(deductionRef, (snapshot) => {
             const deductionData = snapshot.val() || [];
@@ -378,20 +378,26 @@ const DeductionDetail = (props) => {
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
-                                            {deductionRows.map((row, index) => (
-                                                <TableRow key={row.employid}>
-                                                    <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
-                                                    {deduction
-                                                        .filter(inc => inc.status === 1)
-                                                        .map(inc => (
-                                                            <TableCell key={inc.ID} sx={{ textAlign: "center" }}>
-                                                                {row[`deduction${inc.ID}`] ?? 0}
-                                                            </TableCell>
-                                                        ))}
-                                                </TableRow>
-                                            ))}
+                                            {
+                                                deductionRows.length === 0 ?
+                                                    <TableRow>
+                                                        <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                    </TableRow>
+                                                    :
+                                                    deductionRows.map((row, index) => (
+                                                        <TableRow key={row.employid}>
+                                                            <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
+                                                            {deduction
+                                                                .filter(inc => inc.status === 1)
+                                                                .map(inc => (
+                                                                    <TableCell key={inc.ID} sx={{ textAlign: "center" }}>
+                                                                        {row[`deduction${inc.ID}`] ?? 0}
+                                                                    </TableCell>
+                                                                ))}
+                                                        </TableRow>
+                                                    ))}
                                         </TableBody>
                                     </Table>
                                 </TableContainer>
