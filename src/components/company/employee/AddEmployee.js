@@ -746,34 +746,34 @@ const AddEmployee = () => {
         if (!companyName.trim() || !firebaseDB) return;
 
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
-        const companiesRef = ref(firebaseDB, "workgroup/company");
         const groupsRef = ref(firebaseDB, "workgroup");
+        const companyRef = ref(firebaseDB, `workgroup/company/${companyId}`);
 
         let backendId = "";
-        let groupid = {};
-        let companyid = {};
+        let backendGroupID = "";
+        let backendCompanyID = "";
 
         try {
-            const group = await get(groupsRef);
-            if (group.exists()) {
-                groupid = group.val(); // สมมติ backenid เป็น string เช่น "abc123"
+            const groupSnap = await get(groupsRef);
+            if (groupSnap.exists()) {
+                backendGroupID = groupSnap.val().backendid;
             } else {
-                throw new Error("ไม่พบค่า backenid ใน Firebase");
+                throw new Error("ไม่พบค่า backenid");
             }
 
-            const company = await get(companiesRef);
-            if (company.exists()) {
-                companyid = company.val(); // สมมติ backenid เป็น string เช่น "abc123"
+            const companySnap = await get(companyRef);
+            if (companySnap.exists()) {
+                backendCompanyID = companySnap.val().cpnbackendid;
             } else {
-                throw new Error("ไม่พบค่า backenid ใน Firebase");
+                throw new Error("ไม่พบค่า cpnbackendid");
             }
 
-            const response = await fetch(`http://upload.happysoftth.com/humantech/${groupid.backendid}/${companyid.cpnbackendid}/employee`, {
+            const response = await fetch(`https://upload.happysoftth.com/humantech/${backendGroupID}/${backendCompanyID}/employee`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ name: `${name} ${lastName}` }),
+                body: JSON.stringify({ employee: `${name} ${lastName}` }),
             });
 
             if (!response.ok) {
@@ -789,6 +789,9 @@ const AddEmployee = () => {
             alert("เกิดข้อผิดพลาดขณะส่งข้อมูลไป backend");
             return;
         }
+
+        // console.log("backendGroupID : ", backendGroupID);
+        // console.log("backendCompanyID : ", backendCompanyID);
 
         try {
             const snapshot = await get(employeeRef);

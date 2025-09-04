@@ -101,7 +101,7 @@ const AdminApproveDomainForm = () => {
 
             // POST ไป backend เพื่อสร้าง group
             try {
-                const response = await fetch("http://upload.happysoftth.com/humantech/group", {
+                const response = await fetch("https://upload.happysoftth.com/humantech/group", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

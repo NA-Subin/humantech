@@ -385,7 +385,7 @@ export default function InsertCompany() {
 
             console.log("backend Id : ", databackendID.backendid);
 
-            const response = await fetch(`http://upload.happysoftth.com/humantech/${databackendID.backendid}/company`, {
+            const response = await fetch(`https://upload.happysoftth.com/humantech/${databackendID.backendid}/company`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -500,6 +500,8 @@ const Employee = () => {
         setEmployees(enrichedEmployees);
     };
 
+    console.log("employees : ", employees);
+
     const handleSave = async () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
         const groupsRef = ref(firebaseDB, "workgroup");
@@ -575,13 +577,13 @@ const Employee = () => {
                 if (!emp.empbackendid || emp.empbackendid === "") {
                     try {
                         const response = await fetch(
-                            `http://upload.happysoftth.com/humantech/${backendGroupID}/${backendCompanyID}/employee`,
+                            `https://upload.happysoftth.com/humantech/${backendGroupID}/${backendCompanyID}/employee`,
                             {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json",
                                 },
-                                body: JSON.stringify({ name: emp.employname || "" }),
+                                body: JSON.stringify({ employee: updatedEmp.employname }),
                             }
                         );
 
