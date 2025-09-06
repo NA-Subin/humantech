@@ -70,6 +70,7 @@ const Employee = () => {
     const [workshiftDate, setWorkshiftDate] = useState(dayjs(new Date).format("DD/MM/YYYY"));
     const [menu, setMenu] = useState("");
     const paperRef = useRef(null);
+    const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
     console.log("checkEmployee : ", checkEmployee);
 
     const toDateString = (dateObj) => {
@@ -141,26 +142,46 @@ const Employee = () => {
     }, [firebaseDB, companyId]);
 
     useEffect(() => {
-        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+        const fetchData = async () => {
+            try {
+                const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/position`);
+                const employRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
-        onValue(optionRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data) {
-                const opts = Object.values(data).map((item) => ({
-                    value: `${item.ID}-${item.positionname}`,
-                    label: item.positionname,
-                    keyposition: item.deptid
-                }));
+                const employSnap = await get(employRef);
+                const employData = employSnap.val();
+                const employList = employData ? Object.values(employData) : [];
 
-                // เพิ่มตัวเลือก "ไม่มี" เข้าไปที่ด้านบน
-                opts.unshift({ value: '0-ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" });
+                onValue(optionRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        const opts = Object.values(data)
+                            // .filter((row) => {
+                            //     const count = employList.filter((emp) =>
+                            //         Number(emp.position.split("-")[0]) === row.ID
+                            //     );
+                            //     return count.length < Number(row.max); // เช็คว่าเต็มหรือยัง
+                            // })
+                            .map((item) => ({
+                                value: `${item.ID}-${item.positionname}`,
+                                label: item.positionname,
+                                keyposition: item.deptid
+                            }));
 
-                setPositionDetail(opts);
-            } else {
-                // ถ้าไม่มีข้อมูล position เลย ให้มีตัวเลือก "ไม่มี" อย่างน้อย
-                setPositionDetail([{ value: '0-ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" }]);
+                        // ✅ เพิ่มตัวเลือก "ไม่มี" ที่ด้านบน
+                        opts.unshift({ value: '0-ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" });
+
+                        setPositionDetail(opts);
+                    } else {
+                        // ✅ ถ้าไม่มี position เลย
+                        setPositionDetail([{ value: '0-ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" }]);
+                    }
+                });
+            } catch (err) {
+                console.error("Error fetching position data:", err);
             }
-        });
+        };
+
+        fetchData();
     }, [firebaseDB, companyId]);
 
     console.log("position Detail : ", positionDetail);
@@ -203,7 +224,7 @@ const Employee = () => {
             type: "select",
             options: employeetype,
         },
-        { label: "ชื่อ", key: "salary", type: "number" },
+        { label: "เงินเดือน", key: "salary", type: "number" },
     ];
 
     useEffect(() => {
@@ -397,7 +418,7 @@ const Employee = () => {
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
             if (!positionData) {
-                setPositions([{ ID: 0, name: '' }]);
+                setPositions([]);
             } else {
                 setPositions(positionData);
             }
@@ -780,6 +801,7 @@ const Employee = () => {
         onValue(employeeRef, (snapshot) => {
             const employeeData = snapshot.val() || [{ ID: 0, name: '', employeenumber: '' }];
             setEmployee(employeeData);
+            setEmployees(allEmployees);
             setEditEmployee(false);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
@@ -795,6 +817,55 @@ const Employee = () => {
                     <Grid item size={12}>
                         <Divider />
                     </Grid>
+                    {positions.map((row) => {
+                        const count = employees.filter(
+                            (emp) => Number(emp.position.split("-")[0]) === row.ID
+                        ).length;
+
+                        const isFull = count >= Number(row.max);
+
+                        return (
+                            <Grid item size={3} key={row.ID}>
+                                <Paper
+                                    sx={{
+                                        width: "100%",
+                                        height: 50,
+                                        borderRadius: 2,
+                                        // backgroundColor: isFull
+                                        //     ? "#ffcdd2"      // ถ้าเต็ม = สีแดงอ่อน
+                                        //     : "#b2dfdb",    // ถ้าไม่เต็ม = สีเขียวอ่อน
+                                        backgroundColor: "white",
+                                        color: theme.palette.primary.dark
+                                    }}
+                                    elevation={3}
+                                >
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                        }}
+                                    >
+                                        <Typography variant="subtitle1" fontWeight="bold" sx={{ marginTop: 1.5 }}>
+                                            {`${row.positionname} ( ${count}/${row.max} )`}
+                                        </Typography>
+                                    </Box>
+
+                                    {
+                                        isFull &&
+                                        <Typography
+                                            variant="subtitle2"
+                                            fontWeight="bold"
+                                            color={theme.palette.error.main}
+                                            sx={{ marginTop: -4.5, textAlign: "right", marginRight: 1 }}
+                                        >
+                                            *
+                                        </Typography>
+                                    }
+                                </Paper>
+                            </Grid>
+                        );
+                    })}
                 </Grid>
             </Box>
             <Grid container spacing={2}>
@@ -854,7 +925,7 @@ const Employee = () => {
                                 setEmployee={setEmployee}
                                 employees={employees}
                             /> */}
-                            <Grid container spacing={2} sx={{ marginBottom: 1 }}>
+                            <Grid container spacing={2} sx={{ marginBottom: 1, marginTop: -2 }}>
                                 <Grid item size={10}>
                                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการตำแหน่งพนักงาน</Typography>
                                 </Grid>
@@ -870,6 +941,7 @@ const Employee = () => {
                                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                                 <TableExcel
                                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
+                                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}
                                                     columns={columns}
                                                     initialData={employees}
                                                     onDataChange={setEmployees}
@@ -877,50 +949,60 @@ const Employee = () => {
                                                 />
                                             </Paper>
                                             :
-                                            <TableContainer component={Paper} textAlign="center">
-                                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}>
-                                                    <TableHead>
-                                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                            <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
-                                                            <TablecellHeader sx={{ width: "10%" }}>รหัสพนักงาน</TablecellHeader>
-                                                            <TablecellHeader sx={{ width: "25%" }}>ชื่อ</TablecellHeader>
-                                                            <TablecellHeader sx={{ width: "15%" }}>ฝ่ายงาน</TablecellHeader>
-                                                            <TablecellHeader sx={{ width: "15%" }}>ส่วนงาน</TablecellHeader>
-                                                            <TablecellHeader sx={{ width: "15%" }}>ตำแหน่ง</TablecellHeader>
-                                                            <TablecellHeader sx={{ width: "15%" }}>ประเภทการจ้าง</TablecellHeader>
-                                                            <TablecellHeader sx={{ width: "15%" }}>เงินเดือน</TablecellHeader>
-                                                        </TableRow>
-                                                    </TableHead>
-                                                    <TableBody>
-                                                        {
-                                                            employees.length === 0 ?
-                                                                <TableRow>
-                                                                    <TablecellNoData colSpan={8}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                                </TableRow>
-                                                                :
-                                                                employees.map((row, index) => (
-                                                                    <TableRow onClick={() => setOpenDetail(row)}>
-                                                                        <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>{row.employeecode}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>{`${row.employname} ${row.nickname === undefined ? "" : `(${row.nickname})`}`}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>
-                                                                            {row.department?.includes("-") ? row.department.split("-")[1] : row.department}
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>
-                                                                            {row.section?.includes("-") ? row.section.split("-")[1] : row.section}
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>
-                                                                            {row.position?.includes("-") ? row.position.split("-")[1] : row.position}
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>
-                                                                            {row.employmenttype?.includes("-") ? row.employmenttype.split("-")[1] : row.employmenttype}
-                                                                        </TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.salary)}</TableCell>
+                                            <React.Fragment>
+                                                <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการเปลี่ยนกะการทำงานให้กดชื่อในตารางได้เลย</Typography>
+                                                <TableContainer component={Paper} textAlign="center">
+                                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}>
+                                                        <TableHead>
+                                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                                <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: "10%" }}>รหัสพนักงาน</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: "25%" }}>ชื่อ</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: "15%" }}>ฝ่ายงาน</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: "15%" }}>ส่วนงาน</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: "15%" }}>ตำแหน่ง</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: "15%" }}>ประเภทการจ้าง</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: "15%" }}>เงินเดือน</TablecellHeader>
+                                                            </TableRow>
+                                                        </TableHead>
+                                                        <TableBody>
+                                                            {
+                                                                employees.length === 0 ?
+                                                                    <TableRow>
+                                                                        <TablecellNoData colSpan={8}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                                     </TableRow>
-                                                                ))}
-                                                    </TableBody>
-                                                </Table>
-                                            </TableContainer>
+                                                                    :
+                                                                    employees.map((row, index) => (
+                                                                        <TableRow
+                                                                            sx={{
+                                                                                cursor: hoveredEmpCode === row.employeecode ? 'pointer' : 'default',
+                                                                                backgroundColor: hoveredEmpCode === row.employeecode ? theme.palette.primary.light : 'inherit',
+                                                                            }}
+                                                                            onMouseEnter={() => setHoveredEmpCode(row.employeecode)}
+                                                                            onMouseLeave={() => setHoveredEmpCode(null)}
+                                                                            onClick={() => setOpenDetail(row)}>
+                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{index + 1}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.employeecode}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{`${row.employname} ${row.nickname === undefined ? "" : `(${row.nickname})`}`}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>
+                                                                                {row.department?.includes("-") ? row.department.split("-")[1] : row.department}
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>
+                                                                                {row.section?.includes("-") ? row.section.split("-")[1] : row.section}
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>
+                                                                                {row.position?.includes("-") ? row.position.split("-")[1] : row.position}
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>
+                                                                                {row.employmenttype?.includes("-") ? row.employmenttype.split("-")[1] : row.employmenttype}
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{new Intl.NumberFormat("en-US").format(row.salary)}</TableCell>
+                                                                        </TableRow>
+                                                                    ))}
+                                                        </TableBody>
+                                                    </Table>
+                                                </TableContainer>
+                                            </React.Fragment>
                                     }
                                 </Grid>
                                 {

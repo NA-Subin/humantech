@@ -219,7 +219,7 @@ const WorkShiftDetail = (props) => {
     return (
         <React.Fragment>
             <Grid item size={12}>
-                <TableContainer component={Paper} textAlign="center">
+                <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh" }}>
                     <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1080px" }}>
                         <TableHead
                             sx={{
@@ -241,34 +241,46 @@ const WorkShiftDetail = (props) => {
                         <TableBody>
                             {
                                 dateArray.length === 0 ?
-                                    <TableRow>
+                                    <TableRow sx={{ height: "60vh" }}>
                                         <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                     </TableRow>
                                     :
                                     dateArray.map((emp, index) => {
                                         const allDays = ["จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์", "อาทิตย์"];
 
-                                        return (
+                                        return Array.isArray(emp.workshifthistory) ? (
                                             <React.Fragment key={index}>
-                                                <TableRow>
-                                                    <TableCell
-                                                        sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }}
-                                                        colSpan={6}
-                                                    >
-                                                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>
-                                                                รหัสพนักงาน : {emp.employeecode}
-                                                            </Typography>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
-                                                                {emp.employname} ({emp.nickname})
-                                                            </Typography>
-                                                            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
-                                                                ฝ่ายงาน {emp.department.split("-")[1].replace("ฝ่าย", "").trim()}
-                                                            </Typography>
-                                                        </Box>
-                                                    </TableCell>
-                                                </TableRow>
+                                                {
+                                                    emp.workshifthistory
+                                                        .filter(shift => {
+                                                            // สร้าง dayjs จาก DD/MM/YYYY/YY ของ shift
+                                                            const shiftStart = dayjs(`${shift.YYYYstart}-${shift.MMstart}-${shift.DDstart}`, "YYYY-M-D");
+                                                            const shiftEnd = shift.DDend === "now"
+                                                                ? monthEnd
+                                                                : dayjs(`${shift.YYYYend}-${shift.MMend}-${shift.DDend}`, "YYYY-M-D");
 
+                                                            // ตรวจสอบ overlap กับเดือน
+                                                            return shiftEnd.isAfter(monthStart) && shiftStart.isBefore(monthEnd);
+                                                        }).workshift !== undefined &&
+                                                    <TableRow>
+                                                        <TableCell
+                                                            sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }}
+                                                            colSpan={6}
+                                                        >
+                                                            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>
+                                                                    รหัสพนักงาน : {emp.employeecode}
+                                                                </Typography>
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
+                                                                    {emp.employname} ({emp.nickname})
+                                                                </Typography>
+                                                                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>
+                                                                    ฝ่ายงาน {emp.department.split("-")[1].replace("ฝ่าย", "").trim()}
+                                                                </Typography>
+                                                            </Box>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                }
                                                 {
                                                     emp.workshifthistory
                                                         .filter(shift => {
@@ -283,16 +295,20 @@ const WorkShiftDetail = (props) => {
                                                         })
                                                         .map((shift, i) => {
                                                             const holidayNames = shift.holiday?.map(h => h.name) || [];
-                                                            const workingDays = allDays.filter(day => !holidayNames.includes(day));
+                                                            const safeAllDays = Array.isArray(allDays) ? allDays : []; // กันไว้ถ้า allDays ยัง undefined
+                                                            const workingDays = safeAllDays.filter(day => !holidayNames.includes(day));
 
                                                             const rowSpanCount = workingDays.length;
 
+                                                            console.log("rowSpanCount : ", rowSpanCount);
+
                                                             return workingDays.map((day, j) => (
+                                                                shift.workshift !== undefined &&
                                                                 <TableRow key={`${i}-${j}`}>
                                                                     <TableCell
                                                                         sx={{
                                                                             textAlign: "center",
-                                                                            borderTop: j === workingDays.length - 1 && `2px solid lightgray`
+                                                                            borderTop: j === (rowSpanCount - 1) && `2px solid lightgray`
                                                                         }}
                                                                     >
                                                                         {j + 1}
@@ -302,7 +318,7 @@ const WorkShiftDetail = (props) => {
                                                                         sx={{
                                                                             textAlign: "center",
                                                                             backgroundColor: dayColors[day] || "transparent",
-                                                                            borderTop: j === workingDays.length - 1 && `2px solid lightgray`
+                                                                            borderTop: j === (rowSpanCount - 1) && `2px solid lightgray`
                                                                         }}
                                                                     >
                                                                         {day}
@@ -311,7 +327,7 @@ const WorkShiftDetail = (props) => {
                                                                     {j === 0 && (
                                                                         <>
                                                                             <TableCell sx={{ textAlign: "center", borderTop: `2px solid lightgray` }} rowSpan={rowSpanCount}>
-                                                                                {shift.workshift.split("-")[1]}
+                                                                                {shift.workshift ? shift.workshift.split("-")[1] : "--"}
                                                                             </TableCell>
                                                                             <TableCell sx={{ textAlign: "center", borderTop: `2px solid lightgray` }} rowSpan={rowSpanCount}>
                                                                                 {`วันที่ ${dayjs(`${shift.YYYYstart}-${shift.MMstart}-${shift.DDstart}`, "YYYY-M-D").isBefore(monthStart)
@@ -331,11 +347,18 @@ const WorkShiftDetail = (props) => {
                                                                         </>
                                                                     )}
                                                                 </TableRow>
-                                                            ));
+                                                            ))
                                                         })
                                                 }
                                             </React.Fragment>
-                                        );
+                                        )
+                                            :
+                                            (
+                                                index === 1 &&
+                                                <TableRow sx={{ height: "60vh" }}>
+                                                    <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                </TableRow>
+                                            )
                                     })
                             }
                         </TableBody>

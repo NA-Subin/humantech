@@ -47,7 +47,7 @@ const InternshipDetail = (props) => {
     const companyId = companyName?.split(":")[0];
     const [thailand, setThailand] = useState([]);
     const [openDetail, setOpenDetail] = useState({});
-    const [hoveredEmployeename, setHoveredEmployeename] = useState(null);
+    const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
 
     useEffect(() => {
         if (!database) return;
@@ -96,6 +96,7 @@ const InternshipDetail = (props) => {
 
 
     const internship = employees.map(emp => ({
+        employeecode: emp.employeecode,
         employname: `${emp.employname} (${emp.nickname})` || '',
         position: emp.position ? emp.position.split("-")[1] ?? emp.position : '',
         dateStart: emp.internship?.dateStart ? toDateString(emp.internship.dateStart) : '',
@@ -313,72 +314,75 @@ const InternshipDetail = (props) => {
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                 <TableExcel
                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                    stylesTable={{ width: "2000px" }} // ✅ ส่งเป็น object
+                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}
                                     columns={internshipColumns}
                                     initialData={internship}
                                     onDataChange={handleInternshipChange}
                                 />
                             </Paper>
                             :
-                            <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 300 }}>ชื่อ</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 200 }}>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 100 }}>วันที่เริ่มต้น</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 100 }}>จนถึงวันที่</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 250 }}>ชื่อบริษัท</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 150 }}>ตำบล</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 150 }}>อำเภอ</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 150 }}>จังหวัด</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 150 }}>รหัสไปรณีย์</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 150 }}>ตำแหน่งงาน</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 150 }}>ประเภทงาน</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 100 }}>ระดับ</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 150 }}>เงินเดือน</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 200 }}>รายละเอียดเพิ่มเติม</TablecellHeader>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {
-                                            internship.length === 0 ?
-                                                <TableRow>
-                                                    <TablecellNoData colSpan={15}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                </TableRow>
-                                                :
-                                                internship.map((row, index) => (
-                                                    <TableRow
-                                                        key={index}
-                                                        onClick={() => setOpenDetail(row)}
-                                                        onMouseEnter={() => setHoveredEmployeename(row.employname)}
-                                                        onMouseLeave={() => setHoveredEmployeename(null)}
-                                                        sx={{
-                                                            cursor: hoveredEmployeename === row.employname ? 'pointer' : 'default',
-                                                            backgroundColor: hoveredEmployeename === row.employname ? theme.palette.primary.light : 'inherit',
-                                                        }}
-                                                    >
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{index + 1}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.employname}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.position}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.dateStart}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.dateEnd}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.company}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.tambon.split("-")[1]}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.amphure.split("-")[1]}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.province.split("-")[1]}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.zipCode}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.positionIntern}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.positionType}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.level}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.salary}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.note}</TableCell>
+                            <React.Fragment>
+                                <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลการทำงาน/ฝึกงานรายคนให้กดชื่อในตารางได้เลย</Typography>
+                                <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
+                                        <TableHead>
+                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 300 }}>ชื่อ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 200 }}>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>วันที่เริ่มต้น</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>จนถึงวันที่</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 250 }}>ชื่อบริษัท</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>ตำบล</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>อำเภอ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>จังหวัด</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>รหัสไปรณีย์</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>ตำแหน่งงาน</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>ประเภทงาน</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>ระดับ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>เงินเดือน</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 200 }}>รายละเอียดเพิ่มเติม</TablecellHeader>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {
+                                                internship.length === 0 ?
+                                                    <TableRow>
+                                                        <TablecellNoData colSpan={15}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                     </TableRow>
-                                                ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                                    :
+                                                    internship.map((row, index) => (
+                                                        <TableRow
+                                                            key={index}
+                                                            onClick={() => setOpenDetail(row)}
+                                                            onMouseEnter={() => setHoveredEmpCode(row.employeecode)}
+                                                            onMouseLeave={() => setHoveredEmpCode(null)}
+                                                            sx={{
+                                                                cursor: hoveredEmpCode === row.employeecode ? 'pointer' : 'default',
+                                                                backgroundColor: hoveredEmpCode === row.employeecode ? theme.palette.primary.light : 'inherit',
+                                                            }}
+                                                        >
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{index + 1}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.employname}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.position}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.dateStart}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.dateEnd}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.company}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.tambon.split("-")[1]}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.amphure.split("-")[1]}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.province.split("-")[1]}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.zipCode}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.positionIntern}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.positionType}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.level}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.salary}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.note}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </React.Fragment>
                     }
                 </Grid>
                 {

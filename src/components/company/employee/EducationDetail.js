@@ -47,7 +47,7 @@ const EducationDetail = (props) => {
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
     const [openDetail, setOpenDetail] = useState({});
-    const [hoveredEmployeename, setHoveredEmployeename] = useState(null);
+    const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
     const educationRows = [];
@@ -64,6 +64,7 @@ const EducationDetail = (props) => {
 
         educations.forEach((education, educationIdx) => {
             educationRows.push({
+                employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 education: education.education || "",
@@ -83,6 +84,7 @@ const EducationDetail = (props) => {
         // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
         if (educations.length === 0) {
             educationRows.push({
+                employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 education: "",
@@ -282,7 +284,7 @@ const EducationDetail = (props) => {
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                 <TableExcel
                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                    stylesTable={{ width: "2000px" }} // ✅ ส่งเป็น object
+                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}
                                     types="list"
                                     columns={educationColumns}
                                     initialData={educationRows}
@@ -290,68 +292,71 @@ const EducationDetail = (props) => {
                                 />
                             </Paper>
                             :
-                            <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อ</TablecellHeader>
-                                            <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader>สถานภาพการศึกษา</TablecellHeader>
-                                            <TablecellHeader>ระดับการศึกษา</TablecellHeader>
-                                            <TablecellHeader>สถานศึกษา</TablecellHeader>
-                                            <TablecellHeader>หมวดการศึกษา</TablecellHeader>
-                                            <TablecellHeader>คณะ</TablecellHeader>
-                                            <TablecellHeader>สาขา</TablecellHeader>
-                                            <TablecellHeader>ชื่อปริญญา</TablecellHeader>
-                                            <TablecellHeader>ปีที่สำเร็จการศึกษา</TablecellHeader>
-                                            <TablecellHeader>เกรดเฉลี่ย</TablecellHeader>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {
-                                            educationRows.length === 0 ?
-                                                <TableRow>
-                                                    <TablecellNoData colSpan={12}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                </TableRow>
-                                                :
-                                                educationRows.map((row, index) => (
-                                                    <TableRow
-                                                        key={index}
-                                                        onClick={() => row.isFirst && setOpenDetail(row)}
-                                                        onMouseEnter={() => setHoveredEmployeename(row.employname)}
-                                                        onMouseLeave={() => setHoveredEmployeename(null)}
-                                                        sx={{
-                                                            cursor: hoveredEmployeename === row.employname ? 'pointer' : 'default',
-                                                            backgroundColor: hoveredEmployeename === row.employname ? theme.palette.primary.light : 'inherit',
-                                                        }}
-                                                    >
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{index + 1}</TableCell>
-                                                        {row.isFirst && (
-                                                            <>
-                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>
-                                                                    {row.employname}
-                                                                </TableCell>
-                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>
-                                                                    {row.position}
-                                                                </TableCell>
-                                                            </>
-                                                        )}
-                                                        {/* ถ้าไม่ใช่ isFirst ไม่ต้องแสดง 2 คอลัมน์แรก */}
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.education}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.educationLevel}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.institution}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.educationCategory}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.faculty}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.branch}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.degree}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.graduateYear}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center",fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.gpa}</TableCell>
+                            <React.Fragment>
+                                <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลการศึกษารายคนให้กดชื่อในตารางได้เลย</Typography>
+                                <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
+                                        <TableHead>
+                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
+                                                <TablecellHeader>ชื่อ</TablecellHeader>
+                                                <TablecellHeader>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader>สถานภาพการศึกษา</TablecellHeader>
+                                                <TablecellHeader>ระดับการศึกษา</TablecellHeader>
+                                                <TablecellHeader>สถานศึกษา</TablecellHeader>
+                                                <TablecellHeader>หมวดการศึกษา</TablecellHeader>
+                                                <TablecellHeader>คณะ</TablecellHeader>
+                                                <TablecellHeader>สาขา</TablecellHeader>
+                                                <TablecellHeader>ชื่อปริญญา</TablecellHeader>
+                                                <TablecellHeader>ปีที่สำเร็จการศึกษา</TablecellHeader>
+                                                <TablecellHeader>เกรดเฉลี่ย</TablecellHeader>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {
+                                                educationRows.length === 0 ?
+                                                    <TableRow>
+                                                        <TablecellNoData colSpan={12}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                     </TableRow>
-                                                ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                                    :
+                                                    educationRows.map((row, index) => (
+                                                        <TableRow
+                                                            key={index}
+                                                            onClick={() => row.isFirst && setOpenDetail(row)}
+                                                            onMouseEnter={() => setHoveredEmpCode(row.employeecode)}
+                                                            onMouseLeave={() => setHoveredEmpCode(null)}
+                                                            sx={{
+                                                                cursor: hoveredEmpCode === row.employeecode ? 'pointer' : 'default',
+                                                                backgroundColor: hoveredEmpCode === row.employeecode ? theme.palette.primary.light : 'inherit',
+                                                            }}
+                                                        >
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{index + 1}</TableCell>
+                                                            {row.isFirst && (
+                                                                <>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>
+                                                                        {row.employname}
+                                                                    </TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>
+                                                                        {row.position}
+                                                                    </TableCell>
+                                                                </>
+                                                            )}
+                                                            {/* ถ้าไม่ใช่ isFirst ไม่ต้องแสดง 2 คอลัมน์แรก */}
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.education}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.educationLevel}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.institution}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.educationCategory}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.faculty}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.branch}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.degree}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.graduateYear}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.gpa}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </React.Fragment>
                     }
                 </Grid>
                 {

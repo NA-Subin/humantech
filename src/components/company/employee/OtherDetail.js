@@ -47,10 +47,11 @@ const OtherDetail = (props) => {
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
     const [openDetail, setOpenDetail] = useState({});
-    const [hoveredEmployeename, setHoveredEmployeename] = useState(null);
+    const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
     //const [other, setother] = useState([]); // จะถูกกรองจาก allEmployees
 
     const other = employees.map(emp => ({
+        employeecode: emp.employeecode,
         employname: `${emp.employname} (${emp.nickname})`,
         position: emp.position.split("-")[1],
         specialAbilities1: emp.specialAbilities?.specialAbilities1 || '',
@@ -197,62 +198,65 @@ const OtherDetail = (props) => {
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                 <TableExcel
                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                    stylesTable={{ width: "2000px" }} // ✅ ส่งเป็น object
+                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}
                                     columns={otherColumns}
                                     initialData={other}
                                     onDataChange={handleOtherChange}
                                 />
                             </Paper>
                             :
-                            <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อ</TablecellHeader>
-                                            <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader>ความสามารถพิเศษที่ 1</TablecellHeader>
-                                            <TablecellHeader>ความสามารถพิเศษที่ 2</TablecellHeader>
-                                            <TablecellHeader>ความสามารถพิเศษที่ 3</TablecellHeader>
-                                            <TablecellHeader>ความเร็วในการพิมพ์ภาษาไทย</TablecellHeader>
-                                            <TablecellHeader>ความเร็วในการพิมพ์ภาษาอังกฤษ</TablecellHeader>
-                                            <TablecellHeader>ประสบการณ์อื่นๆ</TablecellHeader>
-                                            <TablecellHeader>บุคคลอ้างอิง</TablecellHeader>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {
-                                            other.length === 0 ?
-                                                <TableRow>
-                                                    <TablecellNoData colSpan={10}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                </TableRow>
-                                                :
-                                                other.map((row, index) => (
-                                                    <TableRow
-                                                        key={index}
-                                                        onClick={() => setOpenDetail(row)}
-                                                        onMouseEnter={() => setHoveredEmployeename(row.employname)}
-                                                        onMouseLeave={() => setHoveredEmployeename(null)}
-                                                        sx={{
-                                                            cursor: hoveredEmployeename === row.employname ? 'pointer' : 'default',
-                                                            backgroundColor: hoveredEmployeename === row.employname ? theme.palette.primary.light : 'inherit',
-                                                        }}
-                                                    >
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{index + 1}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.employname}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.position}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.specialAbilities1}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.specialAbilities2}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.specialAbilities3}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.printingSpeedTH}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.printingSpeedENG}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.otherProjects}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.referencePerson}</TableCell>
+                            <React.Fragment>
+                                <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลอื่นๆรายคนให้กดชื่อในตารางได้เลย</Typography>
+                                <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
+                                        <TableHead>
+                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
+                                                <TablecellHeader>ชื่อ</TablecellHeader>
+                                                <TablecellHeader>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader>ความสามารถพิเศษที่ 1</TablecellHeader>
+                                                <TablecellHeader>ความสามารถพิเศษที่ 2</TablecellHeader>
+                                                <TablecellHeader>ความสามารถพิเศษที่ 3</TablecellHeader>
+                                                <TablecellHeader>ความเร็วในการพิมพ์ภาษาไทย</TablecellHeader>
+                                                <TablecellHeader>ความเร็วในการพิมพ์ภาษาอังกฤษ</TablecellHeader>
+                                                <TablecellHeader>ประสบการณ์อื่นๆ</TablecellHeader>
+                                                <TablecellHeader>บุคคลอ้างอิง</TablecellHeader>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {
+                                                other.length === 0 ?
+                                                    <TableRow>
+                                                        <TablecellNoData colSpan={10}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                     </TableRow>
-                                                ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                                    :
+                                                    other.map((row, index) => (
+                                                        <TableRow
+                                                            key={index}
+                                                            onClick={() => setOpenDetail(row)}
+                                                            onMouseEnter={() => setHoveredEmpCode(row.employeecode)}
+                                                            onMouseLeave={() => setHoveredEmpCode(null)}
+                                                            sx={{
+                                                                cursor: hoveredEmpCode === row.employeecode ? 'pointer' : 'default',
+                                                                backgroundColor: hoveredEmpCode === row.employeecode ? theme.palette.primary.light : 'inherit',
+                                                            }}
+                                                        >
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{index + 1}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.employname}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.position}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.specialAbilities1}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.specialAbilities2}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.specialAbilities3}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.printingSpeedTH}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.printingSpeedENG}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.otherProjects}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.referencePerson}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </React.Fragment>
                     }
                 </Grid>
                 {

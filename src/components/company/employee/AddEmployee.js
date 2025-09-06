@@ -38,7 +38,7 @@ import { HotTable } from '@handsontable/react';
 import 'handsontable/dist/handsontable.full.min.css';
 import MuiExcelLikeTable from "../test";
 import TableExcel from "../../../theme/TableExcel";
-import { ShowConfirm, ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
+import { ShowAccessLogin, ShowConfirm, ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { DatePicker, LocalizationProvider, PickersDay } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -804,7 +804,7 @@ const AddEmployee = () => {
                 password: "1234567",
                 nickname: nickname,
                 employeeid: nextIndex,
-                employeetype: `${type.ID}-${type.name}`,
+                employmenttype: `${type.ID}-${type.name}`,
                 section: checkPosition.sectionid,
                 department: checkPosition.deptid,
                 position: `${checkPosition.ID}-${checkPosition.positionname}`,
@@ -820,6 +820,102 @@ const AddEmployee = () => {
                 workshifthistory: workshifthistory,
                 empbackendid: backendId
             });
+
+            ShowAccessLogin("เพิ่มข้อมูลเรียบร้อย");
+
+            // ✅ รีเซ็ตค่าหลังบันทึกเสร็จ
+            setOpen(false);
+            setStep(0);
+
+            setSalary("");
+            setNickname("");
+            setName("");
+            setLastName("");
+            setOpenSex(true);
+            setOpenBike("");
+            setOpenCar("");
+            setOpenTruck("");
+            setFileBike("");
+            setFileCar("");
+            setFileTruck("");
+            setVehicleBike(null);
+            setVehicleCar(null);
+            setVehicleTruck(null);
+            setMilitaryStatus("");
+            setEducation(true);
+            setNationality("");
+            setReligion("");
+            setWeight("");
+            setHeight("");
+            setStatusEmployee("");
+            setPhone("");
+            setHomePhone("");
+            setCountry("");
+            setLineID("");
+            setAddress({});
+            setBirthDate(null);
+            setVehicleFileList([
+                {
+                    vehicleFile: null,
+                    vehicleType: ""
+                },
+            ]);
+            setDateStart(null);
+            setDateEnd(null);
+            setInternshipCompany("");
+            setInternshipAddress({});
+            setInternshipPosition("");
+            setInternshipTypeP("");
+            setInternshipLevel("");
+            setInternshipSalary("");
+            setInternshipNote("");
+
+            setEducationList([
+                {
+                    education: "",
+                    educationLevel: "",
+                    institution: "",
+                    graduateYear: "",
+                    gpa: "",
+                },
+            ]);
+            setLanguageList([
+                {
+                    language: "",
+                    speaking: "",
+                    reading: "",
+                    writing: "",
+                },
+            ]);
+            setTrainingList([
+                {
+                    dateStart: "",
+                    dateEnd: "",
+                    institution: "",
+                    course: "",
+                    file: null,
+                    fileType: ""
+                },
+            ]);
+            setSpecialAbilities1("");
+            setSpecialAbilities2("");
+            setSpecialAbilities3("");
+            setPrintingSpeedTH("");
+            setPrintingSpeedENG("");
+            setOtherProject("");
+            setReferencePerson("");
+
+            setCheckPosition({});
+            setEmployeeCode("");
+            setWorkshift("");
+            setType("");
+            setPosition([{
+                ID: 0,
+                deptid: "",
+                levelid: "",
+                positionname: "",
+                sectionid: "",
+            }]);
 
         } catch (error) {
             console.error("Error adding company:", error);

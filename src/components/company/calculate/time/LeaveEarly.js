@@ -204,76 +204,96 @@ const LeaveEarly = (props) => {
                             <TableBody>
                                 {
                                     result.length === 0 ?
-                                        <TableRow>
+                                        <TableRow sx={{ height: "60vh" }}>
                                             <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                         </TableRow>
                                         :
                                         result.map((emp, index) => (
-                                            <React.Fragment>
-                                                <TableRow>
-                                                    <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
-                                                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
-                                                                ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
-                                                                    ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
-                                                                    : emp.department.split("-")[1]}
-                                                            </Typography>
-                                                            {
-                                                                emp.section.split("-")[1] !== "ไม่มี" &&
-                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
-                                                            }
-                                                            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
-                                                        </Box>
-                                                    </TableCell>
-                                                </TableRow>
-                                                {
-                                                    emp.dateHistory
-                                                        .filter(date => {
-                                                            // เงื่อนไข: มีเวลา checkout และ stop และ checkout < stop
-                                                            if (date.checkout && date.stop) {
+                                            (emp.attendant !== undefined) ?
+                                                <React.Fragment>
+                                                    {
+                                                        emp.dateHistory
+                                                            .filter(date => {
+                                                                // เงื่อนไข: มีเวลา checkout และ stop และ checkout < stop
+                                                                if (date.checkout && date.stop) {
+                                                                    const checkout = dayjs(date.checkout, "HH:mm");
+                                                                    const stop = dayjs(date.stop, "HH:mm");
+                                                                    return checkout.isBefore(stop); // กลับก่อน
+                                                                }
+                                                                return false;
+                                                            }).length !== 0 &&
+                                                        <TableRow>
+                                                            <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
+                                                                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
+                                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
+                                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
+                                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
+                                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
+                                                                        ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
+                                                                            ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
+                                                                            : emp.department.split("-")[1]}
+                                                                    </Typography>
+                                                                    {
+                                                                        emp.section.split("-")[1] !== "ไม่มี" &&
+                                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
+                                                                    }
+                                                                    <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
+                                                                </Box>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    }
+                                                    {
+                                                        emp.dateHistory
+                                                            .filter(date => {
+                                                                // เงื่อนไข: มีเวลา checkout และ stop และ checkout < stop
+                                                                if (date.checkout && date.stop) {
+                                                                    const checkout = dayjs(date.checkout, "HH:mm");
+                                                                    const stop = dayjs(date.stop, "HH:mm");
+                                                                    return checkout.isBefore(stop); // กลับก่อน
+                                                                }
+                                                                return false;
+                                                            })
+                                                            .map((date, index) => {
                                                                 const checkout = dayjs(date.checkout, "HH:mm");
                                                                 const stop = dayjs(date.stop, "HH:mm");
-                                                                return checkout.isBefore(stop); // กลับก่อน
-                                                            }
-                                                            return false;
-                                                        })
-                                                        .map((date, index) => {
-                                                            const checkout = dayjs(date.checkout, "HH:mm");
-                                                            const stop = dayjs(date.stop, "HH:mm");
-                                                            const minutesEarly = stop.diff(checkout, "minute"); // ต่างกันกี่นาที
+                                                                const minutesEarly = stop.diff(checkout, "minute"); // ต่างกันกี่นาที
 
-                                                            return (
-                                                                <TableRow key={index}>
-                                                                    <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                                        {formatThaiShort(dayjs(date.date, "DD/MM/YYYY"))}
-                                                                    </TableCell>
-                                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                                        {date.workshift.split("-")[1]}
-                                                                    </TableCell>
-                                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                                        {`${date.start} - ${date.stop}`}
-                                                                    </TableCell>
-                                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                                        {`ออก ${date.checkout}`}
-                                                                    </TableCell>
-                                                                    <TableCell
-                                                                        sx={{
-                                                                            textAlign: "center",
-                                                                            color: theme.palette.warning.main,
-                                                                            fontWeight: "bold"
-                                                                        }}
-                                                                    >
-                                                                        กลับก่อน {minutesEarly} นาที
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            );
-                                                        })
-                                                }
-                                            </React.Fragment>
+                                                                return (
+                                                                    <TableRow key={index}>
+                                                                        <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                            {formatThaiShort(dayjs(date.date, "DD/MM/YYYY"))}
+                                                                        </TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                            {date.workshift.split("-")[1]}
+                                                                        </TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                            {`${date.start} - ${date.stop}`}
+                                                                        </TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                            {`ออก ${date.checkout}`}
+                                                                        </TableCell>
+                                                                        <TableCell
+                                                                            sx={{
+                                                                                textAlign: "center",
+                                                                                color: theme.palette.warning.main,
+                                                                                fontWeight: "bold"
+                                                                            }}
+                                                                        >
+                                                                            กลับก่อน {minutesEarly} นาที
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                );
+                                                            })
+                                                    }
+                                                </React.Fragment>
+                                                :
+                                                (
+                                                    index === 0 &&
+                                                    <TableRow sx={{ height: "60vh" }}>
+                                                        <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                    </TableRow>
+                                                )
                                         ))
                                 }
                             </TableBody>

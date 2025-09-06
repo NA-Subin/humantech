@@ -126,18 +126,21 @@ const OTDetail = (props) => {
 
             // เอา dateArray มารวมกับข้อมูลลา
             const merged = dateArray.map((emp) => {
-                // หา leave records ของพนักงานจาก deptid
-                const empLeave = Object.values(docOTData).filter(
-                    (leave) => leave.empid === emp.ID
+                // หา ot records ของพนักงานจาก deptid
+                const empOT = Object.values(docOTData).filter(
+                    (ot) => ot.empid === emp.ID
                 );
 
                 return {
                     ...emp,
-                    documentOT: empLeave.length > 0 ? empLeave : []  // เก็บ documentOT ลงไป
+                    documentOT: empOT.length > 0 ? empOT : []  // เก็บ documentOT ลงไป
                 };
             });
 
-            setDocOT(merged);
+            // ✅ เช็คว่ามีพนักงานที่มี documentot จริงๆ หรือไม่
+            const hasOT = merged.some(emp => emp.documentOT.length > 0);
+
+            setDocOT(hasOT ? merged : []);
         });
 
         return () => unsubscribe();
@@ -191,7 +194,7 @@ const OTDetail = (props) => {
     return (
         <React.Fragment>
             <Grid item size={12}>
-                <TableContainer component={Paper} textAlign="center">
+                <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh" }}>
                     <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1080px" }}>
                         <TableHead
                             sx={{
@@ -212,31 +215,34 @@ const OTDetail = (props) => {
                         <TableBody>
                             {
                                 docOT.length === 0 ?
-                                    <TableRow>
+                                    <TableRow  sx={{ height: "60vh" }}>
                                         <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                     </TableRow>
                                     :
                                     docOT.map((emp, index) => (
                                         <React.Fragment>
-                                            <TableRow>
-                                                <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
-                                                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
-                                                            ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
-                                                                ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
-                                                                : emp.department.split("-")[1]}
-                                                        </Typography>
-                                                        {
-                                                            emp.section.split("-")[1] !== "ไม่มี" &&
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
-                                                        }
-                                                        <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
-                                                    </Box>
-                                                </TableCell>
-                                            </TableRow>
+                                            {
+                                                emp.documentOT.length !== 0 &&
+                                                <TableRow>
+                                                    <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
+                                                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
+                                                                ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
+                                                                    ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
+                                                                    : emp.department.split("-")[1]}
+                                                            </Typography>
+                                                            {
+                                                                emp.section.split("-")[1] !== "ไม่มี" &&
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
+                                                            }
+                                                            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
+                                                        </Box>
+                                                    </TableCell>
+                                                </TableRow>
+                                            }
                                             {
                                                 emp.documentOT.map((date, index) => (
                                                     <TableRow key={index}>

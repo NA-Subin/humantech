@@ -79,7 +79,7 @@ const DocumentDetal = (props) => {
     const [dateArrayMap, setDateArrayMap] = useState([]);
     const [dateArray, setDateArray] = useState([]);
     const [menu, setMenu] = useState('0-แก้ไขเวลา');
-    const [doc, setDoc] = useState("");
+    const [doc, setDoc] = useState(1);
 
     console.log("dateArrayMap : ", dateArrayMap);
     console.log("dateArray : ", dateArray);

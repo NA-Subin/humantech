@@ -204,70 +204,90 @@ const LateDetail = (props) => {
                             <TableBody>
                                 {
                                     result.length === 0 ?
-                                        <TableRow>
+                                        <TableRow sx={{ height: "60vh" }}>
                                             <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                         </TableRow>
                                         :
                                         result.map((emp, index) => (
-                                            <React.Fragment>
-                                                <TableRow>
-                                                    <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
-                                                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
-                                                                ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
-                                                                    ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
-                                                                    : emp.department.split("-")[1]}
-                                                            </Typography>
-                                                            {
-                                                                emp.section.split("-")[1] !== "ไม่มี" &&
-                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
-                                                            }
-                                                            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
-                                                        </Box>
-                                                    </TableCell>
-                                                </TableRow>
-                                                {
-                                                    emp.dateHistory
-                                                        .filter(date => {
-                                                            // เงื่อนไข: มีเวลา checkin และ start และ checkin > start
-                                                            if (date.checkin && date.start) {
+                                            emp.attendant !== undefined ?
+                                                <React.Fragment>
+                                                    {
+                                                        emp.dateHistory
+                                                            .filter(date => {
+                                                                // เงื่อนไข: มีเวลา checkin และ start และ checkin > start
+                                                                if (date.checkin && date.start) {
+                                                                    const checkin = dayjs(date.checkin, "HH:mm");
+                                                                    const start = dayjs(date.start, "HH:mm");
+                                                                    return checkin.isAfter(start);
+                                                                }
+                                                                return false;
+                                                            }).length !== 0 &&
+                                                        <TableRow>
+                                                            <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
+                                                                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
+                                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
+                                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
+                                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
+                                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
+                                                                        ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
+                                                                            ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
+                                                                            : emp.department.split("-")[1]}
+                                                                    </Typography>
+                                                                    {
+                                                                        emp.section.split("-")[1] !== "ไม่มี" &&
+                                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
+                                                                    }
+                                                                    <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
+                                                                </Box>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    }
+                                                    {
+                                                        emp.dateHistory
+                                                            .filter(date => {
+                                                                // เงื่อนไข: มีเวลา checkin และ start และ checkin > start
+                                                                if (date.checkin && date.start) {
+                                                                    const checkin = dayjs(date.checkin, "HH:mm");
+                                                                    const start = dayjs(date.start, "HH:mm");
+                                                                    return checkin.isAfter(start);
+                                                                }
+                                                                return false;
+                                                            })
+                                                            .map((date, index) => {
                                                                 const checkin = dayjs(date.checkin, "HH:mm");
                                                                 const start = dayjs(date.start, "HH:mm");
-                                                                return checkin.isAfter(start);
-                                                            }
-                                                            return false;
-                                                        })
-                                                        .map((date, index) => {
-                                                            const checkin = dayjs(date.checkin, "HH:mm");
-                                                            const start = dayjs(date.start, "HH:mm");
-                                                            const minutesLate = checkin.diff(start, "minute");
+                                                                const minutesLate = checkin.diff(start, "minute");
 
-                                                            return (
-                                                                <TableRow key={index}>
-                                                                    <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                                        {formatThaiShort(dayjs(date.date, "DD/MM/YYYY"))}
-                                                                    </TableCell>
-                                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                                        {date.workshift.split("-")[1]}
-                                                                    </TableCell>
-                                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                                        {`${date.start} - ${date.stop}`}
-                                                                    </TableCell>
-                                                                    <TableCell sx={{ textAlign: "center" }}>
-                                                                        {`เข้า ${date.checkin}`}
-                                                                    </TableCell>
-                                                                    <TableCell sx={{ textAlign: "center", color: theme.palette.error.main, fontWeight: "bold" }}>
-                                                                        มาสาย {minutesLate} นาที
-                                                                    </TableCell>
-                                                                </TableRow>
-                                                            );
-                                                        })
-                                                }
-                                            </React.Fragment>
+                                                                return (
+                                                                    <TableRow key={index}>
+                                                                        <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                            {formatThaiShort(dayjs(date.date, "DD/MM/YYYY"))}
+                                                                        </TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                            {date.workshift.split("-")[1]}
+                                                                        </TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                            {`${date.start} - ${date.stop}`}
+                                                                        </TableCell>
+                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                            {`เข้า ${date.checkin}`}
+                                                                        </TableCell>
+                                                                        <TableCell sx={{ textAlign: "center", color: theme.palette.error.main, fontWeight: "bold" }}>
+                                                                            มาสาย {minutesLate} นาที
+                                                                        </TableCell>
+                                                                    </TableRow>
+                                                                );
+                                                            })
+                                                    }
+                                                </React.Fragment>
+                                                :
+                                                (
+                                                    index === 0 &&
+                                                    <TableRow sx={{ height: "60vh" }}>
+                                                        <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                    </TableRow>
+                                                )
                                         ))
                                 }
                             </TableBody>

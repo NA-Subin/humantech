@@ -54,7 +54,7 @@ const AddTimeDetail = (props) => {
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [leave, setLeave] = useState([{ ID: 0, name: '' }]);
-    const [docLeave, setDocLeave] = useState([]);
+    const [docTime, setDocTime] = useState([]);
     const columns = [
         { label: "ประเภทการลา", key: "name", type: "text" },
         { label: "จำนวนวัน", key: "max", type: "text" }
@@ -91,25 +91,28 @@ const AddTimeDetail = (props) => {
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const docLeaveRef = ref(firebaseDB, `workgroup/company/${companyId}/documenttime/${year}/${m + 1}`);
+        const docTimeRef = ref(firebaseDB, `workgroup/company/${companyId}/documenttime/${year}/${m + 1}`);
 
-        const unsubscribe = onValue(docLeaveRef, (snapshot) => {
-            const docLeaveData = snapshot.val() || {};
+        const unsubscribe = onValue(docTimeRef, (snapshot) => {
+            const docTimeData = snapshot.val() || {};
 
             // เอา dateArray มารวมกับข้อมูลลา
             const merged = dateArray.map((emp) => {
-                // หา leave records ของพนักงานจาก deptid
-                const empLeave = Object.values(docLeaveData).filter(
-                    (leave) => leave.empid === emp.ID
+                // หา time records ของพนักงานจาก deptid
+                const empTime = Object.values(docTimeData).filter(
+                    (time) => time.empid === emp.ID
                 );
 
                 return {
                     ...emp,
-                    documentLeave: empLeave.length > 0 ? empLeave : []  // เก็บ documentLeave ลงไป
+                    documentTime: empTime.length > 0 ? empTime : []  // เก็บ documentTime ลงไป
                 };
             });
 
-            setDocLeave(merged);
+            // ✅ เช็คว่ามีพนักงานที่มี documentTime จริงๆ หรือไม่
+            const hasTime = merged.some(emp => emp.documentTime.length > 0);
+
+            setDocTime(hasTime ? merged : []);
         });
 
         return () => unsubscribe();
@@ -123,10 +126,10 @@ const AddTimeDetail = (props) => {
         // );
 
         // onValue(timeEmployee, (snapshot) => {
-        //     const docLeaveData = snapshot.val() || {};
+        //     const docTimeData = snapshot.val() || {};
 
         //     const show = {
-        //         ID: attendantID ? attendantID : docLeaveData.length,
+        //         ID: attendantID ? attendantID : docTimeData.length,
         //         DDI: type === "ขอแก้ไขเวลาเข้างาน" ? dayjs(date, "DD/MM/YYYY").format("DD") : "",
         //         DDO: type === "ขอแก้ไขเวลาเข้างาน" ? "" : dayjs(date, "DD/MM/YYYY").format("DD"),
         //         MMI: type === "ขอแก้ไขเวลาเข้างาน" ? dayjs(date, "DD/MM/YYYY").format("MM") : "",
@@ -266,7 +269,7 @@ const AddTimeDetail = (props) => {
     return (
         <React.Fragment>
             <Grid item size={12}>
-                <TableContainer component={Paper} textAlign="center">
+                <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh" }}>
                     <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1080px" }}>
                         <TableHead
                             sx={{
@@ -287,34 +290,37 @@ const AddTimeDetail = (props) => {
                         </TableHead>
                         <TableBody>
                             {
-                                docLeave.length === 0 ?
-                                    <TableRow>
+                                docTime.length === 0 ?
+                                    <TableRow sx={{ height: "60vh" }}>
                                         <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                     </TableRow>
                                     :
-                                    docLeave.map((emp, index) => (
+                                    docTime.map((emp, index) => (
                                         <React.Fragment>
-                                            <TableRow>
-                                                <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
-                                                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
-                                                        <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
-                                                            ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
-                                                                ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
-                                                                : emp.department.split("-")[1]}
-                                                        </Typography>
-                                                        {
-                                                            emp.section.split("-")[1] !== "ไม่มี" &&
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
-                                                        }
-                                                        <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
-                                                    </Box>
-                                                </TableCell>
-                                            </TableRow>
                                             {
-                                                emp.documentLeave.map((date, index) => (
+                                                emp.documentTime.length !== 0 &&
+                                                <TableRow>
+                                                    <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
+                                                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
+                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
+                                                                ฝ่ายงาน {emp.department.split("-")[1].startsWith("ฝ่าย")
+                                                                    ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
+                                                                    : emp.department.split("-")[1]}
+                                                            </Typography>
+                                                            {
+                                                                emp.section.split("-")[1] !== "ไม่มี" &&
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
+                                                            }
+                                                            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
+                                                        </Box>
+                                                    </TableCell>
+                                                </TableRow>
+                                            }
+                                            {
+                                                emp.documentTime.map((date, index) => (
                                                     <TableRow key={index}>
                                                         <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>วันที่ {formatThaiShort(dayjs(date.datein, "DD/MM/YYYY"))}</TableCell>

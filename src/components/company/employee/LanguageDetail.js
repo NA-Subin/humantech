@@ -49,7 +49,7 @@ const LanguageDetail = (props) => {
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
     const [thailand, setThailand] = useState([]);
     const [openDetail, setOpenDetail] = useState({});
-    const [hoveredEmployeename, setHoveredEmployeename] = useState(null);
+    const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
     useEffect(() => {
@@ -85,6 +85,7 @@ const LanguageDetail = (props) => {
 
         langs.forEach((lang, langIdx) => {
             languageRows.push({
+                employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 language: lang.language || "",
@@ -99,6 +100,7 @@ const LanguageDetail = (props) => {
         // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
         if (langs.length === 0) {
             languageRows.push({
+                employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 language: "-",
@@ -263,7 +265,7 @@ const LanguageDetail = (props) => {
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                 <TableExcel
                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                    stylesTable={{ width: "1080px" }} // ✅ ส่งเป็น object
+                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1000px" }}
                                     types="list"
                                     columns={languageColumns}
                                     initialData={languageRows}
@@ -271,60 +273,63 @@ const LanguageDetail = (props) => {
                                 />
                             </Paper>
                             :
-                            <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1000px" }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader rowSpan={2} sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader rowSpan={2}>ชื่อ</TablecellHeader>
-                                            <TablecellHeader rowSpan={2}>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader colSpan={4}>ภาษาที่ใช้</TablecellHeader>
-                                        </TableRow>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader>ภาษา</TablecellHeader>
-                                            <TablecellHeader>พูด</TablecellHeader>
-                                            <TablecellHeader>อ่าน</TablecellHeader>
-                                            <TablecellHeader>เขียน</TablecellHeader>
-                                        </TableRow>
-                                    </TableHead>
+                            <React.Fragment>
+                                <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลภาษารายคนให้กดชื่อในตารางได้เลย</Typography>
+                                <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1000px" }}>
+                                        <TableHead>
+                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 50 }}>ลำดับ</TablecellHeader>
+                                                <TablecellHeader rowSpan={2}>ชื่อ</TablecellHeader>
+                                                <TablecellHeader rowSpan={2}>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader colSpan={4}>ภาษาที่ใช้</TablecellHeader>
+                                            </TableRow>
+                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                <TablecellHeader>ภาษา</TablecellHeader>
+                                                <TablecellHeader>พูด</TablecellHeader>
+                                                <TablecellHeader>อ่าน</TablecellHeader>
+                                                <TablecellHeader>เขียน</TablecellHeader>
+                                            </TableRow>
+                                        </TableHead>
 
-                                    <TableBody>
-                                        {
-                                            languageRows.length === 0 ?
-                                                <TableRow>
-                                                    <TablecellNoData colSpan={7}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                </TableRow>
-                                                :
-                                                (
-                                                    languageRows.map((row, index) => (
-                                                        <TableRow
-                                                            key={index}
-                                                            onClick={() => row.isFirst && setOpenDetail(row)}
-                                                            onMouseEnter={() => setHoveredEmployeename(row.employname)}
-                                                            onMouseLeave={() => setHoveredEmployeename(null)}
-                                                            sx={{
-                                                                cursor: hoveredEmployeename === row.employname ? 'pointer' : 'default',
-                                                                backgroundColor: hoveredEmployeename === row.employname ? theme.palette.primary.light : 'inherit',
-                                                            }}
-                                                        >
-                                                            {row.isFirst && (
-                                                                <>
-                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{index + 1}</TableCell>
-                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.employname}</TableCell>
-                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.position}</TableCell>
-                                                                </>
-                                                            )}
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.language}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.speak}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.read}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal', }}>{row.write}</TableCell>
-                                                        </TableRow>
-                                                    ))
-                                                )
-                                        }
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                        <TableBody>
+                                            {
+                                                languageRows.length === 0 ?
+                                                    <TableRow>
+                                                        <TablecellNoData colSpan={7}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                    </TableRow>
+                                                    :
+                                                    (
+                                                        languageRows.map((row, index) => (
+                                                            <TableRow
+                                                                key={index}
+                                                                onClick={() => row.isFirst && setOpenDetail(row)}
+                                                                onMouseEnter={() => setHoveredEmpCode(row.employeecode)}
+                                                                onMouseLeave={() => setHoveredEmpCode(null)}
+                                                                sx={{
+                                                                    cursor: hoveredEmpCode === row.employeecode ? 'pointer' : 'default',
+                                                                    backgroundColor: hoveredEmpCode === row.employeecode ? theme.palette.primary.light : 'inherit',
+                                                                }}
+                                                            >
+                                                                {row.isFirst && (
+                                                                    <>
+                                                                        <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{index + 1}</TableCell>
+                                                                        <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.employname}</TableCell>
+                                                                        <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.position}</TableCell>
+                                                                    </>
+                                                                )}
+                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.language}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.speak}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.read}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.write}</TableCell>
+                                                            </TableRow>
+                                                        ))
+                                                    )
+                                            }
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </React.Fragment>
                     }
                 </Grid>
                 {

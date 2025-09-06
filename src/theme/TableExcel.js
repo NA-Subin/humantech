@@ -471,7 +471,14 @@ export default function TableExcel({
             <Stack direction="row" spacing={2}>
                 <TableContainer component={Paper} ref={tableRef} sx={styles}>
                     <Table size="small" sx={stylesTable} >
-                        <TableHead>
+                        <TableHead
+                            sx={{
+                                position: "sticky",
+                                top: 0,
+                                zIndex: 2,
+                                backgroundColor: theme.palette.primary.dark,
+                            }}
+                        >
                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                 <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
                                 {columns.map((col, idx) => (
@@ -528,7 +535,7 @@ export default function TableExcel({
                                                                         : (isCellSelected(rowIdx, colIdx)
                                                                             ? theme.palette.primary.light
                                                                             : getCellBackgroundColor(data[rowIdx]?.[col.key], col)),
-                                                                            position: "sticky",      // ทำให้ sticky
+                                                                    position: "sticky",      // ทำให้ sticky
                                                                     left: 0,                 // ติดซ้ายที่ 0px
                                                                     zIndex: 20,              // ให้ลอยอยู่บนเซลล์อื่น
                                                                 }}>

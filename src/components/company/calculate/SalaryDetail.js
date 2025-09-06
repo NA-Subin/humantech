@@ -257,6 +257,8 @@ const SalaryDetail = (props) => {
             m
         );
 
+        const employeetype = emp.employmenttype ? emp.employmenttype.split("-")[1] : 0
+
         const row = {
             employeecode: emp.employeecode,
             employeetype: emp.employmenttype,
@@ -267,13 +269,13 @@ const SalaryDetail = (props) => {
             salary: Number(emp.salary),
             employid: emp.ID,
             employname: `${emp.employname} (${emp.nickname})`,
-            workday: emp.employmenttype.split("-")[1] === "รายเดือน" ? workingDays : 0,
+            workday: employeetype !== 0 ? workingDays : 0,
             attendantCount: attendantCount,
             holidayCount: holidayResult.holidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
             holiday: holidayResult.holidayDates, // ✅ เพิ่มจำนวนวันหยุด
             leaveCount: leave.length,
             otHours: otHours,
-            missingWork: (emp.employmenttype.split("-")[1] === "รายเดือน" ? workingDays : 0) - (attendantCount + holidayResult.holidayDates.length + leave.length),
+            missingWork: (employeetype !== 0 ? workingDays : 0) - (attendantCount + holidayResult.holidayDates.length + leave.length),
             totalIncome: 0,
             totalDeduction: 0,
             total: 0
@@ -616,9 +618,16 @@ const SalaryDetail = (props) => {
             <Box sx={{ marginTop: 2, width: `${windowWidth - 500}px` }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
-                        <TableContainer component={Paper}>
+                        <TableContainer component={Paper} sx={{ height: "70vh" }}>
                             <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
-                                <TableHead>
+                                <TableHead
+                                    sx={{
+                                        position: "sticky",
+                                        top: 0,
+                                        zIndex: 2,
+                                        backgroundColor: theme.palette.primary.dark,
+                                    }}
+                                >
                                     <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                         {/* <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader> */}
                                         <TablecellHeader sx={{ width: 60 }}>รหัส</TablecellHeader>
@@ -650,7 +659,7 @@ const SalaryDetail = (props) => {
                                 <TableBody>
                                     {
                                         Object.entries(groupedRows).length === 0 ?
-                                            <TableRow>
+                                            <TableRow sx={{ height: "60vh" }}>
                                                 <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                             </TableRow>
                                             :

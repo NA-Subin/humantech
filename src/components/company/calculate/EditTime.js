@@ -89,7 +89,7 @@ const EditTimeDetail = (props) => {
     console.log("position : ", position);
 
     const [menu, setMenu] = useState('0-แก้ไขเวลา');
-    const [day, setDay] = useState("");
+    const [day, setDay] = useState(1);
 
     console.log("Menu : ", menu);
 

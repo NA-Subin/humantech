@@ -362,9 +362,16 @@ const DeductionDetail = (props) => {
                                     />
                                 </Paper>
                                 :
-                                <TableContainer component={Paper} textAlign="center">
+                                <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", overflow: "auto" }}>
                                     <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
-                                        <TableHead>
+                                        <TableHead
+                                            sx={{
+                                                position: "sticky",
+                                                top: 0,
+                                                zIndex: 2,
+                                                backgroundColor: theme.palette.primary.dark,
+                                            }}
+                                        >
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                 <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
                                                 <TablecellHeader>ชื่อ</TablecellHeader>
@@ -380,7 +387,7 @@ const DeductionDetail = (props) => {
                                         <TableBody>
                                             {
                                                 deductionRows.length === 0 ?
-                                                    <TableRow>
+                                                    <TableRow sx={{ height: "60vh" }}>
                                                         <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                     </TableRow>
                                                     :

@@ -61,7 +61,7 @@ const WorkShiftDetail = () => {
         { label: "กะการทำงาน", key: "name", type: "text" },
         { label: "เข้า", key: "start", type: "time" },
         { label: "ออก", key: "stop", type: "time" },
-        { label: "จำนวนชั่วโมง", key: "totalWorkHours", type: "number" },
+        // { label: "จำนวนชั่วโมง", key: "totalWorkHours", type: "number" },
         ...Object.entries(daysMap).map(([key, label]) => ({
             label,
             key,
@@ -115,20 +115,33 @@ const WorkShiftDetail = () => {
                     zeller: 1,
                 }));
 
+            // 🕒 คำนวณชั่วโมงทำงาน
+            const [startHour, startMinute] = shift.start.split(":").map(Number);
+            const [stopHour, stopMinute] = shift.stop.split(":").map(Number);
+
+            let start = startHour + startMinute / 60;
+            let stop = stopHour + stopMinute / 60;
+
+            // ถ้า stop < start → ข้ามวัน
+            if (stop < start) {
+                stop += 24;
+            }
+
+            const totalWorkHours = stop - start;
+
             return {
                 ID: shift.ID,
                 name: shift.name,
                 start: shift.start,
                 stop: shift.stop,
                 status: shift.status,
-                totalWorkHours: shift.totalWorkHours,
+                totalWorkHours: totalWorkHours.toFixed(2), // ✅ เก็บเป็นทศนิยม 2 ตำแหน่ง
                 holiday: holidays,
             };
         });
 
         setWorkshift(updated);
     };
-
 
     console.log("workshift : ", workshift);
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
@@ -324,7 +337,7 @@ const WorkShiftDetail = () => {
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.name}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.start}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>{row.stop}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center" }}>{row.breakMinutes}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center" }}>{row.totalWorkHours}</TableCell>
 
                                                                 {Object.keys(daysMap).map((dayKey) => (
                                                                     <TableCell key={dayKey} sx={{ textAlign: "center" }}>

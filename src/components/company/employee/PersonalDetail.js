@@ -50,7 +50,7 @@ const PersonalDetail = (props) => {
 
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
-    const [hoveredEmployeename, setHoveredEmployeename] = useState(null);
+    const [hoveredEmpID, setHoveredEmpID] = useState(null);
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
     const [thailand, setThailand] = useState([]);
@@ -74,6 +74,7 @@ const PersonalDetail = (props) => {
     }, [database]);
 
     const personal = employees.map(emp => ({
+        employeecode: emp.employeecode,
         employname: `${emp.employname} (${emp.nickname})`,
         position: emp.position.split("-")[1],
         sex: emp.personal?.sex || '',
@@ -429,78 +430,81 @@ const PersonalDetail = (props) => {
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                 <TableExcel
                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                    stylesTable={{ width: "2500px" }} // ✅ ส่งเป็น object
+                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2500px" }}
                                     columns={personalColumns}
                                     initialData={personal}
                                     onDataChange={handlePersonalChange}
                                 />
                             </Paper>
                             :
-                            <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2500px" }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 300 }}>ชื่อ</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 200 }}>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 100 }}>เพศ</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 150 }}>สถานภาพทางทหาร</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 120 }}>ตำบล</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 120 }}>อำเภอ</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 120 }}>จังหวัด</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 100 }}>รหัสไปรณีย์</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 100 }}>สัญชาติ</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 100 }}>ศาสนา</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 100 }}>ส่วนสูง</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 100 }}>น้ำหนัก</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 100 }}>สถานภาพ</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 120 }}>เบอร์โทรศัพท์</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 120 }}>โทรศัพท์บ้าน</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 150 }}>Line ID</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 150 }}>ประเทศ</TablecellHeader>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {
-                                            personal.length === 0 ?
-                                                <TableRow>
-                                                    <TablecellNoData colSpan={18}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                </TableRow>
-                                                :
-                                                personal.map((row, index) => (
-                                                    <TableRow
-                                                        key={index}
-                                                        onClick={() => setOpenDetail(row)}
-                                                        onMouseEnter={() => setHoveredEmployeename(row.employname)}
-                                                        onMouseLeave={() => setHoveredEmployeename(null)}
-                                                        sx={{
-                                                            cursor: hoveredEmployeename === row.employname ? 'pointer' : 'default',
-                                                            backgroundColor: hoveredEmployeename === row.employname ? theme.palette.primary.light : 'inherit',
-                                                        }}
-                                                    >
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{index + 1}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.employname}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.position}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.sex}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.militaryStatus}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.tambon.split("-")[1]}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.amphure.split("-")[1]}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.province.split("-")[1]}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.zipCode}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.nationality}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.religion}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.height}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.weight}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.statusEmployee}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.phone}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.homephone}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.lineID}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.country}</TableCell>
+                            <React.Fragment>
+                                <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลทั่วไปรายคนให้กดชื่อในตารางได้เลย</Typography>
+                                <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2500px" }}>
+                                        <TableHead>
+                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 300 }}>ชื่อ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 200 }}>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>เพศ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>สถานภาพทางทหาร</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120 }}>ตำบล</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120 }}>อำเภอ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120 }}>จังหวัด</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>รหัสไปรณีย์</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>สัญชาติ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>ศาสนา</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>ส่วนสูง</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>น้ำหนัก</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>สถานภาพ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120 }}>เบอร์โทรศัพท์</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120 }}>โทรศัพท์บ้าน</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>Line ID</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>ประเทศ</TablecellHeader>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {
+                                                personal.length === 0 ?
+                                                    <TableRow>
+                                                        <TablecellNoData colSpan={18}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                     </TableRow>
-                                                ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                                    :
+                                                    personal.map((row, index) => (
+                                                        <TableRow
+                                                            key={index}
+                                                            onClick={() => setOpenDetail(row)}
+                                                            onMouseEnter={() => setHoveredEmpID(row.employeecode)}
+                                                            onMouseLeave={() => setHoveredEmpID(null)}
+                                                            sx={{
+                                                                cursor: hoveredEmpID === row.employeecode ? 'pointer' : 'default',
+                                                                backgroundColor: hoveredEmpID === row.employeecode ? theme.palette.primary.light : 'inherit',
+                                                            }}
+                                                        >
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{index + 1}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.employname}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.position}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.sex}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.militaryStatus}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.tambon.split("-")[1]}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.amphure.split("-")[1]}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.province.split("-")[1]}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.zipCode}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.nationality}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.religion}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.height}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.weight}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.statusEmployee}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.phone}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.homephone}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.lineID}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.country}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </React.Fragment>
                     }
                 </Grid>
                 {

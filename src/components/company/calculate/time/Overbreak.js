@@ -270,7 +270,7 @@ const OverbreakDetail = (props) => {
                                 <TableBody>
                                     {
                                         attendantRows.length === 0 ?
-                                            <TableRow>
+                                            <TableRow sx={{ height: "60vh" }}>
                                                 <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                             </TableRow>
                                             :

@@ -108,8 +108,8 @@ const CalculateSalary = () => {
                 return <IncomeDetail data={key} month={selectedDate} />;
             case 'รายจ่าย':
                 return <DeductionDetails data={key} month={selectedDate} />;
-            case 'ตรวจสอบเงินเดือน':
-                return <Salary data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
+            // case 'ตรวจสอบเงินเดือน':
+            //     return <Salary data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'สรุปผลการคำนวณ':
                 return <SalaryDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'ปิดงบบัญชี':
@@ -298,7 +298,7 @@ const CalculateSalary = () => {
                             'ยื่นเอกสาร',
                             'รายได้',
                             'รายจ่าย',
-                            'ตรวจสอบเงินเดือน',
+                            // 'ตรวจสอบเงินเดือน',
                             'สรุปผลการคำนวณ',
                             'ปิดงบบัญชี',
                         ].map((text, index) => {

@@ -57,58 +57,61 @@ const MissingWorkDetail = (props) => {
     const [checkin, setCheckin] = useState("");
     const [checkout, setCheckout] = useState("");
 
-    const result = dateArray.map((item) => {
-        const { attendant = [], dateHistory = [] } = item;
+    const result = Array.isArray(dateArray) ?
+        dateArray.map((item) => {
+            const { attendant = [], dateHistory = [] } = item;
 
-        const newDateHistory = dateHistory.map((d) => {
-            // หาวันที่ตรงกับ datein หรือ dateout
-            const found = attendant.find((a) => {
-                const datein = a.DDI && a.MMI ? `${a.DDI}/${a.MMI}/2025` : null;
-                const dateout = a.DDO && a.MMO ? `${a.DDO}/${a.MMO}/2025` : null;
-                return d.date === datein || d.date === dateout;
+            const newDateHistory = dateHistory.map((d) => {
+                // หาวันที่ตรงกับ datein หรือ dateout
+                const found = attendant.find((a) => {
+                    const datein = a.DDI && a.MMI ? `${a.DDI}/${a.MMI}/2025` : null;
+                    const dateout = a.DDO && a.MMO ? `${a.DDO}/${a.MMO}/2025` : null;
+                    return d.date === datein || d.date === dateout;
+                });
+
+                let message = "ขาดงาน";
+                let datein = "";
+                let dateout = "";
+                let checkin = "";
+                let checkout = "";
+
+                if (found) {
+                    if (found.DDI && found.MMI) {
+                        datein = `${found.DDI}/${found.MMI}/2025`;
+                        checkin = found.checkin || ""; // เวลาเข้า
+                    }
+
+                    if (found.DDO && found.MMO) {
+                        dateout = `${found.DDO}/${found.MMO}/2025`;
+                        checkout = found.checkout || ""; // เวลาออก
+                    }
+
+                    if (datein && dateout) {
+                        message = "ลงเวลาเข้าออกครบ";
+                    } else if (datein && !dateout) {
+                        message = "ลงเวลาไม่ครบ (ไม่มีเวลาออก)";
+                    } else if (!datein && dateout) {
+                        message = "ลงเวลาไม่ครบ (ไม่มีเวลาเข้า)";
+                    }
+                }
+
+                return {
+                    ...d,
+                    datein,
+                    dateout,
+                    checkin,
+                    checkout,
+                    message,
+                };
             });
 
-            let message = "ขาดงาน";
-            let datein = "";
-            let dateout = "";
-            let checkin = "";
-            let checkout = "";
-
-            if (found) {
-                if (found.DDI && found.MMI) {
-                    datein = `${found.DDI}/${found.MMI}/2025`;
-                    checkin = found.checkin || ""; // เวลาเข้า
-                }
-
-                if (found.DDO && found.MMO) {
-                    dateout = `${found.DDO}/${found.MMO}/2025`;
-                    checkout = found.checkout || ""; // เวลาออก
-                }
-
-                if (datein && dateout) {
-                    message = "ลงเวลาเข้าออกครบ";
-                } else if (datein && !dateout) {
-                    message = "ลงเวลาไม่ครบ (ไม่มีเวลาออก)";
-                } else if (!datein && dateout) {
-                    message = "ลงเวลาไม่ครบ (ไม่มีเวลาเข้า)";
-                }
-            }
-
             return {
-                ...d,
-                datein,
-                dateout,
-                checkin,
-                checkout,
-                message,
+                ...item,
+                dateHistory: newDateHistory,
             };
-        });
-
-        return {
-            ...item,
-            dateHistory: newDateHistory,
-        };
-    });
+        })
+        :
+        [];
 
     console.log("result : ", result);
 
@@ -296,33 +299,37 @@ const MissingWorkDetail = (props) => {
                             <TableBody>
                                 {
                                     result.length === 0 ?
-                                        <TableRow>
+                                        <TableRow sx={{ height: "60vh" }}>
                                             <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                         </TableRow>
                                         :
                                         result.map((emp, index) => (
                                             <React.Fragment>
-                                                <TableRow>
-                                                    <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
-                                                        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
-                                                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
-                                                                ฝ่ายงาน {
-                                                                    emp.department?.split("-")[1]?.startsWith("ฝ่าย")
-                                                                        ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
-                                                                        : emp.department?.split("-")[1] || ""
+                                                {
+                                                    emp.dateHistory
+                                                        .filter(date => date.message === "ขาดงาน").length > 0 &&
+                                                    <TableRow>
+                                                        <TableCell sx={{ textAlign: "left", height: "50px", backgroundColor: theme.palette.primary.light }} colSpan={6}>
+                                                            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "left", paddingLeft: 2 }}>
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 2 }} gutterBottom>รหัสพนักงาน : {emp.employeecode}</Typography>
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>{emp.employname}</Typography>
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>({emp.nickname})</Typography>
+                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>
+                                                                    ฝ่ายงาน {
+                                                                        emp.department?.split("-")[1]?.startsWith("ฝ่าย")
+                                                                            ? emp.department.split("-")[1].replace("ฝ่าย", "").trim()
+                                                                            : emp.department?.split("-")[1] || ""
+                                                                    }
+                                                                </Typography>
+                                                                {
+                                                                    emp.section.split("-")[1] !== "ไม่มี" &&
+                                                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
                                                                 }
-                                                            </Typography>
-                                                            {
-                                                                emp.section.split("-")[1] !== "ไม่มี" &&
-                                                                <Typography variant="subtitle2" fontWeight="bold" sx={{ marginRight: 1 }} gutterBottom>ส่วนงาน {emp.section.split("-")[1]}</Typography>
-                                                            }
-                                                            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
-                                                        </Box>
-                                                    </TableCell>
-                                                </TableRow>
+                                                                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ตำแหน่ง {emp.position.split("-")[1]}</Typography>
+                                                            </Box>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                }
                                                 {
                                                     emp.dateHistory
                                                         .filter(date => date.message === "ขาดงาน")

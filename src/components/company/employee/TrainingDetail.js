@@ -49,7 +49,7 @@ const TrainingDetail = (props) => {
     const [edit, setEdit] = useState("");
     const [openDetail, setOpenDetail] = useState("");
     const [thailand, setThailand] = useState([]);
-    const [hoveredEmployeename, setHoveredEmployeename] = useState(null);
+    const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
 
@@ -108,6 +108,7 @@ const TrainingDetail = (props) => {
 
         trains.forEach((train, trainIdx) => {
             trainingRows.push({
+                employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 course: train.course || "",
@@ -124,6 +125,7 @@ const TrainingDetail = (props) => {
         // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
         if (trains.length === 0) {
             trainingRows.push({
+                employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 course: "-",
@@ -317,7 +319,7 @@ const TrainingDetail = (props) => {
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                 <TableExcel
                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                    stylesTable={{ width: "2000px" }} // ✅ ส่งเป็น object
+                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}
                                     types="list"
                                     columns={trainingColumns}
                                     initialData={trainingRows}
@@ -325,81 +327,84 @@ const TrainingDetail = (props) => {
                                 />
                             </Paper>
                             :
-                            <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader rowSpan={2} sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader rowSpan={2}>ชื่อ</TablecellHeader>
-                                            <TablecellHeader rowSpan={2}>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader rowSpan={2}>วันที่เริ่มต้น</TablecellHeader>
-                                            <TablecellHeader rowSpan={2}>จนถึงวันที่</TablecellHeader>
-                                            <TablecellHeader rowSpan={2}>สถานบัน</TablecellHeader>
-                                            <TablecellHeader rowSpan={2}>หลักสูตร</TablecellHeader>
-                                            <TablecellHeader colSpan={2}>file</TablecellHeader>
-                                        </TableRow>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader>เอกสาร</TablecellHeader>
-                                            <TablecellHeader>รูปภาพ</TablecellHeader>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {
-                                            trainingRows.length === 0 ?
-                                                <TableRow>
-                                                    <TablecellNoData colSpan={9}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                </TableRow>
-                                                :
-                                                trainingRows.map((row, index) => (
-                                                    <TableRow
-                                                        onClick={() => row.isFirst && setOpenDetail(row)}
-                                                        onMouseEnter={() => setHoveredEmployeename(row.employname)}
-                                                        onMouseLeave={() => setHoveredEmployeename(null)}
-                                                        sx={{
-                                                            cursor: hoveredEmployeename === row.employname ? 'pointer' : 'default',
-                                                            backgroundColor: hoveredEmployeename === row.employname ? theme.palette.primary.light : 'inherit',
-                                                        }}
-                                                    >
-                                                        {row.isFirst && (
-                                                            <>
-                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{index + 1}</TableCell>
-                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.employname}</TableCell>
-                                                                <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.position}</TableCell>
-                                                            </>
-                                                        )}
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.dateStart}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.dateEnd}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.institution}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmployeename === row.employname ? 'bold' : 'normal' }}>{row.course}</TableCell>
-                                                        {
-                                                            row.fileType === "pdf" ?
-                                                                (
-                                                                    <React.Fragment>
-                                                                        <TableCell sx={{ textAlign: "center" }}>{row.file}</TableCell>
-                                                                        <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                                    </React.Fragment>
-                                                                )
-                                                                :
-                                                                row.fileType === "image" ?
+                            <React.Fragment>
+                                <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลการฝึกอบรมรายคนให้กดชื่อในตารางได้เลย</Typography>
+                                <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
+                                        <TableHead>
+                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 50 }}>ลำดับ</TablecellHeader>
+                                                <TablecellHeader rowSpan={2}>ชื่อ</TablecellHeader>
+                                                <TablecellHeader rowSpan={2}>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader rowSpan={2}>วันที่เริ่มต้น</TablecellHeader>
+                                                <TablecellHeader rowSpan={2}>จนถึงวันที่</TablecellHeader>
+                                                <TablecellHeader rowSpan={2}>สถานบัน</TablecellHeader>
+                                                <TablecellHeader rowSpan={2}>หลักสูตร</TablecellHeader>
+                                                <TablecellHeader colSpan={2}>file</TablecellHeader>
+                                            </TableRow>
+                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                <TablecellHeader>เอกสาร</TablecellHeader>
+                                                <TablecellHeader>รูปภาพ</TablecellHeader>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {
+                                                trainingRows.length === 0 ?
+                                                    <TableRow>
+                                                        <TablecellNoData colSpan={9}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                    </TableRow>
+                                                    :
+                                                    trainingRows.map((row, index) => (
+                                                        <TableRow
+                                                            onClick={() => row.isFirst && setOpenDetail(row)}
+                                                            onMouseEnter={() => setHoveredEmpCode(row.employeecode)}
+                                                            onMouseLeave={() => setHoveredEmpCode(null)}
+                                                            sx={{
+                                                                cursor: hoveredEmpCode === row.employeecode ? 'pointer' : 'default',
+                                                                backgroundColor: hoveredEmpCode === row.employeecode ? theme.palette.primary.light : 'inherit',
+                                                            }}
+                                                        >
+                                                            {row.isFirst && (
+                                                                <>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{index + 1}</TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.employname}</TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.position}</TableCell>
+                                                                </>
+                                                            )}
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.dateStart}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.dateEnd}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.institution}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.course}</TableCell>
+                                                            {
+                                                                row.fileType === "pdf" ?
                                                                     (
                                                                         <React.Fragment>
-                                                                            <TableCell sx={{ textAlign: "center" }}>-</TableCell>
                                                                             <TableCell sx={{ textAlign: "center" }}>{row.file}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>-</TableCell>
                                                                         </React.Fragment>
                                                                     )
                                                                     :
-                                                                    (
-                                                                        <React.Fragment>
-                                                                            <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                                            <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                                        </React.Fragment>
-                                                                    )
-                                                        }
-                                                    </TableRow>
-                                                ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
+                                                                    row.fileType === "image" ?
+                                                                        (
+                                                                            <React.Fragment>
+                                                                                <TableCell sx={{ textAlign: "center" }}>-</TableCell>
+                                                                                <TableCell sx={{ textAlign: "center" }}>{row.file}</TableCell>
+                                                                            </React.Fragment>
+                                                                        )
+                                                                        :
+                                                                        (
+                                                                            <React.Fragment>
+                                                                                <TableCell sx={{ textAlign: "center" }}>-</TableCell>
+                                                                                <TableCell sx={{ textAlign: "center" }}>-</TableCell>
+                                                                            </React.Fragment>
+                                                                        )
+                                                            }
+                                                        </TableRow>
+                                                    ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </React.Fragment>
                     }
                 </Grid>
                 {
