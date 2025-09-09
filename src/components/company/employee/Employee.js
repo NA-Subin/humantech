@@ -19,6 +19,9 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import SettingsIcon from '@mui/icons-material/Settings';
+import DisabledByDefaultIcon from '@mui/icons-material/DisabledByDefault';
+import SaveIcon from '@mui/icons-material/Save';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import CloseIcon from '@mui/icons-material/Close';
@@ -48,6 +51,9 @@ import OtherDetail from "./OtherDetail";
 import dayjs from "dayjs";
 import ThaiDateSelector from "../../../theme/ThaiDateSelector";
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import { formatThaiSlash } from "../../../theme/DateTH";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 
 dayjs.extend(customParseFormat);
 
@@ -703,7 +709,160 @@ const Employee = () => {
     // console.log("Dates : ",dayjs(dates, "DD/MM/YYYY"));
     // console.log("Dates s : ",dayjs(toDateString(workshiftDate), "DD/MM/YYYY"));
 
-    console.log("date : ", workshiftDate);
+    console.log("date : ", toDateString(workshiftDate));
+    console.log("opendetail.workshifthistory : ", opendetail.workshifthistory);
+
+    const [workshiftID, setWorkshiftID] = useState("");
+    const [workshiftName, setWorkshiftName] = useState("");
+    const [workshiftDateStart, setWorkshiftDateStart] = useState(dayjs(new Date).format("DD/MM/YYYY"));
+    const [workshiftDateEnd, setWorkshiftDateEnd] = useState(dayjs(new Date).format("DD/MM/YYYY"));
+
+    // const handleUpdateTime = (tm) => {
+    //     setWorkshiftID(tm.ID);
+    //     setWorkshiftName(tm.workshift);
+    //     setWorkshiftDateStart(tm.datestart);
+    //     setWorkshiftDateEnd(tm.dateend);
+    // }
+
+    const handleUpdateTime = (tm) => {
+        // ถ้า attendant ว่าง → ไม่ต้องเช็ค
+        if (!opendetail.attendant || Object.keys(opendetail.attendant).length === 0) {
+            setWorkshiftID(tm.ID);
+            setWorkshiftName(tm.workshift);
+            setWorkshiftDateStart(tm.datestart);
+            setWorkshiftDateEnd(tm.dateend);
+            return;
+        }
+
+        // แปลง attendant เป็น array ของทุก entry
+        let allAttendants = [];
+        Object.values(opendetail.attendant).forEach(yearObj => {
+            Object.values(yearObj).forEach(monthArr => {
+                allAttendants = allAttendants.concat(monthArr || []);
+            });
+        });
+
+
+        // ตรวจสอบ overlap และ workshift ตรงกัน
+        const hasConflict = allAttendants.some(entry => {
+            if (entry.workshift !== tm.workshift) return false;
+
+            const entryStart = dayjs(entry.datestart, "DD/MM/YYYY");
+            const entryEnd = entry.dateend !== "now"
+                ? dayjs(entry.dateend, "DD/MM/YYYY")
+                : dayjs(); // ถ้ายัง "now" ให้ถือว่าสิ้นสุดวันนี้
+
+            const tmStart = dayjs(tm.datestart, "DD/MM/YYYY");
+            const tmEnd = dayjs(tm.dateend, "DD/MM/YYYY");
+
+            // เช็คว่าช่วง tm ทับกับ entry เดิมหรือไม่
+            return tmStart.isBetween(entryStart, entryEnd, "day", "[]") ||
+                tmEnd.isBetween(entryStart, entryEnd, "day", "[]") ||
+                entryStart.isBetween(tmStart, tmEnd, "day", "[]") ||
+                entryEnd.isBetween(tmStart, tmEnd, "day", "[]");
+        });
+
+        if (hasConflict) {
+            ShowWarning(
+                "ช่วงวันที่ซ้ำ",
+                "ไม่สามารถบันทึกได้ เพราะมีกะการทำงานตรงกันในช่วงเวลาที่เลือก"
+            );
+            return;
+        }
+
+        // ถ้าไม่มี conflict → เซ็ตค่า
+        setWorkshiftID(tm.ID);
+        setWorkshiftName(tm.workshift);
+        setWorkshiftDateStart(tm.datestart);
+        setWorkshiftDateEnd(tm.dateend);
+    };
+
+
+    // const handleSaveWorkshift = () => {
+    //     const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${opendetail.ID}`);
+
+    //     if (!workshift || !workshiftDate || !workshifts?.length) {
+    //         ShowWarning("ข้อมูลไม่ครบ", "กรุณาเลือกกะการทำงานและวันที่ให้ครบถ้วนก่อนบันทึก");
+    //         return;
+    //     }
+
+    //     const shiftID = Number(workshift.ID);
+    //     const shiftData = workshifts.find(row => row.ID === shiftID);
+
+    //     if (!shiftData) {
+    //         ShowWarning("ไม่พบข้อมูลกะ", "ไม่สามารถค้นหากะที่เลือกได้");
+    //         return;
+    //     }
+
+    //     const currentHistory = Array.isArray(opendetail.workshifthistory) ? [...opendetail.workshifthistory] : [];
+    //     const lastIndex = currentHistory.length - 1;
+    //     const lastHistory = currentHistory[lastIndex] || null;
+
+    //     const isSameWorkshift = (historyEntry, shift) => {
+    //         if (!historyEntry || !shift) return false;
+    //         return historyEntry.start === shift.start && historyEntry.stop === shift.stop;
+    //     };
+
+    //     const newStartDate = toDateString(workshiftDate);
+
+    //     // ถ้า shift เหมือนเดิม → update เฉพาะ workshift
+    //     if (isSameWorkshift(lastHistory, shiftData)) {
+    //         set(companiesRef, {
+    //             workshift: `${workshift.ID}-${workshift.name}`,
+    //         })
+    //             .then(() => {
+    //                 setEditWorkshift(false);
+    //             })
+    //             .catch((error) => {
+    //                 ShowError("เกิดข้อผิดพลาดในการบันทึก");
+    //                 console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+    //             });
+    //         return;
+    //     }
+
+    //     // ถ้ามี history อย่างน้อย 1 รายการ → ปรับ end ก่อนเพิ่มใหม่
+    //     if (currentHistory.length > 0) {
+    //         const newEndDate = newStartDate.subtract(1, "day");
+    //         currentHistory[lastIndex] = {
+    //             ...lastHistory,
+    //             DDend: newEndDate.format("DD"),
+    //             MMend: newEndDate.format("MM"),
+    //             YYYYend: newEndDate.format("YYYY"),
+    //             dateend: newEndDate.format("DD/MM/YYYY"),
+    //         };
+    //     }
+
+    //     // เพิ่ม entry ใหม่
+    //     const newHistoryEntry = {
+    //         ID: currentHistory.length,
+    //         workshift: `${workshift.ID}-${workshift.name}`,
+    //         DDstart: dayjs(workshiftDate.day).format("DD"),
+    //         MMstart: dayjs(workshiftDate.month).format("MM"),
+    //         YYYYstart: dayjs(workshiftDate.year).format("YYYY"),
+    //         datestart: toDateString(workshiftDate),
+    //         DDend: "now",
+    //         MMend: "now",
+    //         YYYYend: "now",
+    //         dateend: "now",
+    //         start: workshift.start,
+    //         stop: workshift.stop,
+    //         holiday: workshift.holiday,
+    //     };
+
+    //     const updatedEmployee = {
+    //         ...opendetail,
+    //         workshift: `${workshift.ID}-${workshift.name}`,
+    //         workshifthistory: [...currentHistory, newHistoryEntry],
+    //     };
+
+    //     set(companiesRef, updatedEmployee)
+    //         .then(() => {
+    //             setEditWorkshift(false);
+    //         })
+    //         .catch((error) => {
+    //             console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+    //         });
+    // };
 
     const handleSaveWorkshift = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${opendetail.ID}`);
@@ -721,35 +880,28 @@ const Employee = () => {
             return;
         }
 
+        // เตรียม history เดิม
         const currentHistory = Array.isArray(opendetail.workshifthistory) ? [...opendetail.workshifthistory] : [];
         const lastIndex = currentHistory.length - 1;
         const lastHistory = currentHistory[lastIndex] || null;
 
-        const isSameWorkshift = (historyEntry, shift) => {
-            if (!historyEntry || !shift) return false;
-            return historyEntry.start === shift.start && historyEntry.stop === shift.stop;
-        };
-
+        // วันเริ่มกะใหม่
         const newStartDate = dayjs(toDateString(workshiftDate), "DD/MM/YYYY");
+        const newStartStr = newStartDate.format("DD/MM/YYYY");
 
-        // ถ้า shift เหมือนเดิม → update เฉพาะ workshift
-        if (isSameWorkshift(lastHistory, shiftData)) {
-            set(companiesRef, {
-                ...opendetail,
-                workshift: `${workshift.ID}-${workshift.name}`,
-            })
-                .then(() => {
-                    ShowSuccess("บันทึกข้อมูลสำเร็จ");
-                    setEditWorkshift(false);
-                })
-                .catch((error) => {
-                    ShowError("เกิดข้อผิดพลาดในการบันทึก");
-                    console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
-                });
-            return;
-        }
+        // 🔍 ตรวจสอบว่าช่วงทับกับ history เดิมหรือไม่
+        // const overlap = currentHistory.some(h => {
+        //     const start = dayjs(h.datestart, "DD/MM/YYYY");
+        //     const end = h.dateend !== "now" ? dayjs(h.dateend, "DD/MM/YYYY") : dayjs("2999-12-31");
+        //     return newStartDate.isBetween(start, end, "day", "[]");
+        // });
 
-        // ถ้ามี history อย่างน้อย 1 รายการ → ปรับ end ก่อนเพิ่มใหม่
+        // if (overlap) {
+        //     ShowWarning("ช่วงวันที่ทับกัน", "คุณกำลังเพิ่ม/แก้กะในช่วงที่มีอยู่แล้ว");
+        //     return;
+        // }
+
+        // ถ้ามี history เดิม → ปิดกะเก่าด้วย end = วันก่อนหน้า
         if (currentHistory.length > 0) {
             const newEndDate = newStartDate.subtract(1, "day");
             currentHistory[lastIndex] = {
@@ -759,16 +911,27 @@ const Employee = () => {
                 YYYYend: newEndDate.format("YYYY"),
                 dateend: newEndDate.format("DD/MM/YYYY"),
             };
+
+            const lastHistoryStart = dayjs(lastHistory.datestart, "DD/MM/YYYY");
+
+            // ถ้าวันที่เลือก <= วันเริ่ม entry ล่าสุด → ไม่อนุญาต
+            if (newStartDate.isSame(lastHistoryStart) || newStartDate.isBefore(lastHistoryStart, "day")) {
+                ShowWarning(
+                    "วันที่ไม่ถูกต้อง",
+                    `คุณไม่สามารถบันทึกวันที่ก่อนหรือเท่ากับวันที่เริ่มของกะล่าสุด (${lastHistory.datestart})`
+                );
+                return;
+            }
         }
 
-        // เพิ่ม entry ใหม่
+        // ✅ สร้าง entry ใหม่
         const newHistoryEntry = {
             ID: currentHistory.length,
             workshift: `${workshift.ID}-${workshift.name}`,
-            DDstart: dayjs(workshiftDate.day).format("DD"),
-            MMstart: dayjs(workshiftDate.month).format("MM"),
-            YYYYstart: dayjs(workshiftDate.year).format("YYYY"),
-            datestart: toDateString(workshiftDate),
+            DDstart: newStartDate.format("DD"),
+            MMstart: newStartDate.format("MM"),
+            YYYYstart: newStartDate.format("YYYY"),
+            datestart: newStartStr,
             DDend: "now",
             MMend: "now",
             YYYYend: "now",
@@ -778,6 +941,7 @@ const Employee = () => {
             holiday: workshift.holiday,
         };
 
+        // ✅ อัปเดตข้อมูลพนักงาน
         const updatedEmployee = {
             ...opendetail,
             workshift: `${workshift.ID}-${workshift.name}`,
@@ -786,11 +950,12 @@ const Employee = () => {
 
         set(companiesRef, updatedEmployee)
             .then(() => {
-                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                setOpenDetail({});
                 setEditWorkshift(false);
+                setWorkshift([]);
+                setWorkshiftDate(dayjs(new Date).format("DD/MM/YYYY"));
             })
             .catch((error) => {
-                ShowError("เกิดข้อผิดพลาดในการบันทึก");
                 console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
             });
     };
@@ -1164,6 +1329,208 @@ const Employee = () => {
                                                     />
                                                 </Grid>
 
+                                                {
+                                                    opendetail.workshifthistory !== undefined &&
+                                                    <Grid item size={12}>
+                                                        <Typography variant="subtitle2" fontWeight="bold">ประวัติการเปลี่ยนกะการทำงาน</Typography>
+                                                        <TableContainer component={Paper} textAlign="center" sx={{ height: "30vh" }}>
+                                                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
+                                                                <TableHead
+                                                                    sx={{
+                                                                        position: "sticky",
+                                                                        top: 0,
+                                                                        zIndex: 2,
+                                                                        backgroundColor: theme.palette.primary.dark,
+                                                                    }}
+                                                                >
+                                                                    <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                                        <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
+                                                                        <TablecellHeader sx={{ width: 120 }}>กะการทำงาน</TablecellHeader>
+                                                                        <TablecellHeader sx={{}}>วันที่เริ่ม</TablecellHeader>
+                                                                        <TablecellHeader sx={{}}>วันที่สิ้นสุด</TablecellHeader>
+                                                                        <TablecellHeader sx={{ width: 70 }} />
+                                                                    </TableRow>
+                                                                </TableHead>
+                                                                <TableBody>
+                                                                    {
+                                                                        opendetail.workshifthistory.length === 0 ?
+                                                                            <TableRow>
+                                                                                <TablecellNoData colSpan={5}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                                            </TableRow>
+                                                                            :
+                                                                            opendetail.workshifthistory.map((row, index) => {
+                                                                                const attendantS = opendetail.attendant?.[row.YYYYstart]?.[row.MMstart] || [];
+                                                                                const attendantE = opendetail.attendant?.[row.YYYYend]?.[row.MMend] || [];
+
+                                                                                console.log("DateStart : ", index, attendantS);
+                                                                                console.log("DateEnd : ", index, attendantE);
+
+                                                                                const checkS = attendantS.some((time) => {
+                                                                                    const sameShift = time.shift === row.workshift;
+                                                                                    const inRange =
+                                                                                        dayjs(time.datein).isBetween(row.datestart, row.dateend, null, "[]")
+
+                                                                                    return sameShift && inRange;
+                                                                                });
+
+                                                                                const checkE = attendantE.some((time) => {
+                                                                                    const sameShift = time.shift === row.workshift;
+                                                                                    const inRange =
+                                                                                        dayjs(time.dateout).isBetween(row.datestart, row.dateend, null, "[]")
+
+                                                                                    return sameShift && inRange;
+                                                                                });
+
+                                                                                // รวมผลลัพธ์ทั้ง S และ E
+                                                                                const check = checkS || checkE;
+
+                                                                                console.log("check :", checkS, checkE, "final:", check);
+
+                                                                                return (
+                                                                                    <TableRow>
+                                                                                        <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
+                                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                                            {
+                                                                                                workshiftID !== row.ID ?
+                                                                                                    (row.workshift ? row.workshift.split("-")[1] : "")
+                                                                                                    :
+                                                                                                    <TextField
+                                                                                                        select
+                                                                                                        fullWidth
+                                                                                                        size="small"
+                                                                                                        value={workshiftName}
+                                                                                                        onChange={(e) => setWorkshiftName(e.target.value)}
+                                                                                                        sx={{
+                                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                                height: 28,
+                                                                                                                borderRadius: 1,
+                                                                                                            },
+                                                                                                            '& .MuiInputBase-input': {
+                                                                                                                fontSize: '14px',
+                                                                                                                padding: '2px 6px',
+                                                                                                                textAlign: 'center',
+                                                                                                                fontFamily: theme.typography.fontFamily,
+                                                                                                            },
+                                                                                                        }}
+                                                                                                        SelectProps={{
+                                                                                                            MenuProps: { PaperProps: { style: { maxHeight: 150, } } },
+                                                                                                        }}
+                                                                                                    >
+                                                                                                        <MenuItem value={workshiftName}>{workshiftName ? workshiftName.split("-")[1] : ""}</MenuItem>
+                                                                                                        {
+                                                                                                            workshifts.map((row) => (
+                                                                                                                row.ID !== (workshiftName ? Number(workshiftName.split("-")[0]) : "") &&
+                                                                                                                <MenuItem value={row}>{row.name}</MenuItem>
+                                                                                                            ))
+                                                                                                        }
+                                                                                                    </TextField>
+                                                                                            }
+                                                                                        </TableCell>
+                                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                                            {
+                                                                                                workshiftID !== row.ID ?
+                                                                                                    (formatThaiSlash(dayjs(row.datestart, "DD/MM/YYYY")))
+                                                                                                    :
+                                                                                                    <Paper sx={{ width: "100%", boxShadow: "none", borderRadius: 0 }}>
+                                                                                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                                                                            <DatePicker
+                                                                                                                value={workshiftDateStart ? dayjs(workshiftDateStart, "DD/MM/YYYY") : null}
+                                                                                                                onChange={(newValue) => {
+                                                                                                                    const newDate = newValue ? newValue.format("DD/MM/YYYY") : "";
+                                                                                                                    setWorkshiftDateStart(newDate);
+                                                                                                                }}
+                                                                                                                format="DD/MM/YYYY"
+                                                                                                                enableAccessibleFieldDOMStructure={false}
+                                                                                                                slotProps={{
+                                                                                                                    textField: {
+                                                                                                                        size: "small",
+                                                                                                                        fullWidth: true,
+                                                                                                                        variant: "outlined",
+                                                                                                                        sx: {
+                                                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                                                height: 28,
+                                                                                                                                borderRadius: 1,
+                                                                                                                            },
+                                                                                                                            '& .MuiInputBase-input': {
+                                                                                                                                fontSize: '14px',
+                                                                                                                                padding: '2px 6px',
+                                                                                                                                textAlign: 'center',
+                                                                                                                                fontFamily: theme.typography.fontFamily,
+                                                                                                                            },
+                                                                                                                        },
+                                                                                                                    }
+                                                                                                                }}
+                                                                                                            />
+                                                                                                        </LocalizationProvider>
+                                                                                                    </Paper>
+                                                                                            }
+                                                                                        </TableCell>
+                                                                                        <TableCell sx={{ textAlign: "center" }}>
+                                                                                            {
+                                                                                                workshiftID !== row.ID ?
+                                                                                                    (row.dateend !== "now" ? formatThaiSlash(dayjs(row.dateend, "DD/MM/YYYY")) : "-")
+                                                                                                    :
+                                                                                                    <Paper sx={{ width: "100%", boxShadow: "none", borderRadius: 0 }}>
+                                                                                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                                                                            <DatePicker
+                                                                                                                value={workshiftDateEnd ? dayjs(workshiftDateEnd, "DD/MM/YYYY") : null}
+                                                                                                                onChange={(newValue) => {
+                                                                                                                    const newDate = newValue ? newValue.format("DD/MM/YYYY") : "";
+                                                                                                                    setWorkshiftDateEnd(newDate);
+                                                                                                                }}
+                                                                                                                format="DD/MM/YYYY"
+                                                                                                                enableAccessibleFieldDOMStructure={false}
+                                                                                                                slotProps={{
+                                                                                                                    textField: {
+                                                                                                                        size: "small",
+                                                                                                                        fullWidth: true,
+                                                                                                                        variant: "outlined",
+                                                                                                                        sx: {
+                                                                                                                            '& .MuiOutlinedInput-root': {
+                                                                                                                                height: 28,
+                                                                                                                                borderRadius: 1,
+                                                                                                                            },
+                                                                                                                            '& .MuiInputBase-input': {
+                                                                                                                                fontSize: '14px',
+                                                                                                                                padding: '2px 6px',
+                                                                                                                                textAlign: 'center',
+                                                                                                                                fontFamily: theme.typography.fontFamily,
+                                                                                                                            },
+                                                                                                                        },
+                                                                                                                    }
+                                                                                                                }}
+                                                                                                            />
+                                                                                                        </LocalizationProvider>
+                                                                                                    </Paper>
+                                                                                            }
+                                                                                        </TableCell>
+                                                                                        <TableCell sx={{ textAlign: "center" }} >
+                                                                                            {
+                                                                                                check === false && (
+                                                                                                    workshiftID !== row.ID ?
+                                                                                                        <IconButton color="warning" onClick={() => handleUpdateTime(row)} >
+                                                                                                            <SettingsIcon fontSize="small" />
+                                                                                                        </IconButton>
+                                                                                                        :
+                                                                                                        <Box display="flex" alignItems="center" justifyContent="center" >
+                                                                                                            <IconButton color="error" onClick={() => setWorkshiftID(null)} sx={{ marginRight: -1 }}>
+                                                                                                                <DisabledByDefaultIcon fontSize="small" />
+                                                                                                            </IconButton>
+                                                                                                            <IconButton color="success" onClick={() => setWorkshiftID(null)} >
+                                                                                                                <SaveIcon fontSize="small" />
+                                                                                                            </IconButton>
+                                                                                                        </Box>
+                                                                                                )
+                                                                                            }
+                                                                                        </TableCell>
+                                                                                    </TableRow>
+                                                                                )
+                                                                            })}
+                                                                </TableBody>
+                                                            </Table>
+                                                        </TableContainer>
+                                                    </Grid>
+                                                }
                                                 {
                                                     editWorkshift &&
                                                     <React.Fragment>

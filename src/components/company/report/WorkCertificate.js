@@ -52,10 +52,10 @@ const ReportWorkCertificat = () => {
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
-    const [department, setDepartment] = useState("");
-    const [section, setSection] = useState("");
-    const [position, setPosition] = useState("");
-    const [employee, setEmployee] = useState("");
+    const [department, setDepartment] = useState("all-ทั้งหมด");
+    const [section, setSection] = useState("all-ทั้งหมด");
+    const [position, setPosition] = useState("all-ทั้งหมด");
+    const [employee, setEmployee] = useState("all-ทั้งหมด");
     const [departments, setDepartments] = useState([]);
     const [sections, setSections] = useState([]);
     const [positions, setPositions] = useState([]);
