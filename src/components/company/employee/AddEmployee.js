@@ -641,13 +641,13 @@ const AddEmployee = () => {
     };
 
     const handleClose = () => {
-        setOpen(false);
+        // setOpen(false);
         ShowConfirm(
             "ยกเลิกข้อมูล",
             "คุณแน่ใจหรือไม่ว่าต้องการยกเลิกข้อมูล?",
             () => {
                 setOpen(false);
-                setStep(0);
+                // setStep(0);
             },
             () => {
                 setOpen(true);
@@ -2520,7 +2520,7 @@ const AddEmployee = () => {
 
                 {/* Dialog หลัก */}
                 <Dialog
-                    open={open ? true : false}
+                    open={open}
                     //onClose={handleClose}
                     PaperProps={{
                         sx: {

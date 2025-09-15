@@ -68,7 +68,7 @@ export function ShowConfirm(title, text, onConfirm, onCancel) {
     MySwal.fire({
         imageUrl: Logo,
         imageHeight: 130,
-        title: `<span style="color: ${isLogout ? '#b71c1c' : '#000'}; margin-top: -15px; display: block;">${title}</span>`,
+        title: title,
         html: `
             <div style="margin-bottom: 10px; font-size: 16px; color: #333;">
                 ${text}
