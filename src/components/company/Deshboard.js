@@ -17,10 +17,11 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import FacebookIcon from '@mui/icons-material/Facebook';
 import EmailIcon from '@mui/icons-material/Email';
 import StoreIcon from '@mui/icons-material/Store';
+import BadgeIcon from '@mui/icons-material/Badge';
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import theme from '../../theme/theme';
 import { Item, ItemReport } from '../../theme/style';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
 import { useState } from 'react';
 import { Button } from '@mui/material';
@@ -28,10 +29,32 @@ import InsertNews from './InsertNews';
 
 export default function CompanyDeshboard() {
     const { firebaseDB, domainKey } = useFirebase();
-    const { domain, companyName } = useParams();
+    const [searchParams] = useSearchParams();
+    const domain = searchParams.get("domain");
+    const companyName = searchParams.get("company");
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const companyId = companyName?.split(":")[0];
+    const [employees, setEmployees] = useState([]);
+
+    React.useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+
+        const unsubscribe = onValue(employeeRef, (snapshot) => {
+            const employeeData = snapshot.val();
+
+            if (!employeeData) {
+                setEmployees([]);
+            } else {
+                const employeeArray = Object.values(employeeData);
+                setEmployees(employeeArray); // default: แสดงทั้งหมด
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
 
     React.useEffect(() => {
         if (!firebaseDB) return;
@@ -54,6 +77,7 @@ export default function CompanyDeshboard() {
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
+
     return (
         <Container maxWidth="xl" sx={{ p: 5 }} >
             <Item sx={{ flexGrow: 1, marginTop: 5 }}>
@@ -102,9 +126,18 @@ export default function CompanyDeshboard() {
                     </Item>
                 </Grid>
                 <Grid item size={3}>
-                    <Item>
-                        <StoreIcon fontSize="large" />
-                    </Item>
+                    <Paper sx={{ borderRadius: 3, boxShadow: '4px 4px 6px 6px rgba(0, 0, 0, 0.1)' }}>
+                        <Grid container spacing={2}>
+                            <Grid item size={6} sx={{ backgroundColor: theme.palette.primary.main, padding: theme.spacing(2), borderTopLeftRadius: 10, borderBottomLeftRadius: 10, textAlign: "center" }}>
+                                <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>พนักงานทั้งหมด</Typography>
+                                <BadgeIcon sx={{ color: "white", fontSize: "65px", marginTop: -1, marginBottom: -2 }} />
+                            </Grid>
+                            <Grid item size={6} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <Typography variant="h3" sx={{ marginTop: 1, marginRight: 1 }} fontWeight="bold" gutterBottom>{employees.length}</Typography>
+                                <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>คน</Typography>
+                            </Grid>
+                        </Grid>
+                    </Paper>
                 </Grid>
                 <Grid item size={3}>
                     <Item>
@@ -128,7 +161,7 @@ export default function CompanyDeshboard() {
                                 <InsertNews />
                             </Grid>
                         </Grid>
-                         <Divider />
+                        <Divider />
                     </Item>
                 </Grid>
             </Grid>
