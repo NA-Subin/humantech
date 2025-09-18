@@ -8,7 +8,9 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import CancelIcon from '@mui/icons-material/Cancel';
 import AddIcon from '@mui/icons-material/Add';
-import { CardActionArea, CardContent, Divider, Grid, InputAdornment, TextField, Typography } from '@mui/material';
+import DomainAddIcon from '@mui/icons-material/DomainAdd';
+import BusinessIcon from '@mui/icons-material/Business';
+import { Box, CardActionArea, CardContent, Divider, Grid, InputAdornment, TextField, Typography } from '@mui/material';
 import theme from '../../theme/theme';
 import { IconButtonError } from '../../theme/style';
 import CloseIcon from '@mui/icons-material/Close';
@@ -471,7 +473,20 @@ export default function InsertCompany() {
                         alignItems: 'center',
                     }}
                 >
-                    <AddIcon fontSize="inherit" sx={{ fontSize: 64 }} />
+                    <Box>
+                        <DomainAddIcon sx={{ fontSize: 70, color: "white" }} />
+                        <Typography variant='subtitle1' fontWeight="bold" color="white" gutterBottom>เพิ่มบริษัท</Typography>
+                    </Box>
+                    {/* <AddIcon
+                        sx={{
+                            fontSize: 45,
+                            color: "white",          // เอา fill ออก
+                            stroke: theme.palette.primary.main,               // กำหนดสีเส้น
+                            strokeWidth: 0.5,              // ความหนาเส้น
+                            marginTop: 6,
+                            marginLeft: -4
+                        }}
+                    /> */}
                 </CardContent>
             </CardActionArea>
             <Dialog
