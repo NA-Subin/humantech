@@ -34,6 +34,9 @@ import DomainLoginAdmin from "./components/login/login-admin/Login";
 import IncomeDetail from "./components/company/salary/Income";
 import DeductionsDetail from "./components/company/salary/Deductions";
 import EmployeeTypeDetail from "./components/company/structure/EmployeeType";
+import DashboardAttendant from "./components/attendant/DashboardAttendant";
+import { database } from "./server/firebase";
+import { onValue, ref } from "firebase/database";
 
 const ProtectedRouteWrapper = ({ children }) => {
   const location = useLocation();
@@ -160,6 +163,8 @@ function CompanyRoutes({ page }: { page?: string }) {
       return <ReportWorkCertificat />;
     case "salary-certificate":
       return <ReportSalaryCertificate />;
+    case "attendant":
+      return <DashboardAttendant />;
     default:
       return <CompanyDeshboard />;
   }
@@ -170,6 +175,26 @@ function MainEntry() {
   const [searchParams] = useSearchParams();
   const domain = searchParams.get("domain");
   const company = searchParams.get("company");
+  const [domainData, setDomainData] = useState(null);
+
+  const groupType = domainData?.find((item) => item.domainKey === domain)?.grouptype;
+  console.log("domainData ", domainData);
+  console.log("Group TYpe", groupType);
+
+  useEffect(() => {
+    const optionRef = ref(database, `workgroupid`);
+
+    onValue(optionRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const arr = Object.values(data);
+        setDomainData(arr);
+      } else {
+        setDomainData([]); // กันค่า null
+      }
+    });
+
+  }, [database]);
 
   // page=dashboard หรือค่าที่ mapping มา
   let page = searchParams.get("page");
@@ -197,11 +222,23 @@ function MainEntry() {
     return <DomainLogin />;
   }
 
+  // if (page === "attendant" && !company) {
+  //   return <Company domain={domain} />;
+  // }
+
+  // if (page === "attendant" && company) {
+  //   return <Box sx={{ display: "flex", backgroundColor: theme.palette.primary.light }}>
+  //     <Box sx={{ flexGrow: 1 }}>
+  //       <CompanyRoutes page={page} />
+  //     </Box>
+  //   </Box>;
+  // }
+
   // กรณี page=dashboard แล้วมี company
   if (page === "dashboard" && company) {
     return (
       <Box sx={{ display: "flex", backgroundColor: theme.palette.primary.light }}>
-        <SideBarCompany domain={domain} company={company} />
+        {groupType !== "attendant" ? <SideBarCompany domain={domain} company={company} /> : ""}
         <Box sx={{ flexGrow: 1 }}>
           <CompanyRoutes page={page} />
         </Box>
@@ -218,7 +255,7 @@ function MainEntry() {
   if (company) {
     return (
       <Box sx={{ display: "flex", backgroundColor: theme.palette.primary.light }}>
-        <SideBarCompany domain={domain} company={company} />
+        {groupType !== "attendant" ? <SideBarCompany domain={domain} company={company} /> : ""}
         <Box sx={{ flexGrow: 1 }}>
           <CompanyRoutes page={page ?? undefined} />
         </Box>

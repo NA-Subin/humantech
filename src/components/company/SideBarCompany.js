@@ -47,6 +47,7 @@ import InstallMobileRoundedIcon from '@mui/icons-material/InstallMobileRounded';
 import MarkEmailUnreadRoundedIcon from '@mui/icons-material/MarkEmailUnreadRounded';
 import EmailRoundedIcon from '@mui/icons-material/EmailRounded';
 import BusinessIcon from '@mui/icons-material/Business';
+import SettingsIcon from '@mui/icons-material/Settings';
 import AccessTimeFilledIcon from '@mui/icons-material/AccessTimeFilled';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import Dialog from '@mui/material/Dialog';
@@ -263,6 +264,10 @@ export default function SideBarCompany() {
     const [openData, setOpenData] = useState(false);
     const [openEmployee, setOpenEmployee] = useState(false);
     const [openAddress, setOpenAddress] = useState({});
+
+    const handleClick = () => {
+        navigate(`/?domain=${domain}&page=dashboard`);
+    };
 
     useEffect(() => {
         if (!firebaseDB) return;
@@ -533,7 +538,7 @@ export default function SideBarCompany() {
                         <MenuIcon />
                     </IconButton>
 
-                    <Search>
+                    {/* <Search>
                         <SearchIconWrapper>
                             <SearchIcon />
                         </SearchIconWrapper>
@@ -541,7 +546,7 @@ export default function SideBarCompany() {
                             placeholder="ค้นหา…"
                             inputProps={{ 'aria-label': 'search' }}
                         />
-                    </Search>
+                    </Search> */}
 
                     <Box sx={{ flexGrow: 1 }} />
                     <ButtonGroup variant="text" color='inherit' aria-label="Basic button group">
@@ -602,13 +607,15 @@ export default function SideBarCompany() {
                             <MenuItem onClick={handleClickOpenPassword}><PasswordRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนรหัสผ่าน</MenuItem><Divider /> */}
                             <MenuItem onClick={handleClickOpenPhone}><PhoneIphoneRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนเบอร์โทรศัพท์</MenuItem><Divider />
                             <MenuItem onClick={handleClickOpenCoordinates}><BusinessIcon sx={{ marginRight: 2 }} /> เพิ่มพิกัดของบริษัท</MenuItem><Divider />
+                            <MenuItem ><SettingsIcon sx={{ marginRight: 2 }} /> ตั้งค่าบริษัท</MenuItem><Divider />
+                            <MenuItem onClick={() => navigate(`/?domain=${domain}&page=dashboard`)}><KeyboardReturnRoundedIcon sx={{ marginRight: 2 }} /> กลับสู่หน้าเลือกบริษัท</MenuItem><Divider />
                         </Menu>
                         {/* <Button size="large" color="inherit">
                             <IconButton size="large" aria-label="เลือกภาษา" color="inherit">
                                 <FlagRoundedIcon />
                             </IconButton>
                         </Button> */}
-                        <Button size="large" color="inherit">
+                        {/* <Button size="large" color="inherit">
                             <IconButton
                                 size="small"
                                 aria-label="กลับสู่ระบบหลัก"
@@ -620,6 +627,7 @@ export default function SideBarCompany() {
                                 //to={`/${domain}/dashboard`}
                                 to={`/?domain=${domain}&page=dashboard`}
                             >
+                                <Typography variant='subtitle1' fontWeight="bold" gutterBottom>กลับสู่หน้าเลือกบริษัท</Typography>
                                 {openLogo ?
                                     <Box>
                                         <Box display="flex" justifyContent="center" alignItems="center">
@@ -657,7 +665,7 @@ export default function SideBarCompany() {
                                     </Box>
                                 }
                             </IconButton>
-                        </Button>
+                        </Button> */}
                     </ButtonGroup>
                     {/* <Dialog
                         maxWidth="md"
@@ -930,8 +938,8 @@ export default function SideBarCompany() {
                 </Toolbar>
             </AppBar>
             <Drawer variant="permanent" open={open}>
-                <DrawerHeader sx={{ backgroundColor: theme.palette.primary.light, display: "flex", justifyContent: "center", alignItems: "center" }}>
-                    <IconButton color="primary" sx={{ display: "block", marginBottom: -1, marginTop: -1, marginRight: -2.5 }} onClick={() => navigate(`/${domain}/${companyName}`)}>
+                <DrawerHeader sx={{ backgroundColor: theme.palette.primary.light, display: "flex", justifyContent: "center", alignItems: "center", position: "sticky", top: 0, zIndex: 5 }}>
+                    <IconButton color="primary" sx={{ display: "block", marginBottom: -1, marginTop: -1, marginRight: -2.5 }} onClick={() => navigate(`?domain=${domain}&company=${companyName}&page=dashboard`)}>
                         <Box
                             sx={{
                                 textAlign: "center",
@@ -992,7 +1000,7 @@ export default function SideBarCompany() {
                         ""
                 } */}
                 <Divider />
-                <List sx={{ marginBottom: 2, py: 0 }}>
+                <List sx={{ marginBottom: 2, py: 0, marginTop: 1 }}>
                     {['หน้าแรก'].map((text, index) => {
                         const isSelected = selectedMenu === text;
 

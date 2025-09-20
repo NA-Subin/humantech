@@ -28,6 +28,8 @@ const DomainLogin = () => {
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();  // ใช้ useNavigate แทน useRouter
+    console.log("domainData : ", domainData);
+    console.log("domainKey : ", domainKey);
 
     const handleCheckDomain = async () => {
         setLoading(true);
@@ -114,7 +116,13 @@ const DomainLogin = () => {
             });
 
             ShowAccessLogin("เข้าสู่ระบบ", `ยินดีต้อนรับเข้าสู่ระบบ ${domainData.domainKey}`);
+            // if (domainData.grouptype === "attendant") {
+            //     navigate(`/?domain=${encodeURIComponent(domainKey)}&page=dashboard`);
+            // } else {
+            //     navigate(`/?domain=${encodeURIComponent(domainKey)}&page=dashboard`);
+            // }
             navigate(`/?domain=${encodeURIComponent(domainKey)}&page=dashboard`);
+
             setTimeout(() => {
                 window.location.reload();
             }, 50); // delay เล็กน้อยเพื่อให้ navigate สำเร็จก่อน
