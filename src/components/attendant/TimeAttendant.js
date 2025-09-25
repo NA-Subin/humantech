@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as XLSX from "xlsx";
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, get, update, child } from "firebase/database";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -23,6 +23,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import StoreIcon from '@mui/icons-material/Store';
 import AlarmIcon from '@mui/icons-material/Alarm';
 import BadgeIcon from '@mui/icons-material/Badge';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ManIcon from '@mui/icons-material/Man';
 import WomanIcon from '@mui/icons-material/Woman';
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
@@ -32,7 +33,7 @@ import { Item, ItemReport, TablecellHeader } from '../../theme/style';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
 import { useState } from 'react';
-import { Button, InputAdornment, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
+import { Button, InputAdornment, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Tooltip } from '@mui/material';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -42,6 +43,7 @@ import { useRef } from 'react';
 import EmployeeDetail from './Employee';
 import Caluculate from './Calculate';
 import { useTranslation } from 'react-i18next';
+import { ShowConfirm, ShowError, ShowSuccess } from '../../sweetalert/sweetalert';
 
 export default function TimeAttendant({ date }) {
     const { firebaseDB, domainKey } = useFirebase();
@@ -103,7 +105,7 @@ export default function TimeAttendant({ date }) {
                 // กรองตามวันที่ (สมมติ field ใน attendant ชื่อว่า `date` เก็บเป็น "DD/MM/YYYY")
                 const filtered = attendantsArray.filter((item) => {
                     const itemDate = dayjs(item.date, "DD/MM/YYYY");
-                    return itemDate.isSame(date, "month"); // เทียบเดือนเดียวกัน
+                    return itemDate.isSame(date, "month") && item.status !== "ยกเลิก"; // เทียบเดือนเดียวกัน
                 });
 
                 setAttendants(filtered);
@@ -275,58 +277,175 @@ export default function TimeAttendant({ date }) {
         const reader = new FileReader();
 
         reader.onload = async (e) => {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: "array" });
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: "array" });
 
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-            const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
-            const formattedData = jsonData.map((row, index) => {
-                // ฟังก์ชันช่วย format เวลา
+                const columnMap = {
+                    employeeId: ["รหัสพนักงาน", "Employee ID"],
+                    name: ["ชื่อ-สกุล", "Name"],
+                    date: ["วันที่", "Date"],
+                    schedule: ["ตารางเวลา", "Schedule"],
+                    timeIn: ["เวลาเข้า", "Time In"],
+                    timeOut: ["เวลาออก", "Time Out"],
+                    late: ["มาสาย", "Late"],
+                    earlyLeave: ["ออกก่อน", "Early Leave"],
+                    absent: ["ขาดงาน", "Absent"],
+                    overtime: ["ล่วงเวลา", "Overtime"],
+                    workHours: ["เวลาทำงาน", "Work Hours"],
+                    exception: ["ข้อยกเว้น", "Exception"],
+                    normalDay: ["วันทำงานปกติ", "Normal Day"],
+                    weekend: ["วันหยุดประจำสัปดาห์", "Weekend"],
+                    totalWorkOvertime: ["ชั่วโมงทำงาน+ล่วงเวลา", "Total Hours"],
+                    otNormal: ["ล่วงเวลา ปกติ", "OT Normal"],
+                    otWeekend: ["ล่วงเวลา วันหยุดสุดสัปดาห์", "OT Weekend"]
+                };
+
+                const getValue = (row, keys) => {
+                    for (let key of keys) {
+                        if (row[key] !== undefined) return row[key];
+                    }
+                    return "";
+                };
+
                 const formatTime = (value) => {
                     if (!value || value === "" || value === null) return "00:00";
-                    // เผื่อมี format แบบตัวเลข เช่น 8.5 = 8:30
                     if (typeof value === "number") {
-                        const hours = Math.floor(value);
-                        const minutes = Math.round((value - hours) * 60);
+                        const totalMinutes = Math.round(value * 24 * 60);
+                        const hours = Math.floor(totalMinutes / 60);
+                        const minutes = totalMinutes % 60;
                         return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
                     }
-                    return value;
+                    if (typeof value === "string" && /^\d{1,2}:\d{2}$/.test(value)) return value;
+                    return "00:00";
                 };
 
-                return {
-                    id: index + 1,
-                    employeeId: row["รหัสพนักงาน"],
-                    name: row["ชื่อ-สกุล"],
-                    date: row["วันที่"],
-                    schedule: row["ตารางเวลา"],
-                    timeIn: row["เวลาเข้า"],
-                    timeOut: row["เวลาออก"],
-                    late: formatTime(row["มาสาย"]),
-                    earlyLeave: formatTime(row["ออกก่อน"]),
-                    absent: row["ขาดงาน"] === "True" || row["ขาดงาน"] === true,
-                    overtime: row["ล่วงเวลา"],
-                    workHours: row["เวลาทำงาน"],
-                    exception: row["ข้อยกเว้น"],
-                    normalDay: row["วันทำงานปกติ"],
-                    weekend: row["วันหยุดประจำสัปดาห์"],
-                    totalWorkOvertime: row["ชั่วโมงทำงาน+ล่วงเวลา"],
-                    otNormal: row["ล่วงเวลา ปกติ"],
-                    otWeekend: row["ล่วงเวลา วันหยุดสุดสัปดาห์"],
-                };
-            });
+                // อ่านข้อมูลเดิมจาก Firebase เพื่อหาค่า ID สูงสุด
+                const refPath = ref(firebaseDB, `workgroup/company/${companyId}/attendant`);
+                const snapshot = await get(refPath);
+                const existingData = snapshot.exists() ? snapshot.val() : {};
+                const existingIDs = Object.keys(existingData).map(Number);
+                const maxID = existingIDs.length ? Math.max(...existingIDs) : -1; // -1 ถ้าไม่มีข้อมูลเดิม
 
-            console.log("Formatted Data:", formattedData);
+                // map ข้อมูลและสร้าง ID ต่อเนื่อง
+                const formattedData = jsonData.map((row, index) => {
+                    const newID = maxID + 1 + index;
+                    return {
+                        id: newID,
+                        employeeId: getValue(row, columnMap.employeeId),
+                        name: getValue(row, columnMap.name),
+                        date: getValue(row, columnMap.date),
+                        schedule: getValue(row, columnMap.schedule),
+                        timeIn: getValue(row, columnMap.timeIn),
+                        timeOut: getValue(row, columnMap.timeOut),
+                        late: formatTime(getValue(row, columnMap.late)),
+                        earlyLeave: formatTime(getValue(row, columnMap.earlyLeave)),
+                        absent: ["True", true, "TRUE", "1"].includes(getValue(row, columnMap.absent)),
+                        overtime: getValue(row, columnMap.overtime),
+                        workHours: getValue(row, columnMap.workHours),
+                        exception: getValue(row, columnMap.exception),
+                        normalDay: getValue(row, columnMap.normalDay),
+                        weekend: getValue(row, columnMap.weekend),
+                        totalWorkOvertime: getValue(row, columnMap.totalWorkOvertime),
+                        otNormal: getValue(row, columnMap.otNormal),
+                        otWeekend: getValue(row, columnMap.otWeekend)
+                    };
+                });
 
-            const refPath = ref(firebaseDB, `workgroup/company/${companyId}/attendant`);
-            await set(refPath, formattedData);
+                // เตรียม object สำหรับ update
+                const updates = {};
+                formattedData.forEach(item => {
+                    updates[String(item.id)] = item;
+                });
 
-            alert("นำเข้าข้อมูลสำเร็จ!");
+                // update Firebase
+                await update(refPath, updates);
+
+                alert("นำเข้าข้อมูลสำเร็จ! ข้อมูลใหม่จะต่อจาก ID ปัจจุบัน");
+            } catch (error) {
+                console.error("เกิดข้อผิดพลาดในการนำเข้า:", error);
+                alert("ไม่สามารถนำเข้าข้อมูลได้");
+            }
         };
 
         reader.readAsArrayBuffer(file);
     };
+
+    const handleExport = async () => {
+        try {
+            const refPath = ref(firebaseDB, `workgroup/company/${companyId}/attendant`);
+            const snapshot = await get(refPath);
+
+            if (!snapshot.exists()) {
+                alert(t("noDataFound")); // ใช้ข้อความแปลได้ด้วย
+                return;
+            }
+
+            const attendants = snapshot.val();
+
+            // ✅ ใช้ t() สำหรับ header แต่ละคอลัมน์
+            const exportData = attendants.map((item) => ({
+                [t("employeeId")]: item.employeeId,
+                [t("name")]: item.name,
+                [t("date")]: item.date,
+                [t("schedule")]: item.schedule,
+                [t("timeIn")]: item.timeIn,
+                [t("timeOut")]: item.timeOut,
+                [t("late")]: item.late,
+                [t("earlyLeave")]: item.earlyLeave,
+                [t("absent")]: item.absent ? t("true") : t("false"),
+                [t("overtime")]: item.overtime,
+                [t("workHours")]: item.workHours,
+                [t("exception")]: item.exception,
+                [t("normalDay")]: item.normalDay,
+                [t("weekend")]: item.weekend,
+                [t("totalWorkOvertime")]: item.totalWorkOvertime,
+                [t("otNormal")]: item.otNormal,
+                [t("otWeekend")]: item.otWeekend,
+            }));
+
+            // ✅ สร้าง Sheet
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+            // ✅ สร้าง Workbook
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Attendant");
+
+            // ✅ ดาวน์โหลดเป็น Excel
+            XLSX.writeFile(workbook, "attendant_export.xlsx");
+
+        } catch (error) {
+            console.error("เกิดข้อผิดพลาดในการ Export:", error);
+            alert(t("exportError"));
+        }
+    };
+
+    const handleDelete = (id) => {
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/attendant`);
+
+        ShowConfirm(
+            t("deleteScanData"),
+            t("confirmDelete"),
+            () => {
+                update(child(companiesRef, String(id)), {
+                    status: "ยกเลิก",
+                })
+                    .then(() => {
+                        ShowSuccess(t("success"));
+                    })
+                    .catch((error) => {
+                        ShowError(t("error"));
+                    });
+            },
+            (error) => {
+                console.log("เกิดข้อผิดพลาดในการบันทึก:", error);
+            }
+        );
+    }
 
     console.log("employeee : ", employees);
 
@@ -444,7 +563,14 @@ export default function TimeAttendant({ date }) {
                                         >
                                             {t("importExcel")}
                                         </Button>
-                                        <Button variant="contained" color="success" size="small">{t("exportExcel")}</Button>
+                                        <Button
+                                            variant="contained"
+                                            color="success"
+                                            size="small"
+                                            onClick={handleExport}
+                                        >
+                                            {t("exportExcel")}
+                                        </Button>
                                     </Box>
                                 </Grid>
                                 <Grid item size={12}>
@@ -476,6 +602,7 @@ export default function TimeAttendant({ date }) {
                                                     <TablecellHeader sx={{ width: 180 }}>{t("totalWorkOvertime")}</TablecellHeader>
                                                     <TablecellHeader sx={{ width: 180 }}>{t("otNormal")}</TablecellHeader>
                                                     <TablecellHeader sx={{ width: 180 }}>{t("otWeekend")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 80, position: "sticky", right: 0, backgroundColor: theme.palette.primary.dark, borderLeft: "2px solid white" }} />
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
@@ -498,6 +625,20 @@ export default function TimeAttendant({ date }) {
                                                         <TableCell sx={{ textAlign: "center" }}>{row.totalWorkOvertime ? row.totalWorkOvertime : "-"}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.otNormal ? row.otNormal : "-"}</TableCell>
                                                         <TableCell sx={{ textAlign: "center" }}>{row.otWeekend ? row.otWeekend : "-"}</TableCell>
+                                                        <TableCell sx={{ textAlign: "center", position: "sticky", right: 0, backgroundColor: "white", borderLeft: "2px solid white" }}>
+                                                            <Tooltip title={t("deleteScanData")} placement="left">
+                                                                <Button
+                                                                    variant="contained"
+                                                                    sx={{ height: 25 }}
+                                                                    color="error"
+                                                                    size="small"
+                                                                    endIcon={<DeleteOutlineIcon />}
+                                                                    onClick={() => handleDelete(row.ID)}
+                                                                >
+                                                                    {t("delete")}
+                                                                </Button>
+                                                            </Tooltip>
+                                                        </TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>

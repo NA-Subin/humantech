@@ -309,11 +309,11 @@ export default function DashboardAttendant() {
                                     fontWeight="bold"
                                     gutterBottom
                                 >
-                                    ( {selectedCompany?.companyname ?? "ชื่อบริษัท"} )
+                                    {/* ( {selectedCompany?.companyname ?? "ชื่อบริษัท"} ) */}
                                 </Typography>
                             </Box>
                         </Grid>
-                        <Grid item size={11} textAlign="right" marginTop={-13}>
+                        <Grid item size={11} textAlign="right" marginTop={-12}>
                             <Box
                                 sx={{
                                     display: "flex",

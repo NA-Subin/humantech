@@ -26,5 +26,8 @@
     "weekend": "Weekend",
     "totalWorkOvertime": "Total Work + Overtime",
     "otNormal": "Overtime (Normal)",
-    "otWeekend": "Overtime (Weekend)"
+    "otWeekend": "Overtime (Weekend)",
+    "deleteScanData": "Delete Scan Data",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete Scan Data?"
 }
