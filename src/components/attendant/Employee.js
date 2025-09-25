@@ -39,9 +39,12 @@ import dayjs from 'dayjs';
 import { BarChart } from '@mui/x-charts';
 import { useRef } from 'react';
 import AddEmployee from './AddEmployee';
+import { useTranslation } from 'react-i18next';
+import UpdateEmployee from './UpdateEmployee';
 
 export default function EmployeeDetail() {
     const { firebaseDB, domainKey } = useFirebase();
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const domain = searchParams.get("domain");
@@ -78,7 +81,7 @@ export default function EmployeeDetail() {
                     <Item sx={{ height: 500, borderTop: `5px solid ${theme.palette.primary.dark}` }}>
                         <Grid container>
                             <Grid item size={12} textAlign="center">
-                                <Typography variant='h6' fontWeight="bold" gutterBottom>เพศ</Typography>
+                                <Typography variant='h6' fontWeight="bold" gutterBottom>{t("employeeDetail.gender")}</Typography>
                             </Grid>
                             <Grid item size={12} >
                                 <Divider />
@@ -89,22 +92,22 @@ export default function EmployeeDetail() {
                                         <ManIcon sx={{ fontSize: 200, color: "#81d4fa", marginLeft: -5 }} />
                                         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: -2 }}>
                                             <Typography variant='h3' fontWeight="bold" textAlign="center" sx={{ marginRight: 1, color: theme.palette.primary.dark }} gutterBottom>{employees.filter((item) => item.sex === "ชาย").length}</Typography>
-                                            <Typography variant='h6' fontWeight="bold" textAlign="center" sx={{ color: theme.palette.primary.dark }} gutterBottom> คน</Typography>
+                                            <Typography variant='h6' fontWeight="bold" textAlign="center" sx={{ color: theme.palette.primary.dark }} gutterBottom> {t("employeeDetail.people")}</Typography>
                                         </Box>
                                     </Grid>
                                     <Grid item size={6}>
                                         <WomanIcon sx={{ fontSize: 200, color: "#f48fb1", marginLeft: -5 }} />
                                         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: -2 }}>
                                             <Typography variant='h3' fontWeight="bold" textAlign="center" sx={{ marginRight: 1, color: theme.palette.primary.dark }} gutterBottom>{employees.filter((item) => item.sex === "หญิง").length}</Typography>
-                                            <Typography variant='h6' fontWeight="bold" textAlign="center" sx={{ color: theme.palette.primary.dark }} gutterBottom> คน</Typography>
+                                            <Typography variant='h6' fontWeight="bold" textAlign="center" sx={{ color: theme.palette.primary.dark }} gutterBottom> {t("employeeDetail.people")}</Typography>
                                         </Box>
                                     </Grid>
                                     <Grid item size={12}>
-                                        <Typography variant='h6' fontWeight="bold" textAlign="center" color="error" gutterBottom>ไม่กำหนดเพศ {employees.filter((item) => item.sex === "").length} คน</Typography>
+                                        <Typography variant='h6' fontWeight="bold" textAlign="center" color="error" gutterBottom>{t("employeeDetail.genderNotSet", { count: employees.filter((item) => item.sex === "").length })}</Typography>
                                     </Grid>
                                     <Grid item size={12}>
-                                        <Typography variant='h5' fontWeight="bold" textAlign="center" sx={{ color: theme.palette.primary.dark }} gutterBottom>รวมทั้งหมด</Typography>
-                                        <Typography variant='h3' fontWeight="bold" textAlign="center" sx={{ marginTop: -2, color: theme.palette.primary.dark }} gutterBottom>{employees.length} คน</Typography>
+                                        <Typography variant='h5' fontWeight="bold" textAlign="center" sx={{ color: theme.palette.primary.dark }} gutterBottom>{t("employeeDetail.total")}</Typography>
+                                        <Typography variant='h3' fontWeight="bold" textAlign="center" sx={{ marginTop: -2, color: theme.palette.primary.dark }} gutterBottom>{employees.length} {t("employeeDetail.people")}</Typography>
                                     </Grid>
                                 </Grid>
                             </Grid>
@@ -115,7 +118,7 @@ export default function EmployeeDetail() {
                     <Item sx={{ height: 500, borderTop: `5px solid ${theme.palette.primary.dark}` }}>
                         <Grid container>
                             <Grid item size={12} textAlign="center">
-                                <Typography variant='h6' fontWeight="bold" gutterBottom>พนักงานทั้งหมด</Typography>
+                                <Typography variant='h6' fontWeight="bold" gutterBottom>{t("employeeDetail.employees")}</Typography>
                             </Grid>
                             <Grid item size={12} textAlign="right" sx={{ marginTop: -5 }}>
                                 <AddEmployee />
@@ -135,34 +138,23 @@ export default function EmployeeDetail() {
                                             }}
                                         >
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100, borderRight: "1px solid white" }}>รหัสพนักงาน</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 300, position: "sticky", left: 0, backgroundColor: theme.palette.primary.dark, borderRight: "1px solid white" }}>ชื่อ-สกุล</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 150 }}>เพศ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 180 }}>ขาดงาน</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>ลากิจ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>ลาป่วย</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>ลาพักร้อน</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>ลาฝึกอบรม</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>ลาคลอด</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>ลาเพื่อทำหมัน</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 50 }}>{t("employeeDetail.index")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100, borderRight: "1px solid white" }}>{t("employeeDetail.employeeCode")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 300, position: "sticky", left: 0, backgroundColor: theme.palette.primary.dark, borderRight: "1px solid white" }}>{t("employeeDetail.name")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>{t("employeeDetail.gender")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 180 }}>{t("employeeDetail.absent")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>{t("employeeDetail.leave.personal")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>{t("employeeDetail.leave.sick")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>{t("employeeDetail.leave.vacation")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>{t("employeeDetail.leave.training")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>{t("employeeDetail.leave.maternity")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>{t("employeeDetail.leave.sterilization")}</TablecellHeader>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
                                             {
                                                 employees.map((item, index) => (
-                                                    <TableRow key={item.ID} >
-                                                        <TableCell sx={{ width: 50, textAlign: "center" }}>{index + 1}</TableCell>
-                                                        <TableCell sx={{ width: 100, textAlign: "center" }}>{item.employeecode}</TableCell>
-                                                        <TableCell sx={{ width: 300, textAlign: "center", position: "sticky", left: 0, backgroundColor: "white" }}>{item.employname}</TableCell>
-                                                        <TableCell sx={{ width: 150, textAlign: "center" }}>{item.sex}</TableCell>
-                                                        <TableCell sx={{ width: 150, textAlign: "center" }}> </TableCell>
-                                                        {
-                                                            item.leave.map((leaveType, idx) => (
-                                                                <TableCell key={idx} sx={{ width: 100, textAlign: "center" }}>{`0/${leaveType.max}`}</TableCell>
-                                                            ))
-                                                        }
-                                                    </TableRow>
+                                                    <UpdateEmployee key={item.employeeId} item={item} index={index} />
                                                 ))
                                             }
                                         </TableBody>
@@ -176,14 +168,14 @@ export default function EmployeeDetail() {
                                     size="small"
                                     sx={{ marginRight: 2 }}
                                 >
-                                    Import Excel
+                                    {t("employeeDetail.importExcel")}
                                 </Button>
                                 <Button
                                     variant="contained"
                                     color="success"
                                     size="small"
                                 >
-                                    Export Excel
+                                    {t("employeeDetail.exportExcel")}
                                 </Button>
                             </Grid>
                         </Grid>

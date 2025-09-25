@@ -1,0 +1,24 @@
+{
+  "employeeDetail": {
+    "title": "Employee Detail",
+    "gender": "Gender",
+    "people": "Person",
+    "genderNotSet": "Gender not set: {{count}}",
+    "total": "Total",
+    "employees": "Employees",
+    "index": "No.",
+    "employeeCode": "Employee Code",
+    "name": "Name",
+    "absent": "Absent",
+    "leave": {
+      "personal": "Personal Leave",
+      "sick": "Sick Leave",
+      "vacation": "Vacation Leave",
+      "training": "Training Leave",
+      "maternity": "Maternity Leave",
+      "sterilization": "Sterilization Leave"
+    },
+    "importExcel": "Import Excel",
+    "exportExcel": "Export Excel"
+  }
+}

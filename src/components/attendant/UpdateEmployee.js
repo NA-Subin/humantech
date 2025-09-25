@@ -34,7 +34,7 @@ import { useRef } from 'react';
 import { ShowError, ShowSuccess } from '../../sweetalert/sweetalert';
 import { useTranslation } from 'react-i18next';
 
-export default function AddEmployee() {
+export default function UpdateEmployee({ item, index }) {
     const { firebaseDB, domainKey } = useFirebase();
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -42,14 +42,14 @@ export default function AddEmployee() {
     const domain = searchParams.get("domain");
     const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
-    const [open, setOpen] = useState(false);
+    const [open, setOpen] = useState(null);
     const [employees, setEmployees] = useState([]);
-    const [employeeID, setEmployeeID] = useState("");
-    const [name, setName] = useState("");
-    const [lastName, setLastName] = useState("");
-    const [department, setDepartment] = useState("");
-    const [section, setSection] = useState("");
-    const [openSex, setOpenSex] = React.useState(true);
+    const [employeeID, setEmployeeID] = useState(item.employeecode);
+    const [name, setName] = useState(item.employname.split(" ")[0]);
+    const [lastName, setLastName] = useState(item.employname.split(" ")[1]);
+    const [department, setDepartment] = useState(item.department);
+    const [section, setSection] = useState(item.section);
+    const [openSex, setOpenSex] = React.useState(item.sex === "ชาย" ? true : false);
     const [leavePersonal, setLeavePersonal] = useState(0);
     const [leaveSick, setLeaveSick] = useState(0);
     const [leaveVacation, setLeaveVacation] = useState(0);
@@ -79,8 +79,7 @@ export default function AddEmployee() {
     const handleSave = async () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
         // ✅ บันทึก
-        update(child(companiesRef, String(employees.length)), {
-            ID: employees.length,
+        update(child(companiesRef, String(item.ID)), {
             employeecode: employeeID,
             employname: `${name} ${lastName}`,
             department: department,
@@ -90,50 +89,56 @@ export default function AddEmployee() {
                 0: {
                     ID: 0,
                     name: "ลากิจ",
-                    max: leavePersonal
+                    number: leavePersonal,
+                    max: item.leave[0]?.max || ""
                 },
                 1: {
                     ID: 1,
                     name: "ลาป่วย",
-                    max: leaveSick
+                    number: leaveSick,
+                    max: item.leave[1]?.max || ""
                 },
                 2: {
                     ID: 2,
                     name: "ลาพักร้อน",
-                    max: leaveVacation
+                    number: leaveVacation,
+                    max: item.leave[2]?.max || ""
                 },
                 3: {
                     ID: 3,
                     name: "ลาฝึกอบรม",
-                    max: leaveTraining
+                    number: leaveTraining,
+                    max: item.leave[3]?.max || ""
                 },
                 4: {
                     ID: 4,
                     name: "ลาคลอด",
-                    max: leaveMaternity
+                    number: leaveMaternity,
+                    max: item.leave[4]?.max || ""
                 },
                 5: {
                     ID: 5,
                     name: "ลาเพื่อทำหมัน",
-                    max: leaveSterilization
+                    number: leaveSterilization,
+                    max: item.leave[5]?.max || ""
                 }
             }
         })
             .then(() => {
                 ShowSuccess(t("success"));
-                setOpen(false);
-                setEmployeeID("");
-                setName("");
-                setLastName("");
-                setDepartment("");
-                setSection("");
-                setOpenSex(true);
-                setLeavePersonal("");
-                setLeaveSick("");
-                setLeaveVacation("");
-                setLeaveTraining("");
-                setLeaveMaternity("");
-                setLeaveSterilization("");
+                setOpen(null);
+                setEmployeeID(item.employeecode);
+                setName(item.employname.split(" ")[0]);
+                setLastName(item.employname.split(" ")[1]);
+                setDepartment(item.department);
+                setSection(item.section);
+                setOpenSex(item.sex === "ชาย" ? true : false);
+                setLeavePersonal(0);
+                setLeaveSick(0);
+                setLeaveVacation(0);
+                setLeaveTraining(0);
+                setLeaveMaternity(0);
+                setLeaveSterilization(0);
             })
             .catch((error) => {
                 console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
@@ -143,17 +148,29 @@ export default function AddEmployee() {
 
     return (
         <React.Fragment>
-            <Button
-                variant="contained"
-                color="primary"
-                size="small"
-                onClick={() => setOpen(true)}
-            >
-                {t("addEmployee")}
-            </Button>
+            <TableRow key={item.ID} onClick={() => setOpen(item.ID)}
+                sx={{
+                    cursor: "pointer",
+                    "&:hover": {
+                        backgroundColor: "rgba(41, 181, 148, 0.19)", // สีน้ำเงินจาง (ปรับตาม theme ได้)
+                    },
+                }}>
+                <TableCell sx={{ width: 50, textAlign: "center" }}>{index + 1}</TableCell>
+                <TableCell sx={{ width: 100, textAlign: "center" }}>{employeeID}</TableCell>
+                <TableCell sx={{ width: 300, textAlign: "center", position: "sticky", left: 0 }}>
+                    <Box sx={{ backgroundColor: "white" }}>{name + lastName}</Box>
+                </TableCell>
+                <TableCell sx={{ width: 150, textAlign: "center" }}>{openSex ? "ชาย" : "หญิง"}</TableCell>
+                <TableCell sx={{ width: 150, textAlign: "center" }}> </TableCell>
+                {
+                    item.leave.map((leaveType, idx) => (
+                        <TableCell key={idx} sx={{ width: 100, textAlign: "center" }}>{`0/${leaveType.max}`}</TableCell>
+                    ))
+                }
+            </TableRow>
             <Dialog
-                open={open ? true : false}
-                onClose={() => setOpen(false)}
+                open={open === item.ID ? true : false}
+                onClose={() => setOpen(null)}
                 PaperProps={{
                     sx: {
                         borderRadius: 4, // ค่าตรงนี้คือความมน ยิ่งมากยิ่งมน (ค่า default คือ 1 หรือ 4px)
@@ -171,10 +188,10 @@ export default function AddEmployee() {
                 >
                     <Grid container spacing={2}>
                         <Grid item size={10}>
-                            <Typography variant="h6" fontWeight="bold" gutterBottom>{t("addEmployeeTitle")}</Typography>
+                            <Typography variant="h6" fontWeight="bold" gutterBottom>{t("updateEmployeeTitle")}</Typography>
                         </Grid>
                         <Grid item size={2} sx={{ textAlign: "right" }}>
-                            <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpen(false)}>
+                            <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpen(null)}>
                                 <CloseIcon />
                             </IconButtonError>
                         </Grid>
@@ -286,26 +303,7 @@ export default function AddEmployee() {
                             <Typography variant="subtitle2" fontWeight="bold">{t("personalLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                    <Paper
-                                        sx={{
-                                            position: "absolute",
-                                            top: 0,
-                                            left: 0,
-                                            width: "100%",
-                                            height: "100%",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "left",
-                                            backgroundColor: theme.palette.primary.main,
-                                            color: "white",
-                                            clipPath: "polygon(0 0, 60% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
-                                        }}
-                                    >
-                                        <Typography variant="subtitle1" fontWeight="bold" sx={{ marginLeft: 1 }}>
-                                            {t("max")}
-                                        </Typography>
-                                    </Paper>
-
+                                    {/* TextField ครึ่งซ้าย */}
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -314,14 +312,12 @@ export default function AddEmployee() {
                                         sx={{
                                             position: "absolute",
                                             top: 0,
-                                            right: 0,
+                                            left: 0,
                                             height: "100%",
                                             "& .MuiInputBase-root": {
                                                 height: "100%",
-                                                textAlign: "center",
-                                                paddingLeft: 7
                                             },
-                                            clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                            clipPath: "polygon(0 0, 70% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
                                         }}
                                         onFocus={(e) => {
                                             if (e.target.value === "0") {
@@ -334,6 +330,27 @@ export default function AddEmployee() {
                                             }
                                         }}
                                     />
+
+                                    {/* Paper ครึ่งขวา */}
+                                    <Paper
+                                        sx={{
+                                            position: "absolute",
+                                            top: 0,
+                                            right: 0,
+                                            width: "65%",
+                                            height: "100%",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            backgroundColor: theme.palette.primary.main,
+                                            color: "white",
+                                            clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                        }}
+                                    >
+                                        <Typography variant="subtitle1" fontWeight="bold">
+                                            {item.leave[0]?.max || ""}
+                                        </Typography>
+                                    </Paper>
                                 </Box>
                             </Box>
                         </Grid>
@@ -342,26 +359,7 @@ export default function AddEmployee() {
                             <Typography variant="subtitle2" fontWeight="bold">{t("sickLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                    <Paper
-                                        sx={{
-                                            position: "absolute",
-                                            top: 0,
-                                            left: 0,
-                                            width: "100%",
-                                            height: "100%",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "left",
-                                            backgroundColor: theme.palette.primary.main,
-                                            color: "white",
-                                            clipPath: "polygon(0 0, 60% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
-                                        }}
-                                    >
-                                        <Typography variant="subtitle1" fontWeight="bold" sx={{ marginLeft: 1 }}>
-                                            {t("max")}
-                                        </Typography>
-                                    </Paper>
-
+                                    {/* TextField ครึ่งซ้าย */}
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -370,14 +368,12 @@ export default function AddEmployee() {
                                         sx={{
                                             position: "absolute",
                                             top: 0,
-                                            right: 0,
+                                            left: 0,
                                             height: "100%",
                                             "& .MuiInputBase-root": {
                                                 height: "100%",
-                                                textAlign: "center",
-                                                paddingLeft: 7
                                             },
-                                            clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                            clipPath: "polygon(0 0, 70% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
                                         }}
                                         onFocus={(e) => {
                                             if (e.target.value === "0") {
@@ -390,6 +386,27 @@ export default function AddEmployee() {
                                             }
                                         }}
                                     />
+
+                                    {/* Paper ครึ่งขวา */}
+                                    <Paper
+                                        sx={{
+                                            position: "absolute",
+                                            top: 0,
+                                            right: 0,
+                                            width: "65%",
+                                            height: "100%",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            backgroundColor: theme.palette.primary.main,
+                                            color: "white",
+                                            clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                        }}
+                                    >
+                                        <Typography variant="subtitle1" fontWeight="bold">
+                                            {item.leave[1]?.max || ""}
+                                        </Typography>
+                                    </Paper>
                                 </Box>
                             </Box>
                         </Grid>
@@ -398,26 +415,7 @@ export default function AddEmployee() {
                             <Typography variant="subtitle2" fontWeight="bold">{t("vacationLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                    <Paper
-                                        sx={{
-                                            position: "absolute",
-                                            top: 0,
-                                            left: 0,
-                                            width: "100%",
-                                            height: "100%",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "left",
-                                            backgroundColor: theme.palette.primary.main,
-                                            color: "white",
-                                            clipPath: "polygon(0 0, 60% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
-                                        }}
-                                    >
-                                        <Typography variant="subtitle1" fontWeight="bold" sx={{ marginLeft: 1 }}>
-                                            {t("max")}
-                                        </Typography>
-                                    </Paper>
-
+                                    {/* TextField ครึ่งซ้าย */}
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -426,14 +424,12 @@ export default function AddEmployee() {
                                         sx={{
                                             position: "absolute",
                                             top: 0,
-                                            right: 0,
+                                            left: 0,
                                             height: "100%",
                                             "& .MuiInputBase-root": {
                                                 height: "100%",
-                                                textAlign: "center",
-                                                paddingLeft: 7
                                             },
-                                            clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                            clipPath: "polygon(0 0, 70% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
                                         }}
                                         onFocus={(e) => {
                                             if (e.target.value === "0") {
@@ -446,6 +442,27 @@ export default function AddEmployee() {
                                             }
                                         }}
                                     />
+
+                                    {/* Paper ครึ่งขวา */}
+                                    <Paper
+                                        sx={{
+                                            position: "absolute",
+                                            top: 0,
+                                            right: 0,
+                                            width: "65%",
+                                            height: "100%",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            backgroundColor: theme.palette.primary.main,
+                                            color: "white",
+                                            clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                        }}
+                                    >
+                                        <Typography variant="subtitle1" fontWeight="bold">
+                                            {item.leave[2]?.max || ""}
+                                        </Typography>
+                                    </Paper>
                                 </Box>
                             </Box>
                         </Grid>
@@ -454,26 +471,7 @@ export default function AddEmployee() {
                             <Typography variant="subtitle2" fontWeight="bold">{t("trainingLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                    <Paper
-                                        sx={{
-                                            position: "absolute",
-                                            top: 0,
-                                            left: 0,
-                                            width: "100%",
-                                            height: "100%",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "left",
-                                            backgroundColor: theme.palette.primary.main,
-                                            color: "white",
-                                            clipPath: "polygon(0 0, 60% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
-                                        }}
-                                    >
-                                        <Typography variant="subtitle1" fontWeight="bold" sx={{ marginLeft: 1 }}>
-                                            {t("max")}
-                                        </Typography>
-                                    </Paper>
-
+                                    {/* TextField ครึ่งซ้าย */}
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -482,14 +480,12 @@ export default function AddEmployee() {
                                         sx={{
                                             position: "absolute",
                                             top: 0,
-                                            right: 0,
+                                            left: 0,
                                             height: "100%",
                                             "& .MuiInputBase-root": {
                                                 height: "100%",
-                                                textAlign: "center",
-                                                paddingLeft: 7
                                             },
-                                            clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                            clipPath: "polygon(0 0, 70% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
                                         }}
                                         onFocus={(e) => {
                                             if (e.target.value === "0") {
@@ -502,6 +498,27 @@ export default function AddEmployee() {
                                             }
                                         }}
                                     />
+
+                                    {/* Paper ครึ่งขวา */}
+                                    <Paper
+                                        sx={{
+                                            position: "absolute",
+                                            top: 0,
+                                            right: 0,
+                                            width: "65%",
+                                            height: "100%",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            backgroundColor: theme.palette.primary.main,
+                                            color: "white",
+                                            clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                        }}
+                                    >
+                                        <Typography variant="subtitle1" fontWeight="bold">
+                                            {item.leave[3]?.max || ""}
+                                        </Typography>
+                                    </Paper>
                                 </Box>
                             </Box>
                         </Grid>
@@ -510,26 +527,7 @@ export default function AddEmployee() {
                             <Typography variant="subtitle2" fontWeight="bold">{t("maternityLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                    <Paper
-                                        sx={{
-                                            position: "absolute",
-                                            top: 0,
-                                            left: 0,
-                                            width: "100%",
-                                            height: "100%",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "left",
-                                            backgroundColor: theme.palette.primary.main,
-                                            color: "white",
-                                            clipPath: "polygon(0 0, 60% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
-                                        }}
-                                    >
-                                        <Typography variant="subtitle1" fontWeight="bold" sx={{ marginLeft: 1 }}>
-                                            {t("max")}
-                                        </Typography>
-                                    </Paper>
-
+                                    {/* TextField ครึ่งซ้าย */}
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -538,14 +536,12 @@ export default function AddEmployee() {
                                         sx={{
                                             position: "absolute",
                                             top: 0,
-                                            right: 0,
+                                            left: 0,
                                             height: "100%",
                                             "& .MuiInputBase-root": {
                                                 height: "100%",
-                                                textAlign: "center",
-                                                paddingLeft: 7
                                             },
-                                            clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                            clipPath: "polygon(0 0, 70% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
                                         }}
                                         onFocus={(e) => {
                                             if (e.target.value === "0") {
@@ -558,6 +554,27 @@ export default function AddEmployee() {
                                             }
                                         }}
                                     />
+
+                                    {/* Paper ครึ่งขวา */}
+                                    <Paper
+                                        sx={{
+                                            position: "absolute",
+                                            top: 0,
+                                            right: 0,
+                                            width: "65%",
+                                            height: "100%",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            backgroundColor: theme.palette.primary.main,
+                                            color: "white",
+                                            clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                        }}
+                                    >
+                                        <Typography variant="subtitle1" fontWeight="bold">
+                                            {item.leave[4]?.max || ""}
+                                        </Typography>
+                                    </Paper>
                                 </Box>
                             </Box>
                         </Grid>
@@ -566,26 +583,7 @@ export default function AddEmployee() {
                             <Typography variant="subtitle2" fontWeight="bold">{t("sterilizationLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                    <Paper
-                                        sx={{
-                                            position: "absolute",
-                                            top: 0,
-                                            left: 0,
-                                            width: "100%",
-                                            height: "100%",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "left",
-                                            backgroundColor: theme.palette.primary.main,
-                                            color: "white",
-                                            clipPath: "polygon(0 0, 60% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
-                                        }}
-                                    >
-                                        <Typography variant="subtitle1" fontWeight="bold" sx={{ marginLeft: 1 }}>
-                                            {t("max")}
-                                        </Typography>
-                                    </Paper>
-
+                                    {/* TextField ครึ่งซ้าย */}
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -594,14 +592,12 @@ export default function AddEmployee() {
                                         sx={{
                                             position: "absolute",
                                             top: 0,
-                                            right: 0,
+                                            left: 0,
                                             height: "100%",
                                             "& .MuiInputBase-root": {
                                                 height: "100%",
-                                                textAlign: "center",
-                                                paddingLeft: 7
                                             },
-                                            clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                            clipPath: "polygon(0 0, 70% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
                                         }}
                                         onFocus={(e) => {
                                             if (e.target.value === "0") {
@@ -614,11 +610,32 @@ export default function AddEmployee() {
                                             }
                                         }}
                                     />
+
+                                    {/* Paper ครึ่งขวา */}
+                                    <Paper
+                                        sx={{
+                                            position: "absolute",
+                                            top: 0,
+                                            right: 0,
+                                            width: "65%",
+                                            height: "100%",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            backgroundColor: theme.palette.primary.main,
+                                            color: "white",
+                                            clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                        }}
+                                    >
+                                        <Typography variant="subtitle1" fontWeight="bold">
+                                            {item.leave[5]?.max || ""}
+                                        </Typography>
+                                    </Paper>
                                 </Box>
                             </Box>
                         </Grid>
                         <Grid item size={12}>
-                            <Divider sx={{ marginTop: 1, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }}/>
+                            <Divider sx={{ marginTop: 1, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
                         </Grid>
                         <Grid item size={12}>
                             <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>

@@ -41,8 +41,14 @@ import { BarChart } from '@mui/x-charts';
 import TimeAttendant from './TimeAttendant';
 import Caluculate from './Calculate';
 import ReactCountryFlag from 'react-country-flag';
+import { useTranslation } from 'react-i18next';
+import { LanguageContext } from '../../LanguageContext';
+import 'dayjs/locale/th';
+import 'dayjs/locale/en';
 
 export default function DashboardAttendant() {
+    const { language, changeLanguage } = React.useContext(LanguageContext);
+    const { t } = useTranslation();
     const { firebaseDB, domainKey } = useFirebase();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -59,7 +65,6 @@ export default function DashboardAttendant() {
     const [position, setPosition] = useState([]);
     const [document, setDocument] = useState([]);
     const [openNavbar, setopenNamevar] = useState(false)
-    const [language, setLanguage] = useState("th");
 
     console.log("document : ", document);
 
@@ -321,7 +326,7 @@ export default function DashboardAttendant() {
                                     variant="subtitle1"
                                     sx={{ marginRight: 2, fontWeight: "bold", color: "gray" }}
                                 >
-                                    เลือกภาษา :
+                                    {t("selectLanguage")}
                                 </Typography>
 
                                 {/* ปุ่มภาษาไทย */}
@@ -330,7 +335,7 @@ export default function DashboardAttendant() {
                                     size="small"
                                     sx={{
                                         marginRight: 1,
-                                        backgroundColor: language === "th" ? "#A51931" : "lightgray", // แดงเข้มแบบธงชาติไทย
+                                        backgroundColor: language === "th" ? "#A51931" : "lightgray",
                                         color: language === "th" ? "white" : "gray",
                                         fontWeight: "bold",
                                         "&:hover": {
@@ -338,7 +343,7 @@ export default function DashboardAttendant() {
                                             backgroundColor: language === "th" ? "#7a0f24" : "gray",
                                         },
                                     }}
-                                    onClick={() => setLanguage("th")}
+                                    onClick={() => changeLanguage("th")}
                                     endIcon={
                                         <ReactCountryFlag
                                             countryCode="TH"
@@ -353,20 +358,20 @@ export default function DashboardAttendant() {
                                     TH
                                 </Button>
 
-                                {/* ปุ่มภาษาอังกฤษ (UK) */}
+                                {/* ปุ่มภาษาอังกฤษ */}
                                 <Button
                                     variant="contained"
                                     size="small"
                                     sx={{
-                                        backgroundColor: language === "eng" ? "#00247D" : "lightgray", // น้ำเงินเข้มแบบ Union Jack
-                                        color: language === "eng" ? "white" : "gray",
+                                        backgroundColor: language === "en" ? "#00247D" : "lightgray",
+                                        color: language === "en" ? "white" : "gray",
                                         fontWeight: "bold",
                                         "&:hover": {
                                             color: "white",
-                                            backgroundColor: language === "eng" ? "#001c63" : "gray",
+                                            backgroundColor: language === "en" ? "#001c63" : "gray",
                                         },
                                     }}
-                                    onClick={() => setLanguage("eng")}
+                                    onClick={() => changeLanguage("en")}
                                     endIcon={
                                         <ReactCountryFlag
                                             countryCode="GB"
@@ -386,7 +391,7 @@ export default function DashboardAttendant() {
                         <Grid item size={12} textAlign="right" marginTop={-7}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'right' }}>
                                 <Paper sx={{ width: "20%", marginRight: 2 }}>
-                                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
+                                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={language}>
                                         <DatePicker
                                             openTo="month"
                                             views={["year", "month"]}
@@ -404,7 +409,7 @@ export default function DashboardAttendant() {
                                                     InputProps: {
                                                         startAdornment: (
                                                             <InputAdornment position="start" sx={{ marginRight: 2 }}>
-                                                                <b>เลือกเดือน :</b>
+                                                                <b>{t("selectMonth")}</b>
                                                             </InputAdornment>
                                                         ),
                                                         sx: {
@@ -420,13 +425,13 @@ export default function DashboardAttendant() {
                                     </LocalizationProvider>
                                 </Paper>
                                 <Button onClick={() => navigate(`/?domain=${domain}&page=dashboard`)} variant="contained" size="large" color="error" endIcon={<KeyboardReturnIcon />}>
-                                    ย้อนกลับ
+                                    {t("back")}
                                 </Button>
                             </Box>
                         </Grid>
                     </Grid>
                     {/* </Item> */}
-                    <TimeAttendant date={dateApprove} />
+                    <TimeAttendant date={dateApprove} language={language} />
                 </Grid>
             </Grid>
         </Container>

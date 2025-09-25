@@ -1,0 +1,17 @@
+{
+  "salaryTable": {
+    "title": "Salary Calculation List",
+    "export": "Export Excel",
+    "columns": {
+      "employeeId": "Employee ID",
+      "name": "Name",
+      "work": "Work",
+      "absent": "Absent",
+      "noTimeIn": "Incomplete Time In",
+      "noTimeOut": "Incomplete Time Out",
+      "late": "Late",
+      "earlyLeave": "Early Leave"
+    },
+    "noData": "No data"
+  }
+}

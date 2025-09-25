@@ -1,0 +1,24 @@
+{
+  "employeeDetail": {
+    "title": "รายละเอียดพนักงาน",
+    "gender": "เพศ",
+    "people": "คน",
+    "genderNotSet": "ยังไม่ได้กำหนดเพศ: {{count}}",
+    "total": "รวมทั้งหมด",
+    "employees": "พนักงาน",
+    "index": "ลำดับ",
+    "employeeCode": "รหัสพนักงาน",
+    "name": "ชื่อ-สกุล",
+    "absent": "ขาดงาน",
+    "leave": {
+      "personal": "ลากิจ",
+      "sick": "ลาป่วย",
+      "vacation": "ลาพักร้อน",
+      "training": "ลาฝึกอบรม",
+      "maternity": "ลาคลอด",
+      "sterilization": "ลาเพื่อทำหมัน"
+    },
+    "importExcel": "นำเข้า Excel",
+    "exportExcel": "ส่งออก Excel"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "salaryTable": {
+    "title": "รายการคำนวณเงินเดือน",
+    "export": "ส่งออก Excel",
+    "columns": {
+      "employeeId": "รหัสพนักงาน",
+      "name": "ชื่อ-สกุล",
+      "work": "ทำงาน",
+      "absent": "ขาดงาน",
+      "noTimeIn": "เวลาเข้าไม่ครบ",
+      "noTimeOut": "เวลาออกไม่ครบ",
+      "late": "สาย",
+      "earlyLeave": "กลับก่อน"
+    },
+    "noData": "ไม่มีข้อมูล"
+  }
+}

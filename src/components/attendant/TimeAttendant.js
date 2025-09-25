@@ -41,9 +41,11 @@ import { BarChart } from '@mui/x-charts';
 import { useRef } from 'react';
 import EmployeeDetail from './Employee';
 import Caluculate from './Calculate';
+import { useTranslation } from 'react-i18next';
 
 export default function TimeAttendant({ date }) {
     const { firebaseDB, domainKey } = useFirebase();
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const domain = searchParams.get("domain");
@@ -346,12 +348,12 @@ export default function TimeAttendant({ date }) {
                                     borderBottom: openTime && `5px solid ${theme.palette.primary.dark}`
                                 }}
                             >
-                                <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>ข้อมูลแสกนเวลา</Typography>
+                                <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>{t("scanInfo")}</Typography>
                                 <AlarmIcon sx={{ color: "white", fontSize: "65px", marginTop: -1, marginBottom: -2 }} />
                             </Grid>
                             <Grid item size={6} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <Typography variant="h3" sx={{ marginTop: 1, marginRight: 1 }} fontWeight="bold" gutterBottom>{attendants.length}</Typography>
-                                <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>ครั้ง</Typography>
+                                <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>{t("times")}</Typography>
                             </Grid>
                         </Grid>
                     </Paper>
@@ -376,12 +378,12 @@ export default function TimeAttendant({ date }) {
                                     borderBottom: openEmployee && `5px solid ${theme.palette.primary.dark}`
                                 }}
                             >
-                                <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>พนักงานทั้งหมด</Typography>
+                                <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>{t("allEmployees")}</Typography>
                                 <BadgeIcon sx={{ color: "white", fontSize: "65px", marginTop: -1, marginBottom: -2 }} />
                             </Grid>
                             <Grid item size={6} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <Typography variant="h3" sx={{ marginTop: 1, marginRight: 1 }} fontWeight="bold" gutterBottom>{employees.length}</Typography>
-                                <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>คน</Typography>
+                                <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>{t("people")}</Typography>
                             </Grid>
                         </Grid>
                     </Paper>
@@ -401,12 +403,12 @@ export default function TimeAttendant({ date }) {
                                     borderBottom: openSalary && `5px solid ${theme.palette.primary.dark}`
                                 }}
                             >
-                                <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>คำนวณเงินเดือน</Typography>
+                                <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>{t("calculateSalary")}</Typography>
                                 <CurrencyExchangeIcon sx={{ color: "white", fontSize: "65px", marginTop: -1, marginBottom: -2 }} />
                             </Grid>
                             <Grid item size={6} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                                 <Typography variant="h3" sx={{ marginTop: 1, marginRight: 1 }} fontWeight="bold" gutterBottom>{Object.values(grouped).length}</Typography>
-                                <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>ใบ</Typography>
+                                <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>{t("record")}</Typography>
                             </Grid>
                         </Grid>
                     </Paper>
@@ -422,7 +424,7 @@ export default function TimeAttendant({ date }) {
                         <Item sx={{ height: 500, borderTop: `5px solid ${theme.palette.primary.dark}` }}>
                             <Grid container spacing={2}>
                                 <Grid item size={6}>
-                                    <Typography variant='h6' fontWeight="bold" gutterBottom>รายการแสกนเวลา</Typography>
+                                    <Typography variant='h6' fontWeight="bold" gutterBottom>{t("scanInfo")}</Typography>
                                 </Grid>
                                 <Grid item size={6} textAlign="right" marginTop={0.5}>
                                     <Box display="flex" alignItems="center" justifyContent="right">
@@ -440,9 +442,9 @@ export default function TimeAttendant({ date }) {
                                             sx={{ marginRight: 2 }}
                                             onClick={handleButtonClick}
                                         >
-                                            Import Excel
+                                            {t("importExcel")}
                                         </Button>
-                                        <Button variant="contained" color="success" size="small">Export Excel</Button>
+                                        <Button variant="contained" color="success" size="small">{t("exportExcel")}</Button>
                                     </Box>
                                 </Grid>
                                 <Grid item size={12}>
@@ -457,23 +459,23 @@ export default function TimeAttendant({ date }) {
                                                 }}
                                             >
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                    <TablecellHeader sx={{ width: 100 }}>รหัสพนักงาน</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 300, position: "sticky", left: 0, backgroundColor: theme.palette.primary.dark, borderRight: "2px solid white" }}>ชื่อ-สกุล</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 150 }}>วันที่</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 180 }}>ตารางเวลา</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 120 }}>เวลาเข้า</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 120 }}>เวลาออก</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 120 }}>มาสาย</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 120 }}>ออกก่อน</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 120 }}>ขาดงาน</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 120 }}>ล่วงเวลา</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 100 }}>เวลาทำงาน</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 150 }}>ข้อยกเว้น</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 150 }}>วันทำงานปกติ</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 180 }}>วันหยุดประจำสัปดาห์</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 180 }}>ชั่วโมงทำงาน+ล่วงเวลา</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 180 }}>ล่วงเวลา ปกติ</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 180 }}>ล่วงเวลา วันหยุดสุดสัปดาห์</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 100 }}>{t("employeeId")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 300, position: "sticky", left: 0, backgroundColor: theme.palette.primary.dark, borderRight: "2px solid white" }}>{t("name")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 150 }}>{t("date")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 180 }}>{t("schedule")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 120 }}>{t("timeIn")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 120 }}>{t("timeOut")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 120 }}>{t("late")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 120 }}>{t("earlyLeave")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 120 }}>{t("absent")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 120 }}>{t("overtime")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 100 }}>{t("workHours")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 150 }}>{t("exception")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 150 }}>{t("normalDay")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 180 }}>{t("weekend")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 180 }}>{t("totalWorkOvertime")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 180 }}>{t("otNormal")}</TablecellHeader>
+                                                    <TablecellHeader sx={{ width: 180 }}>{t("otWeekend")}</TablecellHeader>
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>

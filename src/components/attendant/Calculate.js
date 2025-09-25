@@ -36,9 +36,11 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { BarChart } from '@mui/x-charts';
+import { useTranslation } from 'react-i18next';
 
 export default function Caluculate({ attendant }) {
     const { firebaseDB, domainKey } = useFirebase();
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const domain = searchParams.get("domain");
@@ -160,12 +162,12 @@ export default function Caluculate({ attendant }) {
                     <Item sx={{ height: 500, borderTop: `5px solid ${theme.palette.primary.dark}` }}>
                         <Grid container spacing={2}>
                             <Grid item size={6}>
-                                <Typography variant='h6' fontWeight="bold" gutterBottom>รายการคำนวณเงินเดือน</Typography>
+                                <Typography variant='h6' fontWeight="bold" gutterBottom>{t("salaryTable.title")}</Typography>
                             </Grid>
                             <Grid item size={6} textAlign="right" marginTop={0.5}>
                                 <Box display="flex" alignItems="center" justifyContent="right">
                                     {/* <Button variant="contained" color="error" size="small" sx={{ marginRight: 2 }}>Import Excel</Button> */}
-                                    <Button variant="contained" color="success" size="small">Export Excel</Button>
+                                    <Button variant="contained" color="success" size="small">{t("salaryTable.export")}</Button>
                                 </Box>
                             </Grid>
                             <Grid item size={12}>
@@ -173,14 +175,14 @@ export default function Caluculate({ attendant }) {
                                     <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}>
                                         <TableHead>
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                <TablecellHeader sx={{ width: 100 }}>รหัสพนักงาน</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 400 }}>ชื่อ-สกุล</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 120 }}>ทำงาน</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 150 }}>ขาดงาน</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 180 }}>เวลาเข้าไม่ครบ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 120 }}>เวลาออกไม่ครบ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 120 }}>สาย</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 120 }}>กลับก่อน</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>{t("salaryTable.columns.employeeId")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 400 }}>{t("salaryTable.columns.name")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120 }}>{t("salaryTable.columns.work")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>{t("salaryTable.columns.absent")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 180 }}>{t("salaryTable.columns.noTimeIn")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120 }}>{t("salaryTable.columns.noTimeOut")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120 }}>{t("salaryTable.columns.late")}</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120 }}>{t("salaryTable.columns.earlyLeave")}</TablecellHeader>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
