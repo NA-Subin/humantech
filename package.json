@@ -19,6 +19,8 @@
     "axios": "^1.10.0",
     "crypto-js": "^4.2.0",
     "dayjs": "^1.11.13",
+    "exceljs": "^4.4.0",
+    "file-saver": "^2.0.5",
     "firebase": "^11.9.1",
     "handsontable": "^12.3.1",
     "i18next": "^25.5.2",

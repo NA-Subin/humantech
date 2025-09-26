@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as XLSX from "xlsx";
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update, get } from "firebase/database";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -41,6 +41,8 @@ import { useRef } from 'react';
 import AddEmployee from './AddEmployee';
 import { useTranslation } from 'react-i18next';
 import UpdateEmployee from './UpdateEmployee';
+import { saveAs } from "file-saver";
+import ExcelJS from "exceljs";
 
 export default function EmployeeDetail() {
     const { firebaseDB, domainKey } = useFirebase();
@@ -51,6 +53,14 @@ export default function EmployeeDetail() {
     const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
     const [employees, setEmployees] = useState([]);
+    const [employee, setEmployee] = useState([]);
+    const fileInputRef = useRef(null);
+
+    console.log("show employee : ", employee);
+
+    const handleButtonClick = () => {
+        fileInputRef.current.click(); // กดปุ่ม → เปิด file dialog
+    };
 
     React.useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -70,6 +80,184 @@ export default function EmployeeDetail() {
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
+
+    const importEmployeesFromExcel = async (file) => {
+        try {
+            // 1️⃣ โหลดไฟล์
+            const workbook = new ExcelJS.Workbook();
+            const buffer = await file.arrayBuffer();
+            await workbook.xlsx.load(buffer);
+
+            const worksheet = workbook.worksheets[0];
+            const rows = worksheet.getSheetValues(); // ExcelJS row index เริ่มจาก 1
+
+            if (!rows || rows.length < 3) {
+                alert("ไฟล์ Excel ไม่มีข้อมูลเพียงพอ");
+                return;
+            }
+
+            // 2️⃣ อ่าน header row
+            const headerRow = rows[2]; // แถว header อยู่ที่ row 2 (row 1 = title)
+
+            // 3️⃣ สร้าง mapping header -> key
+            const columnMap = {
+                employeeCode: [t("employeeDetail.employeeCode"), "Employee Code"],
+                fullName: [t("employeeDetail.name"), "Name"],
+                gender: [t("employeeDetail.gender"), "Gender"],
+                department: [t("employeeDetail.department"), "Department"],
+                section: [t("employeeDetail.section"), "Section"],
+                absent: [t("employeeDetail.absent"), "Absent"],
+                leavePersonal: [t("employeeDetail.leave.personal"), "Leave Personal"],
+                leaveSick: [t("employeeDetail.leave.sick"), "Leave Sick"],
+                leaveVacation: [t("employeeDetail.leave.vacation"), "Leave Vacation"],
+                leaveTraining: [t("employeeDetail.leave.training"), "Leave Training"],
+                leaveMaternity: [t("employeeDetail.leave.maternity"), "Leave Maternity"],
+                leaveSterilization: [t("employeeDetail.leave.sterilization"), "Leave Sterilization"],
+            };
+
+            const columnIndex = {};
+            headerRow.forEach((cell, idx) => {
+                for (let key in columnMap) {
+                    if (columnMap[key].includes(cell)) {
+                        columnIndex[key] = idx; // idx เริ่มจาก 0
+                    }
+                }
+            });
+
+            // 4️⃣ อ่านข้อมูล rows ตั้งแต่ row 3 เป็นต้นไป
+            const dataRows = rows.slice(3); // row index 3 = แถว data
+            const leaveTypes = [
+                { key: "leavePersonal", name: "ลากิจ", id: 0 },
+                { key: "leaveSick", name: "ลาป่วย", id: 1 },
+                { key: "leaveVacation", name: "ลาพักร้อน", id: 2 },
+                { key: "leaveTraining", name: "ลาฝึกอบรม", id: 3 },
+                { key: "leaveMaternity", name: "ลาคลอด", id: 4 },
+                { key: "leaveSterilization", name: "ลาเพื่อทำหมัน", id: 5 },
+            ];
+
+            const formattedData = dataRows
+                .filter(row => row) // skip empty row
+                .map((row, idx) => ({
+                    ID: idx, // จะ append ID ต่อ Firebase ต่อไป
+                    employeecode: row[columnIndex.employeeCode] || "",
+                    employname: row[columnIndex.fullName] || "",
+                    department: row[columnIndex.department] || "",
+                    section: row[columnIndex.section] || "",
+                    sex: (() => {
+                        const g = row[columnIndex.gender];
+                        if (!g) return "";
+                        if (["M", "ชาย", "Male"].includes(g)) return "ชาย";
+                        if (["F", "หญิง", "Female"].includes(g)) return "หญิง";
+                        return "";
+                    })(),
+                    absent: ["ใช่", "Yes", "TRUE", true].includes(row[columnIndex.absent]),
+                    leave: leaveTypes.map(type => {
+                        const value = row[columnIndex[type.key]] || "0/0";
+                        const [num, max] = value.split("/").map(Number);
+                        return {
+                            id: type.id,
+                            name: type.name,
+                            number: num ?? 0,
+                            max: max ?? 0,
+                        };
+                    }),
+                }));
+
+            // 5️⃣ โหลดข้อมูลเดิมจาก Firebase
+            const refPath = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+            const snapshot = await get(refPath);
+            const existingData = snapshot.exists() ? snapshot.val() : {};
+            const existingIDs = Object.keys(existingData).map(Number);
+            const maxID = existingIDs.length ? Math.max(...existingIDs) : -1;
+
+            // 6️⃣ append ID ต่อ Firebase
+            const updates = {};
+            formattedData.forEach((emp, idx) => {
+                const newID = maxID + 1 + idx;
+                updates[newID] = { ...emp, ID: newID };
+            });
+
+            setEmployee(prev => [...prev, ...formattedData.map((emp, idx) => ({ ...emp, id: maxID + 1 + idx }))]);
+
+            await update(refPath, updates);
+
+            alert(`นำเข้าข้อมูลพนักงานสำเร็จ! เพิ่มพนักงานใหม่ ${formattedData.length} คน`);
+        } catch (err) {
+            console.error("Import error:", err);
+            alert("ไม่สามารถนำเข้าข้อมูลพนักงานได้");
+        }
+    };
+
+    const exportEmployeesToExcel = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet(t("employeeDetail.employees"));
+
+        // 1️⃣ Columns ตาม Table
+        worksheet.columns = [
+            { header: t("employeeDetail.index"), key: "no", width: 8 },
+            { header: t("employeeDetail.employeeCode"), key: "employeeCode", width: 15 },
+            { header: t("employeeDetail.name"), key: "fullName", width: 30 },
+            { header: t("employeeDetail.department"), key: "department", width: 30 },
+            { header: t("employeeDetail.section"), key: "section", width: 30 },
+            { header: t("employeeDetail.gender"), key: "gender", width: 10 },
+            { header: t("employeeDetail.absent"), key: "absent", width: 15 },
+            { header: t("employeeDetail.leave.personal"), key: "leavePersonal", width: 15 },
+            { header: t("employeeDetail.leave.sick"), key: "leaveSick", width: 15 },
+            { header: t("employeeDetail.leave.vacation"), key: "leaveVacation", width: 15 },
+            { header: t("employeeDetail.leave.training"), key: "leaveTraining", width: 15 },
+            { header: t("employeeDetail.leave.maternity"), key: "leaveMaternity", width: 15 },
+            { header: t("employeeDetail.leave.sterilization"), key: "leaveSterilization", width: 15 },
+        ];
+
+        // 2️⃣ Title row
+        worksheet.mergeCells(1, 1, 1, worksheet.columns.length);
+        const titleCell = worksheet.getCell("A1");
+        titleCell.value = t("employeeDetail.employees");
+        titleCell.alignment = { horizontal: "center", vertical: "middle" };
+        titleCell.font = { size: 16, bold: true };
+        titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFDDEBF7" } };
+        worksheet.getRow(1).height = 30;
+
+        // 3️⃣ Header row
+        const headerRow = worksheet.addRow(worksheet.columns.map(c => c.header));
+        headerRow.font = { bold: true };
+        headerRow.alignment = { horizontal: "center", vertical: "middle" };
+        headerRow.height = 25;
+        headerRow.eachCell((cell) => {
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFBDD7EE" } };
+            cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+        });
+
+        // 4️⃣ Data rows
+        employees.forEach((emp, index) => {
+            const dataRow = {
+                no: index + 1,
+                employeeCode: emp.employeecode,
+                fullName: `${emp.employname}`,
+                gender: emp.gender === "M" ? "ชาย" : "หญิง",
+                absent: emp.absent ?? 0,
+                department: emp.department,
+                section: emp.section,
+                leavePersonal: `${emp.leave[0].number ?? 0}/${emp.leave[0].max ?? 0}`,
+                leaveSick: `${emp.leave[1].number ?? 0}/${emp.leave[1].max ?? 0}`,
+                leaveVacation: `${emp.leave[2].number ?? 0}/${emp.leave[2].max ?? 0}`,
+                leaveTraining: `${emp.leave[3].number ?? 0}/${emp.leave[3].max ?? 0}`,
+                leaveMaternity: `${emp.leave[4].number ?? 0}/${emp.leave[4].max ?? 0}`,
+                leaveSterilization: `${emp.leave[5].number ?? 0}/${emp.leave[5].max ?? 0}`,
+            };
+            const newRow = worksheet.addRow(dataRow);
+            newRow.height = 20;
+            newRow.alignment = { horizontal: "center", vertical: "middle" };
+            newRow.eachCell((cell) => {
+                cell.border = { top: { style: "thin" }, left: { style: "thin" }, bottom: { style: "thin" }, right: { style: "thin" } };
+            });
+        });
+
+        // ✅ 5️⃣ Save file
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), `${t("employeeDetail.employees")}_${dayjs().format("YYYYMMDD_HHmmss")}.xlsx`);
+    };
+
 
     return (
         <React.Fragment>
@@ -162,7 +350,7 @@ export default function EmployeeDetail() {
                                 </TableContainer>
                             </Grid>
                             <Grid item size={12} textAlign="right" sx={{ marginTop: 1 }}>
-                                <Button
+                                {/* <Button
                                     variant="contained"
                                     color="error"
                                     size="small"
@@ -174,9 +362,39 @@ export default function EmployeeDetail() {
                                     variant="contained"
                                     color="success"
                                     size="small"
+                                    onClick={exportEmployeesToExcel}
                                 >
                                     {t("employeeDetail.exportExcel")}
-                                </Button>
+                                </Button> */}
+                                <Box display="flex" alignItems="center" justifyContent="right">
+                                    <input
+                                        type="file"
+                                        accept=".xlsx, .xls"
+                                        ref={fileInputRef}
+                                        style={{ display: "none" }}
+                                        onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            if (file) importEmployeesFromExcel(file);
+                                        }}
+                                    />
+                                    <Button
+                                        variant="contained"
+                                        color="error"
+                                        size="small"
+                                        sx={{ marginRight: 2 }}
+                                        onClick={handleButtonClick}
+                                    >
+                                        {t("employeeDetail.importExcel")}
+                                    </Button>
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        size="small"
+                                        onClick={exportEmployeesToExcel}
+                                    >
+                                        {t("employeeDetail.exportExcel")}
+                                    </Button>
+                                </Box>
                             </Grid>
                         </Grid>
                     </Item>

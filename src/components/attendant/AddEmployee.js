@@ -120,7 +120,7 @@ export default function AddEmployee() {
             }
         })
             .then(() => {
-                ShowSuccess(t("success"));
+                ShowSuccess(t("success"), t("ok"));
                 setOpen(false);
                 setEmployeeID("");
                 setName("");
@@ -137,7 +137,7 @@ export default function AddEmployee() {
             })
             .catch((error) => {
                 console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
-                ShowError(t("error"));
+                ShowError(t("error"), t("ok"));
             });
     };
 

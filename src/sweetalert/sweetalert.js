@@ -7,33 +7,33 @@ import theme from '../theme/theme';
 
 const MySwal = withReactContent(Swal);
 
-export function ShowError(title, text) {
+export function ShowError(title, text, confirmButtonText = "OK") {
     MySwal.fire({
         icon: "error",
         title: title,
         html: <div style={{ marginBottom: 2 }}>{text}</div>,
         confirmButtonColor: '#FF9843',
-        confirmButtonText: "ตกลง"
+        confirmButtonText
     });
 }
 
-export function ShowWarning(title, text) {
+export function ShowWarning(title, text, confirmButtonText = "OK") {
     MySwal.fire({
         icon: "warning",
         title: title,
         html: <div style={{ marginBottom: 2 }}>{text}</div>,
         confirmButtonColor: '#ffc400',
-        confirmButtonText: "ตกลง"
+        confirmButtonText
     });
 }
 
-export function ShowSuccess(title, text) {
+export function ShowSuccess(title, text, confirmButtonText = "OK") {
     MySwal.fire({
         icon: "success",
         title: title,
         html: <div style={{ marginBottom: 2 }}>{text}</div>,
         confirmButtonColor: '#ffc400',
-        confirmButtonText: "ตกลง"
+        confirmButtonText
     });
 }
 
@@ -62,7 +62,7 @@ export function ShowAccessLogin(title, text, duration = 2000) {
 }
 
 
-export function ShowConfirm(title, text, onConfirm, onCancel) {
+export function ShowConfirm(title, text, onConfirm, onCancel, confirmButtonText = "OK", cancelButtonText = "Cancel") {
     const isLogout = title === "ออกจากระบบ";
 
     MySwal.fire({
@@ -78,8 +78,8 @@ export function ShowConfirm(title, text, onConfirm, onCancel) {
         showCancelButton: true,
         confirmButtonColor: theme.palette.success.main,
         cancelButtonColor: theme.palette.error.main,
-        confirmButtonText: "ตกลง",
-        cancelButtonText: "ยกเลิก",
+        confirmButtonText,
+        cancelButtonText,
         reverseButtons: true, // 👈 เพิ่มบรรทัดนี้
         customClass: {
             popup: "custom-swal-popup",

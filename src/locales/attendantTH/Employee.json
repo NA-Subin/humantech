@@ -9,6 +9,8 @@
     "index": "ลำดับ",
     "employeeCode": "รหัสพนักงาน",
     "name": "ชื่อ-สกุล",
+    "department": "แผนก",
+    "section": "ส่วนงาน",
     "absent": "ขาดงาน",
     "leave": {
       "personal": "ลากิจ",

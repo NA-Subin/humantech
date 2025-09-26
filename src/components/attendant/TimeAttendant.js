@@ -435,15 +435,17 @@ export default function TimeAttendant({ date }) {
                     status: "ยกเลิก",
                 })
                     .then(() => {
-                        ShowSuccess(t("success"));
+                        ShowSuccess(t("success"), t("ok"));
                     })
                     .catch((error) => {
-                        ShowError(t("error"));
+                        ShowError(t("error"), t("ok"));
                     });
             },
             (error) => {
                 console.log("เกิดข้อผิดพลาดในการบันทึก:", error);
-            }
+            },
+            t("ok"),
+            t("cancel")
         );
     }
 

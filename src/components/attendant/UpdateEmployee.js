@@ -50,12 +50,12 @@ export default function UpdateEmployee({ item, index }) {
     const [department, setDepartment] = useState(item.department);
     const [section, setSection] = useState(item.section);
     const [openSex, setOpenSex] = React.useState(item.sex === "ชาย" ? true : false);
-    const [leavePersonal, setLeavePersonal] = useState(0);
-    const [leaveSick, setLeaveSick] = useState(0);
-    const [leaveVacation, setLeaveVacation] = useState(0);
-    const [leaveTraining, setLeaveTraining] = useState(0);
-    const [leaveMaternity, setLeaveMaternity] = useState(0);
-    const [leaveSterilization, setLeaveSterilization] = useState(0);
+    const [leavePersonal, setLeavePersonal] = useState(item.leave[0]?.number || 0);
+    const [leaveSick, setLeaveSick] = useState(item.leave[1]?.number || 0);
+    const [leaveVacation, setLeaveVacation] = useState(item.leave[2]?.number || 0);
+    const [leaveTraining, setLeaveTraining] = useState(item.leave[3]?.number || 0);
+    const [leaveMaternity, setLeaveMaternity] = useState(item.leave[4]?.number || 0);
+    const [leaveSterilization, setLeaveSterilization] = useState(item.leave[5]?.number || 0);
 
     React.useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -125,7 +125,7 @@ export default function UpdateEmployee({ item, index }) {
             }
         })
             .then(() => {
-                ShowSuccess(t("success"));
+                ShowSuccess(t("success"), t("ok"));
                 setOpen(null);
                 setEmployeeID(item.employeecode);
                 setName(item.employname.split(" ")[0]);
@@ -133,16 +133,16 @@ export default function UpdateEmployee({ item, index }) {
                 setDepartment(item.department);
                 setSection(item.section);
                 setOpenSex(item.sex === "ชาย" ? true : false);
-                setLeavePersonal(0);
-                setLeaveSick(0);
-                setLeaveVacation(0);
-                setLeaveTraining(0);
-                setLeaveMaternity(0);
-                setLeaveSterilization(0);
+                setLeavePersonal(item.leave[0]?.number || 0);
+                setLeaveSick(item.leave[1]?.number || 0);
+                setLeaveVacation(item.leave[2]?.number || 0);
+                setLeaveTraining(item.leave[3]?.number || 0);
+                setLeaveMaternity(item.leave[4]?.number || 0);
+                setLeaveSterilization(item.leave[5]?.number || 0);
             })
             .catch((error) => {
                 console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
-                ShowError(t("error"));
+                ShowError(t("error"), t("ok"));
             });
     };
 
@@ -164,7 +164,7 @@ export default function UpdateEmployee({ item, index }) {
                 <TableCell sx={{ width: 150, textAlign: "center" }}> </TableCell>
                 {
                     item.leave.map((leaveType, idx) => (
-                        <TableCell key={idx} sx={{ width: 100, textAlign: "center" }}>{`0/${leaveType.max}`}</TableCell>
+                        <TableCell key={idx} sx={{ width: 100, textAlign: "center" }}>{`${leaveType.number ? leaveType.number : "0"}/${leaveType.max}`}</TableCell>
                     ))
                 }
             </TableRow>

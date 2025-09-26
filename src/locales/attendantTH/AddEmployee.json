@@ -17,11 +17,14 @@
     "trainingLeave": "ลาฝึกอบรม",
     "maternityLeave": "ลาคลอด",
     "sterilizationLeave": "ลาเพื่อทำหมัน",
+    "updateEmployeeTitle": "แก้ไขข้อมูลพนักงาน",
+    "max": "เต็ม :",
     "cancel": "ยกเลิก",
     "save": "บันทึกข้อมูล",
     "submit": "ตกลง",
     "error": "เกิดข้อผิดพลาด",
     "success": "บันทึกข้อมูลสำเร็จ",
-    "updateEmployeeTitle": "แก้ไขข้อมูลพนักงาน",
-    "max": "เต็ม :"
+    "ok": "ตกลง",
+    "warning": "คำเตือน",
+    "logout": "ออกจากระบบ"
 }

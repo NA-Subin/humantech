@@ -9,6 +9,8 @@
     "index": "No.",
     "employeeCode": "Employee Code",
     "name": "Name",
+    "department": "Department",
+    "section": "Section",
     "absent": "Absent",
     "leave": {
       "personal": "Personal Leave",
