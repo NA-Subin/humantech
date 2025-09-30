@@ -26,5 +26,18 @@
     "success": "บันทึกข้อมูลสำเร็จ",
     "ok": "ตกลง",
     "warning": "คำเตือน",
-    "logout": "ออกจากระบบ"
+    "logout": "ออกจากระบบ",
+    "leave": {
+        "sickLeave": "ลาป่วย",
+        "personalLeavePaid": "ลากิจได้รับค่าจ้าง",
+        "personalLeaveUnpaid": "ลากิจไม่ได้รับค่าจ้าง",
+        "annualLeave": "ลาหยุดพักผ่อน",
+        "maternityLeave": "ลาคลอดบุตร",
+        "paternitySupportLeave": "ลาไปช่วยเหลือภรรยาที่คลอดบุตร",
+        "militarySelectionLeave": "ลาเพื่อเข้ารับการคัดเลือกทหาร",
+        "ordinationLeave": "ลาอุปสมบท",
+        "sterilizationLeave": "ลาเพื่อทำหมัน",
+        "trainingLeave": "ลาฝึกอบรม",
+        "funeralLeave": "ลาเพื่อจัดการศพ"
+    }
 }

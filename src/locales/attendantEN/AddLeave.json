@@ -1,0 +1,10 @@
+{
+    "addLeave": "Add Leave",
+    "addLeaveTitle": "Leave Information",
+    "language": "en",
+    "selectDate": "Select Date",
+    "selectEmployee": "Select Employee",
+    "pleaseSelectEmploy": "Please select an employee ...",
+    "selectStart": "Time Start",
+    "selectEnd": "Time End"
+}

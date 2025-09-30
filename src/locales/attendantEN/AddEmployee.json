@@ -26,5 +26,18 @@
     "success": "Data saved successfully",
     "ok": "OK",
     "warning": "Warning",
-    "logout": "Logout"
+    "logout": "Logout",
+    "leave": {
+        "sickLeave": "Sick Leave",
+        "personalLeavePaid": "Personal Leave (Paid)",
+        "personalLeaveUnpaid": "Personal Leave (Unpaid)",
+        "annualLeave": "Annual Leave",
+        "maternityLeave": "Maternity Leave",
+        "paternitySupportLeave": "Paternity Support Leave",
+        "militarySelectionLeave": "Military Selection Leave",
+        "ordinationLeave": "Ordination Leave",
+        "sterilizationLeave": "Sterilization Leave",
+        "trainingLeave": "Training Leave",
+        "funeralLeave": "Funeral Leave"
+    }
 }

@@ -43,6 +43,7 @@ import { useTranslation } from 'react-i18next';
 import UpdateEmployee from './UpdateEmployee';
 import { saveAs } from "file-saver";
 import ExcelJS from "exceljs";
+import AddLeave from './AddLeave';
 
 export default function EmployeeDetail() {
     const { firebaseDB, domainKey } = useFirebase();
@@ -54,6 +55,7 @@ export default function EmployeeDetail() {
     const companyId = companyName?.split(":")[0];
     const [employees, setEmployees] = useState([]);
     const [employee, setEmployee] = useState([]);
+    const [leave, setLeave] = useState([]);
     const fileInputRef = useRef(null);
 
     console.log("show employee : ", employee);
@@ -61,6 +63,43 @@ export default function EmployeeDetail() {
     const handleButtonClick = () => {
         fileInputRef.current.click(); // กดปุ่ม → เปิด file dialog
     };
+
+    const translateLeaveName = (name, t) => {
+        const mapping = {
+            "ลาป่วย": t("leave.sickLeave"),
+            "ลากิจได้รับค่าจ้าง": t("leave.personalLeavePaid"),
+            "ลากิจไม่ได้รับค่าจ้าง": t("leave.personalLeaveUnpaid"),
+            "ลาหยุดพักผ่อน": t("leave.annualLeave"),
+            "ลาคลอดบุตร": t("leave.maternityLeave"),
+            "ลาไปช่วยเหลือภรรยาที่คลอดบุตร": t("leave.paternitySupportLeave"),
+            "ลาเพื่อเข้ารับการคัดเลือกทหาร": t("leave.militarySelectionLeave"),
+            "ลาอุปสมบท": t("leave.ordinationLeave"),
+            "ลาเพื่อทำหมัน": t("leave.sterilizationLeave"),
+            "ลาฝึกอบรม": t("leave.trainingLeave"),
+            "ลาเพื่อจัดการศพ": t("leave.funeralLeave"),
+        };
+
+        return mapping[name] || name;
+    };
+
+    React.useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
+
+        const unsubscribe = onValue(leaveRef, (snapshot) => {
+            const leaveData = snapshot.val();
+
+            if (!leaveData) {
+                setLeave([]);
+            } else {
+                const leaveArray = Object.values(leaveData);
+                setLeave(leaveArray); // default: แสดงทั้งหมด
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
 
     React.useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -309,6 +348,7 @@ export default function EmployeeDetail() {
                                 <Typography variant='h6' fontWeight="bold" gutterBottom>{t("employeeDetail.employees")}</Typography>
                             </Grid>
                             <Grid item size={12} textAlign="right" sx={{ marginTop: -5 }}>
+                                <AddLeave />
                                 <AddEmployee />
                             </Grid>
                             <Grid item size={12}>
@@ -331,18 +371,17 @@ export default function EmployeeDetail() {
                                                 <TablecellHeader sx={{ width: 300, position: "sticky", left: 0, backgroundColor: theme.palette.primary.dark, borderRight: "1px solid white" }}>{t("employeeDetail.name")}</TablecellHeader>
                                                 <TablecellHeader sx={{ width: 150 }}>{t("employeeDetail.gender")}</TablecellHeader>
                                                 <TablecellHeader sx={{ width: 180 }}>{t("employeeDetail.absent")}</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>{t("employeeDetail.leave.personal")}</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>{t("employeeDetail.leave.sick")}</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>{t("employeeDetail.leave.vacation")}</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>{t("employeeDetail.leave.training")}</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>{t("employeeDetail.leave.maternity")}</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>{t("employeeDetail.leave.sterilization")}</TablecellHeader>
+                                                {leave.map((item, index) => (
+                                                    <TablecellHeader key={index} sx={{ width: 200 }}>
+                                                        {translateLeaveName(item.name, t)}
+                                                    </TablecellHeader>
+                                                ))}
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
                                             {
                                                 employees.map((item, index) => (
-                                                    <UpdateEmployee key={item.employeeId} item={item} index={index} />
+                                                    <UpdateEmployee key={item.employeeId} item={item} index={index} leave={leave} />
                                                 ))
                                             }
                                         </TableBody>

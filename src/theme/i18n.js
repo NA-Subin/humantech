@@ -15,6 +15,9 @@ import time_en from "../locales/attendantEN/TimeAttendant.json";
 import calculate_th from "../locales/attendantTH/Calculate.json";
 import calculate_en from "../locales/attendantEN/Calculate.json";
 
+import AddLeave_th from "../locales/attendantTH/AddLeave.json";
+import AddLeave_en from "../locales/attendantEN/AddLeave.json";
+
 i18n
     .use(LanguageDetector) // auto detect ภาษา
     .use(initReactI18next)
@@ -25,7 +28,8 @@ i18n
                     ...addemployee_th,
                     ...employee_th,
                     ...time_th,
-                    ...calculate_th
+                    ...calculate_th,
+                    ...AddLeave_th
                 }
             },
             en: {
@@ -33,7 +37,8 @@ i18n
                     ...addemployee_en,
                     ...employee_en,
                     ...time_en,
-                    ...calculate_en
+                    ...calculate_en,
+                    ...AddLeave_en
                 }
             }
         },

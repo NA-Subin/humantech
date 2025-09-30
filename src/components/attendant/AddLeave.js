@@ -24,9 +24,9 @@ import { IconButtonError, Item, ItemReport, TablecellHeader } from '../../theme/
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
 import { useState } from 'react';
-import { Button, Chip, Dialog, DialogContent, DialogTitle, InputAdornment, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
+import { Button, Dialog, DialogContent, DialogTitle, InputAdornment, MenuItem, Slider, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import { PieChart } from '@mui/x-charts/PieChart';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
+import { DatePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { BarChart } from '@mui/x-charts';
@@ -34,7 +34,7 @@ import { useRef } from 'react';
 import { ShowError, ShowSuccess } from '../../sweetalert/sweetalert';
 import { useTranslation } from 'react-i18next';
 
-export default function AddEmployee() {
+export default function AddLeave() {
     const { firebaseDB, domainKey } = useFirebase();
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -45,47 +45,101 @@ export default function AddEmployee() {
     const [open, setOpen] = useState(false);
     const [employees, setEmployees] = useState([]);
     const [employeeID, setEmployeeID] = useState("");
+    const [employ, setEmploy] = useState({});
+    const [leave, setLeave] = useState([]);
     const [name, setName] = useState("");
     const [lastName, setLastName] = useState("");
     const [department, setDepartment] = useState("");
     const [section, setSection] = useState("");
     const [openSex, setOpenSex] = React.useState(true);
-    const [leave, setLeave] = useState([]);
     const [leavePersonal, setLeavePersonal] = useState(0);
     const [leaveSick, setLeaveSick] = useState(0);
     const [leaveVacation, setLeaveVacation] = useState(0);
     const [leaveTraining, setLeaveTraining] = useState(0);
     const [leaveMaternity, setLeaveMaternity] = useState(0);
     const [leaveSterilization, setLeaveSterilization] = useState(0);
-    const [selected, setSelected] = useState([]);
+    const [dateLeave, setDateLeave] = useState(dayjs());
+    const [timeStart, setTimeStart] = useState(dayjs().set("hour", 8).set("minute", 0));
+    const [timeEnd, setTimeEnd] = useState(dayjs().set("hour", 17).set("minute", 0));
+    const [selectedID, setSelectedID] = useState(null); // ✅ บอกว่าเลือกหลอดไหนอยู่
+    const [leaveLength, setLeaveLength] = useState("");
+    const date = dayjs(new Date());
+    const month = date.format("MM");
+    const year = date.format("YYYY");
 
-    const handleSelect = (item, index) => {
-        const isSelected = selected.some(sel => sel.ID === item.ID);
+    const handleChangeEmployee = (event) => {
+        const selectedEmployee = event.target.value;
+        setEmploy(selectedEmployee);
+        setLeave(selectedEmployee.leave);
+    }
 
-        if (isSelected) {
-            const updated = selected.filter(sel => sel.ID !== item.ID);
-            setSelected(
-                updated.map((sel, idx) => ({
-                    no: idx,
-                    ID: sel.ID,
-                    name: sel.name,
-                    max: sel.max ?? sel.maxDaysPerYear, // ✅ fallback ป้องกัน undefined
-                }))
-            );
-        } else {
-            const newItem = { ...item, no: selected.length };
-            const updated = [...selected, newItem];
-            setSelected(
-                updated.map((sel, idx) => ({
-                    no: idx,
-                    ID: sel.ID,
-                    name: sel.name,
-                    max: sel.max ?? sel.maxDaysPerYear, // ✅ fallback ป้องกัน undefined
-                }))
-            );
+    console.log("Employ : ", employ);
+    console.log("Leave : ", leave);
+
+    const handleDateChangeDate = (newValue) => {
+        if (newValue) {
+            setDateLeave(newValue); // ✅ newValue เป็น dayjs อยู่แล้ว
         }
     };
 
+    const handleDateChangeTimeStart = (newValue) => {
+        if (newValue) {
+            setTimeStart(newValue); // ✅ newValue เป็น dayjs อยู่แล้ว
+        }
+    };
+
+    const handleDateChangeTimeEnd = (newValue) => {
+        if (newValue) {
+            setTimeEnd(newValue); // ✅ newValue เป็น dayjs อยู่แล้ว
+        }
+    };
+
+    const [selectedId, setSelectedId] = useState(null);
+    const [leaveName, setLeaveName] = useState("");
+
+    console.log("leaveName : ", leaveName);
+
+    const handleClick = (lv) => {
+        setLeaveName(lv.name);
+        // ถ้ากดช่องเดิม → ลบออก และปลดล็อก
+        if (selectedId === lv.ID) {
+            setSelectedId(null);
+            setLeave((prev) =>
+                prev.map((item) =>
+                    item.ID === lv.ID ? { ...item, number: 0 } : item
+                )
+            );
+            return;
+        }
+
+        // ถ้ายังไม่มีช่องใดถูกเลือก → เลือกช่องนี้
+        if (!selectedId) {
+            setSelectedId(lv.ID);
+            setLeave((prev) =>
+                prev.map((item) =>
+                    item.ID === lv.ID ? { ...item, number: 1 } : item
+                )
+            );
+            return;
+        }
+
+        // ถ้ามีช่องอื่นถูกเลือกแล้ว → ไม่ทำอะไร (ล็อก)
+        return;
+    };
+
+    React.useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const docLeaveRef = ref(firebaseDB, `workgroup/company/${companyId}/documentleave/${year}/${month + 1}`);
+
+        const unsubscribe = onValue(docLeaveRef, (snapshot) => {
+            const docLeaveData = snapshot.val() || {};
+
+            setLeaveLength(Object.values(docLeaveData).length);
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId, year, month]);
 
     React.useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -106,36 +160,22 @@ export default function AddEmployee() {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-    React.useEffect(() => {
-        if (!firebaseDB || !companyId) return;
-
-        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
-
-        const unsubscribe = onValue(leaveRef, (snapshot) => {
-            const leaveData = snapshot.val();
-
-            if (!leaveData) {
-                setLeave([]);
-            } else {
-                const leaveArray = Object.values(leaveData);
-                setLeave(leaveArray); // default: แสดงทั้งหมด
-            }
-        });
-
-        return () => unsubscribe();
-    }, [firebaseDB, companyId]);
-
     const handleSave = async () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/documentleave/${year}/${month + 1}`);
         // ✅ บันทึก
-        update(child(companiesRef, String(employees.length)), {
-            ID: employees.length,
-            employeecode: employeeID,
-            employname: `${name} ${lastName}`,
-            department: department,
-            section: section,
-            sex: openSex ? "ชาย" : "หญิง",
-            leave: selected,
+        update(child(companiesRef, String(leaveLength)), {
+            ID: leaveLength,
+            employname: employ.employname,
+            department: employ.department,
+            section: employ.section,
+            status: "อนุมัติ",
+            doctype: "leave",
+            leave: leaveName,
+            datestart: dayjs(dateLeave, "DD/MM/YYYY"),
+            dateend: dayjs(dateLeave, "DD/MM/YYYY"),
+            timestart: timeStart,
+            timeend: timeEnd,
+            daterequest: dayjs(new Date).format("DD/MM/YYYY")
         })
             .then(() => {
                 ShowSuccess(t("success"), t("ok"));
@@ -146,7 +186,12 @@ export default function AddEmployee() {
                 setDepartment("");
                 setSection("");
                 setOpenSex(true);
-                setSection([]);
+                setLeavePersonal("");
+                setLeaveSick("");
+                setLeaveVacation("");
+                setLeaveTraining("");
+                setLeaveMaternity("");
+                setLeaveSterilization("");
             })
             .catch((error) => {
                 console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
@@ -172,19 +217,16 @@ export default function AddEmployee() {
         return mapping[name] || name;
     };
 
-
-    console.log("leave", leave);
-    console.log("selected", selected);
-
     return (
         <React.Fragment>
             <Button
                 variant="contained"
-                color="primary"
+                color="warning"
                 size="small"
                 onClick={() => setOpen(true)}
+                sx={{ marginRight: 2 }}
             >
-                {t("addEmployee")}
+                {t("addLeave")}
             </Button>
             <Dialog
                 open={open ? true : false}
@@ -206,7 +248,7 @@ export default function AddEmployee() {
                 >
                     <Grid container spacing={2}>
                         <Grid item size={10}>
-                            <Typography variant="h6" fontWeight="bold" gutterBottom>{t("addEmployeeTitle")}</Typography>
+                            <Typography variant="h6" fontWeight="bold" gutterBottom>{t("addLeaveTitle")}</Typography>
                         </Grid>
                         <Grid item size={2} sx={{ textAlign: "right" }}>
                             <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpen(false)}>
@@ -224,127 +266,207 @@ export default function AddEmployee() {
                         height: "300px", // หรือความสูง fixed ที่คุณใช้
                     }}
                 >
-                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginTop: 2, marginBottom: 1 }} >{t("generalInfo")}</Typography>
-                    <Grid container spacing={2} marginLeft={2}>
-                        <Grid item size={6}>
-                            <Typography variant="subtitle2" fontWeight="bold" >{t("employeeId")}</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                value={employeeID}
-                                onChange={(e) => setEmployeeID(e.target.value)}
-                            />
+                    {/* <Typography variant="subtitle2" fontWeight="bold" sx={{ marginTop: 2, marginBottom: 1 }} >{t("generalInfo")}</Typography> */}
+                    <Grid container spacing={2} marginLeft={2} marginTop={2}>
+                        <Grid item size={4}>
+                            <Typography variant="subtitle2" fontWeight="bold" >{t("selectDate")}</Typography>
+                            <Paper sx={{ width: "100%", marginRight: 2 }}>
+                                <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={t("language")}>
+                                    <DatePicker
+                                        openTo="day"
+                                        views={["year", "month", "day"]}
+                                        value={dateLeave}
+                                        format="DD/MM/YYYY"
+                                        onChange={handleDateChangeDate}
+                                        slotProps={{
+                                            textField: {
+                                                size: "small",
+                                                fullWidth: true,
+                                                inputProps: {
+                                                    value: dateLeave ? dateLeave.format("DD/MM/YYYY") : "",
+                                                    readOnly: true,
+                                                },
+                                                InputProps: {
+                                                    // startAdornment: (
+                                                    //     <InputAdornment position="start" sx={{ marginRight: 2 }}>
+                                                    //         <b>{t("selectDate")}</b>
+                                                    //     </InputAdornment>
+                                                    // ),
+                                                    sx: {
+                                                        fontSize: "16px",
+                                                        height: "40px",
+                                                        padding: "10px",
+                                                    },
+                                                },
+                                            },
+                                        }}
+                                    />
+                                </LocalizationProvider>
+                            </Paper>
                         </Grid>
-                        <Grid item size={6}></Grid>
-                        <Grid item size={6}>
-                            <Typography variant="subtitle2" fontWeight="bold" >{t("firstName")}</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                            />
+                        <Grid item size={4}>
+                            <Typography variant="subtitle2" fontWeight="bold" >{t("selectStart")}</Typography>
+                            <Paper sx={{ width: "100%", marginRight: 2 }}>
+                                <LocalizationProvider
+                                    dateAdapter={AdapterDayjs}
+                                    adapterLocale={t("language")} // ถ้าใช้ i18n
+                                >
+                                    <TimePicker
+                                        ampm={false} // ✅ ใช้เวลา 24 ชม. (ถ้าอยากได้ 12 ชม. ใช้ true)
+                                        views={["hours", "minutes", "seconds"]} // ✅ เลือกได้ถึงวินาที
+                                        value={timeStart}
+                                        onChange={handleDateChangeTimeStart}
+                                        format="HH:mm" // ✅ หรือ "HH:mm:ss" ถ้าต้องการวินาที
+                                        slotProps={{
+                                            textField: {
+                                                size: "small",
+                                                fullWidth: true,
+                                                inputProps: {
+                                                    value: timeStart ? timeStart.format("HH:mm") : "",
+                                                    readOnly: true,
+                                                },
+                                                InputProps: {
+                                                    sx: {
+                                                        fontSize: "16px",
+                                                        height: "40px",
+                                                        padding: "10px",
+                                                    },
+                                                },
+                                            },
+                                        }}
+                                    />
+                                </LocalizationProvider>
+                            </Paper>
                         </Grid>
-                        <Grid item size={6}>
-                            <Typography variant="subtitle2" fontWeight="bold" >{t("lastName")}</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                value={lastName}
-                                onChange={(e) => setLastName(e.target.value)}
-                            />
+                        <Grid item size={4}>
+                            <Typography variant="subtitle2" fontWeight="bold" >{t("selectEnd")}</Typography>
+                            <Paper sx={{ width: "100%", marginRight: 2 }}>
+                                <LocalizationProvider
+                                    dateAdapter={AdapterDayjs}
+                                    adapterLocale={t("language")} // ถ้าใช้ i18n
+                                >
+                                    <TimePicker
+                                        ampm={false} // ✅ ใช้เวลา 24 ชม. (ถ้าอยากได้ 12 ชม. ใช้ true)
+                                        views={["hours", "minutes", "seconds"]} // ✅ เลือกได้ถึงวินาที
+                                        value={timeEnd}
+                                        onChange={handleDateChangeTimeEnd}
+                                        format="HH:mm" // ✅ หรือ "HH:mm:ss" ถ้าต้องการวินาที
+                                        slotProps={{
+                                            textField: {
+                                                size: "small",
+                                                fullWidth: true,
+                                                inputProps: {
+                                                    value: timeEnd ? timeEnd.format("HH:mm") : "",
+                                                    readOnly: true,
+                                                },
+                                                InputProps: {
+                                                    sx: {
+                                                        fontSize: "16px",
+                                                        height: "40px",
+                                                        padding: "10px",
+                                                    },
+                                                },
+                                            },
+                                        }}
+                                    />
+                                </LocalizationProvider>
+                            </Paper>
                         </Grid>
-                        <Grid item size={6}>
-                            <Typography variant="subtitle2" fontWeight="bold">{t("department")}</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                value={department}
-                                onChange={(e) => setDepartment(e.target.value)}
-                            />
-                        </Grid>
-                        <Grid item size={6}>
-                            <Typography variant="subtitle2" fontWeight="bold">{t("section")}</Typography>
-                            <TextField
-                                fullWidth
-                                size="small"
-                                value={section}
-                                onChange={(e) => setSection(e.target.value)}
-                            />
-                        </Grid>
+                        {/* <Grid item size={6}></Grid> */}
                         <Grid item size={12}>
-                            <Typography variant="subtitle2" fontWeight="bold" >{t("sex")}</Typography>
-                            <Grid container spacing={5} marginLeft={1} marginRight={1} >
-                                <Grid item size={1} />
-                                <Grid item size={5}
-                                    sx={{
-                                        height: "70px",
-                                        backgroundColor: openSex ? "#81d4fa" : "#eeeeee",
-                                        cursor: "pointer",
-                                        borderRadius: 2,
-                                        display: "flex",
-                                        justifyContent: "center",
-                                        alignItems: "center"
-                                    }}
-                                    onClick={() => setOpenSex(true)}
-                                >
-                                    <Typography variant="h4" fontWeight="bold" color={openSex ? "white" : "textDisabled"} gutterBottom>{t("male")}</Typography>
-                                    <BoyIcon
-                                        sx={{ fontSize: 70, color: openSex ? "white" : "lightgray" }} // กำหนดขนาดไอคอนเป็น 60px
-                                    />
-                                </Grid>
-                                <Grid item size={5}
-                                    sx={{
-                                        height: "70px",
-                                        backgroundColor: openSex ? "#eeeeee" : "#f48fb1",
-                                        cursor: "pointer",
-                                        borderRadius: 2,
-                                        display: "flex",
-                                        justifyContent: "center",
-                                        alignItems: "center"
-                                    }}
-                                    onClick={() => setOpenSex(false)}
-                                >
-                                    <Typography variant="h4" fontWeight="bold" color={openSex ? "textDisabled" : "white"} gutterBottom>{t("female")}</Typography>
-                                    <GirlIcon
-                                        color="disabled"
-                                        sx={{ fontSize: 70, color: openSex ? "lightgray" : "white" }} // กำหนดขนาดไอคอนเป็น 60px
-                                    />
-                                </Grid>
-                                <Grid item size={1} />
-                            </Grid>
+                            <Typography variant="subtitle2" fontWeight="bold" >{t("selectEmployee")}</Typography>
+                            <TextField
+                                select
+                                fullWidth
+                                size="small"
+                                value={employ?.id || "กรุณาเลือกพนักงาน"} // ✅ ใช้ id ถ้ามีค่า, ถ้าไม่มีให้เป็น ""
+                                onChange={(e) => {
+                                    const selected = employees.find(emp => emp.id === e.target.value);
+                                    setEmploy(selected);
+                                    setLeave(selected.leave);
+                                }}
+                            >
+                                <MenuItem value="กรุณาเลือกพนักงาน">
+                                    {t("pleaseSelectEmploy")}
+                                </MenuItem>
+
+                                {employees.map((emp) => (
+                                    <MenuItem key={emp.id} value={emp.id}>
+                                        {emp.employname}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+
                         </Grid>
                     </Grid>
                     <Typography variant="subtitle2" fontWeight="bold" sx={{ marginTop: 2, marginBottom: 1 }} >{t("leaveInfo")}</Typography>
-                    <Grid container spacing={2} marginLeft={2} marginBottom={1}>
-                        <Grid item size={12} sx={{ marginTop: -1 }}>
-                            {leave.map((item, index) => {
-                                const isSelected = selected.some(sel => sel.name === item.name);
-
-                                return (
-                                    <Chip
-                                        key={index}
-                                        label={translateLeaveName(item.name, t)}
-                                        onClick={() => handleSelect(item, index)}
-                                        color={isSelected ? "primary" : "default"}
-                                        variant={isSelected ? "filled" : "outlined"}
-                                        sx={{
-                                            borderRadius: 1,
-                                            cursor: "pointer",
-                                            minWidth: 140,
-                                            marginRight: 1,
-                                            marginTop: 1,
-                                            fontSize: "14px"
-                                        }}
-                                    />
-                                );
-                            })}
-
-                        </Grid>
-                    </Grid>
-
                     <Grid container spacing={2} marginLeft={2}>
-                        {/*     <Grid item size={3}>
+                        {leave.map((lv) => {
+                            const percent = (lv.number / lv.max) * 100;
+                            const isFull = lv.number >= lv.max;
+                            const isSelected = selectedId !== null && Number(selectedId) === Number(lv.ID);
+                            const isLocked = selectedId !== null && Number(selectedId) !== Number(lv.ID);
+
+                            return (
+                                <Grid item size={6} key={lv.ID}>
+                                    <Typography variant="subtitle2" mb={0.5}>
+                                        {translateLeaveName(lv.name, t)}
+                                    </Typography>
+
+                                    <Box
+                                        onClick={() => handleClick(lv)}
+                                        sx={{
+                                            position: "relative",
+                                            height: 30,
+                                            width: "100%",
+                                            borderRadius: 2,
+                                            backgroundColor: theme.palette.grey[300],
+                                            overflow: "hidden",
+                                            cursor: isFull || isLocked ? "not-allowed" : "pointer",
+                                            border: isSelected
+                                                ? `3px solid ${theme.palette.primary.main}`
+                                                : `1px solid ${theme.palette.divider}`,
+                                            boxShadow: isSelected
+                                                ? `0 0 6px ${theme.palette.primary.main}`
+                                                : "none",
+                                            transition: "all 0.2s ease",
+                                        }}
+                                    >
+                                        {/* ✅ หลอดสี */}
+                                        <Box
+                                            sx={{
+                                                position: "absolute",
+                                                top: 0,
+                                                left: 0,
+                                                height: "100%",
+                                                width: `${percent}%`,
+                                                backgroundColor: isFull
+                                                    ? theme.palette.error.main
+                                                    : theme.palette.primary.main,
+                                                transition: "width 0.25s ease",
+                                            }}
+                                        />
+
+                                        {/* ✅ ตัวเลข */}
+                                        <Typography
+                                            variant="body2"
+                                            fontWeight="bold"
+                                            color={isFull ? "white" : "black"}
+                                            sx={{
+                                                position: "absolute",
+                                                top: "50%",
+                                                left: "50%",
+                                                transform: "translate(-50%, -50%)",
+                                            }}
+                                        >
+                                            {lv.number ? lv.number : 0}/{lv.max}
+                                        </Typography>
+                                    </Box>
+                                </Grid>
+                            );
+                        })}
+
+                        {/* <Grid item size={3}>
                             <Typography variant="subtitle2" fontWeight="bold">{t("personalLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>

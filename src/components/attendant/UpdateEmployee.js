@@ -34,7 +34,7 @@ import { useRef } from 'react';
 import { ShowError, ShowSuccess } from '../../sweetalert/sweetalert';
 import { useTranslation } from 'react-i18next';
 
-export default function UpdateEmployee({ item, index }) {
+export default function UpdateEmployee({ item, index, leave }) {
     const { firebaseDB, domainKey } = useFirebase();
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -56,6 +56,24 @@ export default function UpdateEmployee({ item, index }) {
     const [leaveTraining, setLeaveTraining] = useState(item.leave[3]?.number || 0);
     const [leaveMaternity, setLeaveMaternity] = useState(item.leave[4]?.number || 0);
     const [leaveSterilization, setLeaveSterilization] = useState(item.leave[5]?.number || 0);
+
+    const translateLeaveName = (name, t) => {
+        const mapping = {
+            "ลาป่วย": t("leave.sickLeave"),
+            "ลากิจได้รับค่าจ้าง": t("leave.personalLeavePaid"),
+            "ลากิจไม่ได้รับค่าจ้าง": t("leave.personalLeaveUnpaid"),
+            "ลาหยุดพักผ่อน": t("leave.annualLeave"),
+            "ลาคลอดบุตร": t("leave.maternityLeave"),
+            "ลาไปช่วยเหลือภรรยาที่คลอดบุตร": t("leave.paternitySupportLeave"),
+            "ลาเพื่อเข้ารับการคัดเลือกทหาร": t("leave.militarySelectionLeave"),
+            "ลาอุปสมบท": t("leave.ordinationLeave"),
+            "ลาเพื่อทำหมัน": t("leave.sterilizationLeave"),
+            "ลาฝึกอบรม": t("leave.trainingLeave"),
+            "ลาเพื่อจัดการศพ": t("leave.funeralLeave"),
+        };
+
+        return mapping[name] || name;
+    };
 
     React.useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -146,6 +164,9 @@ export default function UpdateEmployee({ item, index }) {
             });
     };
 
+    console.log("leave : ", leave);
+    console.log("item.leave : ", item.leave);
+
     return (
         <React.Fragment>
             <TableRow key={item.ID} onClick={() => setOpen(item.ID)}
@@ -162,11 +183,22 @@ export default function UpdateEmployee({ item, index }) {
                 </TableCell>
                 <TableCell sx={{ width: 150, textAlign: "center" }}>{openSex ? "ชาย" : "หญิง"}</TableCell>
                 <TableCell sx={{ width: 150, textAlign: "center" }}> </TableCell>
-                {
-                    item.leave.map((leaveType, idx) => (
-                        <TableCell key={idx} sx={{ width: 100, textAlign: "center" }}>{`${leaveType.number ? leaveType.number : "0"}/${leaveType.max}`}</TableCell>
-                    ))
-                }
+                {leave.map((header) => {
+                    // sort item.leave ตาม ID ก่อน
+                    const sortedLeave = [...item.leave].sort((a, b) => a.ID - b.ID);
+
+                    // หา leave ของพนักงานที่ตรง header
+                    const leaveType = sortedLeave.find(l => l.ID === header.ID);
+
+                    console.log("leaveType : ", leaveType);
+
+                    // แสดงค่าตาม no (ถ้ามี) หรือ 0/max
+                    return (
+                        <TableCell key={header.ID} sx={{ width: 200, textAlign: "center" }}>
+                            {leaveType ? `${leaveType.number || 0}/${leaveType.max}` : `-`}
+                        </TableCell>
+                    );
+                })}
             </TableRow>
             <Dialog
                 open={open === item.ID ? true : false}
@@ -299,11 +331,57 @@ export default function UpdateEmployee({ item, index }) {
                     </Grid>
                     <Typography variant="subtitle2" fontWeight="bold" sx={{ marginTop: 2, marginBottom: 1 }} >{t("leaveInfo")}</Typography>
                     <Grid container spacing={2} marginLeft={2}>
-                        <Grid item size={3}>
+                        {item.leave.map((lv, index) => (
+                            <Grid item size={6} key={lv.ID}>
+                                <Typography variant="subtitle2" fontWeight="bold">{translateLeaveName(lv.name, t)}</Typography>
+                                <Box display="flex" alignItems="center" justifyContent="center" width="100%">
+                                    <Box sx={{ position: "relative", width: "100%", height: 40 }}>
+                                        {/* TextField ครึ่งซ้าย */}
+                                        <TextField
+                                            fullWidth
+                                            size="small"
+                                            value={lv.number || 0}
+                                            onChange={(e) => setLeavePersonal(e.target.value)}
+                                            sx={{
+                                                position: "absolute",
+                                                top: 0,
+                                                left: 0,
+                                                height: "100%",
+                                                "& .MuiInputBase-root": { height: "100%" },
+                                                clipPath: "polygon(0 0, 70% 0, 40% 100%, 0% 100%)", // ซ้ายเฉียง
+                                            }}
+                                        />
+
+                                        {/* Paper ครึ่งขวา */}
+                                        <Paper
+                                            sx={{
+                                                position: "absolute",
+                                                top: 0,
+                                                right: 0,
+                                                width: "65%",
+                                                height: "100%",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                backgroundColor: theme.palette.primary.main,
+                                                color: "white",
+                                                clipPath: "polygon(40% 0, 100% 0, 100% 100%, 0% 100%)", // ขวาเฉียง
+                                            }}
+                                        >
+                                            <Typography variant="subtitle1" fontWeight="bold">
+                                                {lv.max || ""}
+                                            </Typography>
+                                        </Paper>
+                                    </Box>
+                                </Box>
+                            </Grid>
+                        ))}
+                    </Grid>
+                    <Grid container spacing={2} marginLeft={2}>
+                        {/*     <Grid item size={3}>
                             <Typography variant="subtitle2" fontWeight="bold">{t("personalLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                    {/* TextField ครึ่งซ้าย */}
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -331,7 +409,6 @@ export default function UpdateEmployee({ item, index }) {
                                         }}
                                     />
 
-                                    {/* Paper ครึ่งขวา */}
                                     <Paper
                                         sx={{
                                             position: "absolute",
@@ -359,7 +436,6 @@ export default function UpdateEmployee({ item, index }) {
                             <Typography variant="subtitle2" fontWeight="bold">{t("sickLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                    {/* TextField ครึ่งซ้าย */}
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -387,7 +463,6 @@ export default function UpdateEmployee({ item, index }) {
                                         }}
                                     />
 
-                                    {/* Paper ครึ่งขวา */}
                                     <Paper
                                         sx={{
                                             position: "absolute",
@@ -415,7 +490,6 @@ export default function UpdateEmployee({ item, index }) {
                             <Typography variant="subtitle2" fontWeight="bold">{t("vacationLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                    {/* TextField ครึ่งซ้าย */}
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -443,7 +517,6 @@ export default function UpdateEmployee({ item, index }) {
                                         }}
                                     />
 
-                                    {/* Paper ครึ่งขวา */}
                                     <Paper
                                         sx={{
                                             position: "absolute",
@@ -471,7 +544,6 @@ export default function UpdateEmployee({ item, index }) {
                             <Typography variant="subtitle2" fontWeight="bold">{t("trainingLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                    {/* TextField ครึ่งซ้าย */}
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -499,7 +571,6 @@ export default function UpdateEmployee({ item, index }) {
                                         }}
                                     />
 
-                                    {/* Paper ครึ่งขวา */}
                                     <Paper
                                         sx={{
                                             position: "absolute",
@@ -527,7 +598,6 @@ export default function UpdateEmployee({ item, index }) {
                             <Typography variant="subtitle2" fontWeight="bold">{t("maternityLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                    {/* TextField ครึ่งซ้าย */}
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -555,7 +625,6 @@ export default function UpdateEmployee({ item, index }) {
                                         }}
                                     />
 
-                                    {/* Paper ครึ่งขวา */}
                                     <Paper
                                         sx={{
                                             position: "absolute",
@@ -583,7 +652,6 @@ export default function UpdateEmployee({ item, index }) {
                             <Typography variant="subtitle2" fontWeight="bold">{t("sterilizationLeave")}</Typography>
                             <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                 <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                    {/* TextField ครึ่งซ้าย */}
                                     <TextField
                                         fullWidth
                                         size="small"
@@ -611,7 +679,6 @@ export default function UpdateEmployee({ item, index }) {
                                         }}
                                     />
 
-                                    {/* Paper ครึ่งขวา */}
                                     <Paper
                                         sx={{
                                             position: "absolute",
@@ -633,8 +700,8 @@ export default function UpdateEmployee({ item, index }) {
                                     </Paper>
                                 </Box>
                             </Box>
-                        </Grid>
-                        <Grid item size={12}>
+                        </Grid> */}
+                        <Grid item size={12} sx={{ marginTop: 2 }}>
                             <Divider sx={{ marginTop: 1, marginBottom: -2, border: `1px solid ${theme.palette.primary.dark}` }} />
                         </Grid>
                         <Grid item size={12}>

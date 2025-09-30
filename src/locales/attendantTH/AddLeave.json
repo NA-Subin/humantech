@@ -1,0 +1,10 @@
+{
+    "addLeave": "เพิ่มการลา",
+    "addLeaveTitle": "ข้อมูลการลา",
+    "language": "th",
+    "selectDate": "เลือกวันที่",
+    "selectEmployee": "เลือกพนักงาน",
+    "pleaseSelectEmploy": "กรุณาเลือกพนักงาน ...",
+    "selectStart": "เวลาเริ่มต้น",
+    "selectEnd": "เวลาสิ้นสุด"
+}
