@@ -65,6 +65,23 @@ export default function DashboardAttendant() {
     const [position, setPosition] = useState([]);
     const [document, setDocument] = useState([]);
     const [openNavbar, setopenNamevar] = useState(false)
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+    React.useEffect(() => {
+        const handleResize = () => {
+            let width = window.innerWidth;
+            setWindowWidth(width);
+        };
+
+        // เรียกครั้งแรกตอน mount
+        handleResize();
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []); // ✅ ทำงานใหม่ทุกครั้งที่ openNavbar เปลี่ยน
 
     console.log("document : ", document);
 
@@ -241,7 +258,7 @@ export default function DashboardAttendant() {
     console.log("employeee : ", employees);
 
     return (
-        <Container maxWidth="xl" sx={{ p: 5 }} >
+        <Container maxWidth="xl" sx={{ p: 5, width: windowWidth <= 900 && windowWidth > 600 ? (windowWidth - 50) : windowWidth <= 600 ? (windowWidth) : (windowWidth - 100) }} >
             <Grid container spacing={2} marginTop={-2}>
                 {/* <Grid item size={0.5}>
                     <Box

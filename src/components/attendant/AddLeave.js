@@ -1,6 +1,6 @@
 import * as React from 'react';
 import * as XLSX from "xlsx";
-import { getDatabase, ref, push, onValue, set, update, child } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update, child, get } from "firebase/database";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -24,7 +24,7 @@ import { IconButtonError, Item, ItemReport, TablecellHeader } from '../../theme/
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
 import { useState } from 'react';
-import { Button, Dialog, DialogContent, DialogTitle, InputAdornment, MenuItem, Slider, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
+import { Button, Chip, Dialog, DialogContent, DialogTitle, InputAdornment, MenuItem, Slider, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { DatePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -47,25 +47,14 @@ export default function AddLeave() {
     const [employeeID, setEmployeeID] = useState("");
     const [employ, setEmploy] = useState({});
     const [leave, setLeave] = useState([]);
-    const [name, setName] = useState("");
-    const [lastName, setLastName] = useState("");
-    const [department, setDepartment] = useState("");
-    const [section, setSection] = useState("");
-    const [openSex, setOpenSex] = React.useState(true);
-    const [leavePersonal, setLeavePersonal] = useState(0);
-    const [leaveSick, setLeaveSick] = useState(0);
-    const [leaveVacation, setLeaveVacation] = useState(0);
-    const [leaveTraining, setLeaveTraining] = useState(0);
-    const [leaveMaternity, setLeaveMaternity] = useState(0);
-    const [leaveSterilization, setLeaveSterilization] = useState(0);
     const [dateLeave, setDateLeave] = useState(dayjs());
     const [timeStart, setTimeStart] = useState(dayjs().set("hour", 8).set("minute", 0));
     const [timeEnd, setTimeEnd] = useState(dayjs().set("hour", 17).set("minute", 0));
     const [selectedID, setSelectedID] = useState(null); // ✅ บอกว่าเลือกหลอดไหนอยู่
-    const [leaveLength, setLeaveLength] = useState("");
+    const [leaves, setLeaves] = useState("");
     const date = dayjs(new Date());
-    const month = date.format("MM");
-    const year = date.format("YYYY");
+    const [month, setMonth] = useState(date.month() + 1);
+    const [year, setYear] = useState(date.format("YYYY"));
 
     const handleChangeEmployee = (event) => {
         const selectedEmployee = event.target.value;
@@ -74,11 +63,20 @@ export default function AddLeave() {
     }
 
     console.log("Employ : ", employ);
-    console.log("Leave : ", leave);
+    console.log("leaves : ", leaves);
 
     const handleDateChangeDate = (newValue) => {
         if (newValue) {
             setDateLeave(newValue); // ✅ newValue เป็น dayjs อยู่แล้ว
+            setMonth(newValue.month() + 1); // month ของ dayjs เริ่มจาก 0
+            setYear(newValue.year());
+
+            const updatedLeave = (employ?.empleave || []).map((lv) => {
+                const number = (employ?.empleaveapprove[year][month] || []).filter(l => l.leave === lv.name).length;
+                return { ...lv, number };
+            });
+
+            setLeave(updatedLeave); // ✅ number จะแสดงตั้งแต่เลือกพนักงาน
         }
     };
 
@@ -101,41 +99,39 @@ export default function AddLeave() {
 
     const handleClick = (lv) => {
         setLeaveName(lv.name);
-        // ถ้ากดช่องเดิม → ลบออก และปลดล็อก
-        if (selectedId === lv.ID) {
-            setSelectedId(null);
-            setLeave((prev) =>
-                prev.map((item) =>
-                    item.ID === lv.ID ? { ...item, number: 0 } : item
-                )
-            );
-            return;
-        }
 
-        // ถ้ายังไม่มีช่องใดถูกเลือก → เลือกช่องนี้
-        if (!selectedId) {
-            setSelectedId(lv.ID);
-            setLeave((prev) =>
-                prev.map((item) =>
-                    item.ID === lv.ID ? { ...item, number: 1 } : item
-                )
-            );
-            return;
-        }
+        setLeave((prev) => prev.map((item) => {
+            if (item.ID === lv.ID) {
+                const currentNumber = item.number || 0;
 
-        // ถ้ามีช่องอื่นถูกเลือกแล้ว → ไม่ทำอะไร (ล็อก)
-        return;
+                if (selectedId === lv.ID) {
+                    // กดซ้ำ → ปลดล็อกและลดจำนวน 1
+                    setSelectedId(null);
+                    return { ...item, number: Math.max(0, currentNumber - 1) };
+                }
+
+                if (!selectedId) {
+                    // เลือกช่องนี้ → เพิ่ม 1 และล็อกช่องอื่น
+                    setSelectedId(lv.ID);
+                    return { ...item, number: currentNumber + 1 };
+                }
+
+                // ช่องอื่น ๆ ถูกล็อก → ไม่ทำอะไร
+                return item;
+            }
+            return item;
+        }));
     };
 
     React.useEffect(() => {
         if (!firebaseDB || !companyId) return;
 
-        const docLeaveRef = ref(firebaseDB, `workgroup/company/${companyId}/documentleave/${year}/${month + 1}`);
+        const docLeaveRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${employ?.ID}/empleaveapprove/${year}/${month}`);
 
         const unsubscribe = onValue(docLeaveRef, (snapshot) => {
             const docLeaveData = snapshot.val() || {};
 
-            setLeaveLength(Object.values(docLeaveData).length);
+            setLeaves(Object.values(docLeaveData));
         });
 
         return () => unsubscribe();
@@ -161,43 +157,74 @@ export default function AddLeave() {
     }, [firebaseDB, companyId]);
 
     const handleSave = async () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/documentleave/${year}/${month + 1}`);
-        // ✅ บันทึก
-        update(child(companiesRef, String(leaveLength)), {
-            ID: leaveLength,
-            employname: employ.employname,
-            department: employ.department,
-            section: employ.section,
-            status: "อนุมัติ",
-            doctype: "leave",
-            leave: leaveName,
-            datestart: dayjs(dateLeave, "DD/MM/YYYY"),
-            dateend: dayjs(dateLeave, "DD/MM/YYYY"),
-            timestart: timeStart,
-            timeend: timeEnd,
-            daterequest: dayjs(new Date).format("DD/MM/YYYY")
-        })
-            .then(() => {
-                ShowSuccess(t("success"), t("ok"));
-                setOpen(false);
-                setEmployeeID("");
-                setName("");
-                setLastName("");
-                setDepartment("");
-                setSection("");
-                setOpenSex(true);
-                setLeavePersonal("");
-                setLeaveSick("");
-                setLeaveVacation("");
-                setLeaveTraining("");
-                setLeaveMaternity("");
-                setLeaveSterilization("");
-            })
-            .catch((error) => {
-                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
-                ShowError(t("error"), t("ok"));
+        try {
+            const docLeaveRef = ref(firebaseDB, `workgroup/company/${companyId}/documentleave/${year}/${month}`);
+            const approveRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${employ?.ID}/empleaveapprove/${year}/${month}`);
+
+            const startDate = dayjs(dateLeave, "DD/MM/YYYY");
+            const endDate = dayjs(dateLeave, "DD/MM/YYYY");
+            const dayCount = endDate.diff(startDate, "day") + 1;
+
+            // ฟังก์ชันสร้าง object
+            const createData = (id) => ({
+                ID: id,
+                empid: employ?.ID ?? 0,
+                empname: employ?.employname ?? "",
+                department: employ?.department ?? "",
+                section: employ?.section ?? "",
+                deptid: "0",
+                secid: "0",
+                hr: "0",
+                leave: leaveName ?? "",
+                leaveid: 0,
+                doctype: "leave",
+                status: "อนุมัติ",
+                datestart: startDate.format("DD/MM/YYYY"),
+                dateend: endDate.format("DD/MM/YYYY"),
+                daterequest: dayjs().format("DD/MM/YYYY"),
+                day: String(dayCount),
+                timestart: timeStart?.format("HH:mm") ?? "08:00",
+                timeend: timeEnd?.format("HH:mm") ?? "17:00",
+                min: "0",
+                remark: "",
+                picture: "",
+                YYYYF: startDate.year(),
+                MMF: startDate.month() + 1,
+                DDF: startDate.date(),
+                YYYYT: endDate.year(),
+                MMT: endDate.month() + 1,
+                DDT: endDate.date(),
+                datecodefrom: startDate.format("YYYY.MMDD"),
+                datecodeto: endDate.format("YYYY.MMDD"),
             });
+
+            // 🔹 อ่านจำนวนรายการปัจจุบันเพื่อสร้าง key
+            const [docSnap, approveSnap] = await Promise.all([get(docLeaveRef), get(approveRef)]);
+            const newKey = String(docSnap.exists() ? Object.keys(docSnap.val()).length : 0);
+            const newKeyDoc = String(approveSnap.exists() ? Object.keys(approveSnap.val()).length : 0);
+
+            // 🔹 บันทึกลง Firebase
+            await Promise.all([
+                set(child(docLeaveRef, newKey), createData(newKey)),
+                set(child(approveRef, newKeyDoc), createData(newKeyDoc)),
+            ]);
+
+            ShowSuccess(t("success"), t("ok"));
+            setOpen(false);
+            setEmploy({});
+            setLeave([]);
+            setDateLeave(dayjs());
+            setTimeStart(dayjs().set("hour", 8).set("minute", 0));
+            setTimeEnd(dayjs().set("hour", 17).set("minute", 0));
+            setSelectedId(null);
+            setLeaveName("");
+        } catch (error) {
+            console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+            ShowError(t("error"), t("ok"));
+        }
     };
+
+
 
     const translateLeaveName = (name, t) => {
         const mapping = {
@@ -216,6 +243,10 @@ export default function AddLeave() {
 
         return mapping[name] || name;
     };
+
+    console.log("employ : ", employ);
+    console.log("leave : ", leave);
+    console.log("employee : ", employees);
 
     return (
         <React.Fragment>
@@ -248,7 +279,7 @@ export default function AddLeave() {
                 >
                     <Grid container spacing={2}>
                         <Grid item size={10}>
-                            <Typography variant="h6" fontWeight="bold" gutterBottom>{t("addLeaveTitle")}</Typography>
+                            <Typography variant="h6" fontWeight="bold" gutterBottom>{t("leaveInfo")}</Typography>
                         </Grid>
                         <Grid item size={2} sx={{ textAlign: "right" }}>
                             <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpen(false)}>
@@ -379,42 +410,50 @@ export default function AddLeave() {
                                 select
                                 fullWidth
                                 size="small"
-                                value={employ?.id || "กรุณาเลือกพนักงาน"} // ✅ ใช้ id ถ้ามีค่า, ถ้าไม่มีให้เป็น ""
+                                value={employ?.ID ?? "-1"}
                                 onChange={(e) => {
-                                    const selected = employees.find(emp => emp.id === e.target.value);
+                                    const id = e.target.value.toString();
+
+                                    // หา employee ที่ตรงกับ id
+                                    const selected = employees.find(emp => emp.ID.toString() === id) || {};
                                     setEmploy(selected);
-                                    setLeave(selected.leave);
+
+                                    // อัปเดต leave array พร้อมคำนวณ number สำหรับแต่ละ leave
+                                    const updatedLeave = (selected?.empleave || []).map((lv) => {
+                                        const number = (selected?.empleaveapprove[year][month] || []).filter(l => l.leave === lv.name).length;
+                                        return { ...lv, number };
+                                    });
+
+                                    setLeave(updatedLeave); // ✅ number จะแสดงตั้งแต่เลือกพนักงาน
                                 }}
                             >
-                                <MenuItem value="กรุณาเลือกพนักงาน">
-                                    {t("pleaseSelectEmploy")}
-                                </MenuItem>
+                                <MenuItem value="-1">{t("pleaseSelectEmploy")}</MenuItem>
 
                                 {employees.map((emp) => (
-                                    <MenuItem key={emp.id} value={emp.id}>
+                                    <MenuItem key={emp.ID} value={emp.ID.toString()}>
                                         {emp.employname}
                                     </MenuItem>
                                 ))}
                             </TextField>
-
                         </Grid>
                     </Grid>
-                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginTop: 2, marginBottom: 1 }} >{t("leaveInfo")}</Typography>
+                    <Divider sx={{ marginTop: 2, marginBottom: 2, marginLeft: 2 }}>
+                        <Chip label={<Typography variant="subtitle2" fontWeight="bold" >{t("addLeaveTitle")}</Typography>} />
+                    </Divider>
                     <Grid container spacing={2} marginLeft={2}>
                         {leave.map((lv) => {
                             const percent = (lv.number / lv.max) * 100;
-                            const isFull = lv.number >= lv.max;
                             const isSelected = selectedId !== null && Number(selectedId) === Number(lv.ID);
-                            const isLocked = selectedId !== null && Number(selectedId) !== Number(lv.ID);
+                            const isLocked = selectedId !== null && !isSelected; // ช่องอื่น ๆ ล็อกถ้า selectedId มีค่า
 
                             return (
                                 <Grid item size={6} key={lv.ID}>
-                                    <Typography variant="subtitle2" mb={0.5}>
+                                    <Typography variant="subtitle2" fontWeight="bold" mb={0.5}>
                                         {translateLeaveName(lv.name, t)}
                                     </Typography>
 
                                     <Box
-                                        onClick={() => handleClick(lv)}
+                                        onClick={() => !isLocked && handleClick(lv)}
                                         sx={{
                                             position: "relative",
                                             height: 30,
@@ -422,7 +461,7 @@ export default function AddLeave() {
                                             borderRadius: 2,
                                             backgroundColor: theme.palette.grey[300],
                                             overflow: "hidden",
-                                            cursor: isFull || isLocked ? "not-allowed" : "pointer",
+                                            cursor: isLocked ? "not-allowed" : "pointer",
                                             border: isSelected
                                                 ? `3px solid ${theme.palette.primary.main}`
                                                 : `1px solid ${theme.palette.divider}`,
@@ -432,7 +471,6 @@ export default function AddLeave() {
                                             transition: "all 0.2s ease",
                                         }}
                                     >
-                                        {/* ✅ หลอดสี */}
                                         <Box
                                             sx={{
                                                 position: "absolute",
@@ -440,18 +478,16 @@ export default function AddLeave() {
                                                 left: 0,
                                                 height: "100%",
                                                 width: `${percent}%`,
-                                                backgroundColor: isFull
-                                                    ? theme.palette.error.main
-                                                    : theme.palette.primary.main,
+                                                backgroundColor: isSelected ? theme.palette.primary.main : theme.palette.grey[400],
                                                 transition: "width 0.25s ease",
                                             }}
                                         />
 
-                                        {/* ✅ ตัวเลข */}
                                         <Typography
                                             variant="body2"
                                             fontWeight="bold"
-                                            color={isFull ? "white" : "black"}
+                                            color={"black"}
+                                            // color={isSelected ? "white" : "black"}
                                             sx={{
                                                 position: "absolute",
                                                 top: "50%",
@@ -459,12 +495,13 @@ export default function AddLeave() {
                                                 transform: "translate(-50%, -50%)",
                                             }}
                                         >
-                                            {lv.number ? lv.number : 0}/{lv.max}
+                                            {lv.number || 0}/{lv.max}
                                         </Typography>
                                     </Box>
                                 </Grid>
                             );
                         })}
+
 
                         {/* <Grid item size={3}>
                             <Typography variant="subtitle2" fontWeight="bold">{t("personalLeave")}</Typography>

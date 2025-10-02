@@ -1,0 +1,30 @@
+{
+  "helmet": {
+    "title": "เทคนิคบริหารทีมให้มีประสิทธิภาพ",
+    "meta": [
+      {
+        "name": "description",
+        "content": "เรียนรู้แนวทางสร้างทีมที่แข็งแกร่งและทำงานร่วมกันได้ดี"
+      }
+    ],
+    "link": [
+      { "rel": "canonical", "href": "https://www.humantech.asia/new-81" }
+    ]
+  },
+  "body": [
+    {
+      "type": "Typography",
+      "props": {
+        "variant": "h5",
+        "children": "เทคนิคบริหารทีม"
+      }
+    },
+    {
+      "type": "Typography",
+      "props": {
+        "variant": "body1",
+        "children": "การบริหารทีมที่ดีต้องเข้าใจคนและเป้าหมายขององค์กร"
+      }
+    }
+  ]
+}

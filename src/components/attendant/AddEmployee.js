@@ -135,7 +135,7 @@ export default function AddEmployee() {
             department: department,
             section: section,
             sex: openSex ? "ชาย" : "หญิง",
-            leave: selected,
+            empleave: selected,
         })
             .then(() => {
                 ShowSuccess(t("success"), t("ok"));
@@ -315,7 +315,7 @@ export default function AddEmployee() {
                             </Grid>
                         </Grid>
                     </Grid>
-                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginTop: 2, marginBottom: 1 }} >{t("leaveInfo")}</Typography>
+                    <Typography variant="subtitle2" fontWeight="bold" sx={{ marginTop: 2, marginBottom: 1 }} >{t("addLeaveTitle")}</Typography>
                     <Grid container spacing={2} marginLeft={2} marginBottom={1}>
                         <Grid item size={12} sx={{ marginTop: -1 }}>
                             {leave.map((item, index) => {

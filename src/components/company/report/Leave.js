@@ -69,12 +69,14 @@ const ReportLeave = () => {
     const [positions, setPositions] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [month, setMonth] = useState(dayjs()); // ✅ เป็น dayjs object
+    const [leaves, setLeaves] = useState([]);
     const handleDateChangeDate = (newValue) => {
         if (newValue) {
             setMonth(newValue); // ✅ newValue เป็น dayjs อยู่แล้ว
         }
     };
 
+    console.log("Leaves : ", leaves);
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
 
@@ -229,6 +231,7 @@ const ReportLeave = () => {
             const hasLeave = merged.some(emp => emp.documentLeave.length > 0);
 
             setDocLeave(hasLeave ? merged : []);
+            setLeaves(Object.values(docLeaveData));
         });
 
         return () => unsubscribe();

@@ -453,216 +453,218 @@ export default function TimeAttendant({ date }) {
 
     return (
         <React.Fragment>
-            <Grid container spacing={2} marginTop={1} marginBottom={1}>
-                <Grid item size={4}>
-                    <Paper sx={{ borderRadius: 3, boxShadow: '4px 4px 6px 6px rgba(0, 0, 0, 0.1)', cursor: "pointer", }} onClick={handleOpenTime}>
-                        <Grid container spacing={2}>
-                            <Grid
-                                item
-                                size={6}
-                                sx={{
-                                    backgroundColor: theme.palette.primary.main,
-                                    padding: theme.spacing(2),
-                                    borderTopLeftRadius: 10,
-                                    borderBottomLeftRadius: 10,
-                                    textAlign: "center",
-                                    borderBottom: openTime && `5px solid ${theme.palette.primary.dark}`
-                                }}
-                            >
-                                <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>{t("scanInfo")}</Typography>
-                                <AlarmIcon sx={{ color: "white", fontSize: "65px", marginTop: -1, marginBottom: -2 }} />
+            <Box sx={{ width: "100%" }}>
+                <Grid container spacing={2} marginTop={1} marginBottom={1}>
+                    <Grid item size={4}>
+                        <Paper sx={{ borderRadius: 3, boxShadow: '4px 4px 6px 6px rgba(0, 0, 0, 0.1)', cursor: "pointer", }} onClick={handleOpenTime}>
+                            <Grid container spacing={2}>
+                                <Grid
+                                    item
+                                    size={6}
+                                    sx={{
+                                        backgroundColor: theme.palette.primary.main,
+                                        padding: theme.spacing(2),
+                                        borderTopLeftRadius: 10,
+                                        borderBottomLeftRadius: 10,
+                                        textAlign: "center",
+                                        borderBottom: openTime && `5px solid ${theme.palette.primary.dark}`
+                                    }}
+                                >
+                                    <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>{t("scanInfo")}</Typography>
+                                    <AlarmIcon sx={{ color: "white", fontSize: "65px", marginTop: -1, marginBottom: -2 }} />
+                                </Grid>
+                                <Grid item size={6} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <Typography variant="h3" sx={{ marginTop: 1, marginRight: 1 }} fontWeight="bold" gutterBottom>{attendants.length}</Typography>
+                                    <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>{t("times")}</Typography>
+                                </Grid>
                             </Grid>
-                            <Grid item size={6} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <Typography variant="h3" sx={{ marginTop: 1, marginRight: 1 }} fontWeight="bold" gutterBottom>{attendants.length}</Typography>
-                                <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>{t("times")}</Typography>
-                            </Grid>
-                        </Grid>
-                    </Paper>
-                </Grid>
-                {/* <Grid item size={3}>
+                        </Paper>
+                    </Grid>
+                    {/* <Grid item size={3}>
                     <Item>
                         <EmailIcon fontSize="large" />
                     </Item>
                 </Grid> */}
-                <Grid item size={4}>
-                    <Paper sx={{ borderRadius: 3, boxShadow: '4px 4px 6px 6px rgba(0, 0, 0, 0.1)', cursor: "pointer" }} onClick={handleOpenEmployee}>
-                        <Grid container spacing={2}>
-                            <Grid
-                                item
-                                size={6}
-                                sx={{
-                                    backgroundColor: theme.palette.primary.main,
-                                    padding: theme.spacing(2),
-                                    borderTopLeftRadius: 10,
-                                    borderBottomLeftRadius: 10,
-                                    textAlign: "center",
-                                    borderBottom: openEmployee && `5px solid ${theme.palette.primary.dark}`
-                                }}
-                            >
-                                <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>{t("allEmployees")}</Typography>
-                                <BadgeIcon sx={{ color: "white", fontSize: "65px", marginTop: -1, marginBottom: -2 }} />
-                            </Grid>
-                            <Grid item size={6} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <Typography variant="h3" sx={{ marginTop: 1, marginRight: 1 }} fontWeight="bold" gutterBottom>{employees.length}</Typography>
-                                <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>{t("people")}</Typography>
-                            </Grid>
-                        </Grid>
-                    </Paper>
-                </Grid>
-                <Grid item size={4}>
-                    <Paper sx={{ borderRadius: 3, boxShadow: '4px 4px 6px 6px rgba(0, 0, 0, 0.1)', cursor: "pointer" }} onClick={handleOpenSalary}>
-                        <Grid container spacing={2}>
-                            <Grid
-                                item
-                                size={6}
-                                sx={{
-                                    backgroundColor: theme.palette.primary.main,
-                                    padding: theme.spacing(2),
-                                    borderTopLeftRadius: 10,
-                                    borderBottomLeftRadius: 10,
-                                    textAlign: "center",
-                                    borderBottom: openSalary && `5px solid ${theme.palette.primary.dark}`
-                                }}
-                            >
-                                <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>{t("calculateSalary")}</Typography>
-                                <CurrencyExchangeIcon sx={{ color: "white", fontSize: "65px", marginTop: -1, marginBottom: -2 }} />
-                            </Grid>
-                            <Grid item size={6} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <Typography variant="h3" sx={{ marginTop: 1, marginRight: 1 }} fontWeight="bold" gutterBottom>{Object.values(grouped).length}</Typography>
-                                <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>{t("record")}</Typography>
-                            </Grid>
-                        </Grid>
-                    </Paper>
-                </Grid>
-            </Grid>
-            {
-                openTime &&
-                <Grid container spacing={2} marginTop={1} marginBottom={1}>
-                    <Grid item size={12}>
-                        <Typography variant='h1' sx={{ marginTop: -4.5, marginBottom: -10, color: theme.palette.primary.dark, marginLeft: 11 }} fontWeight="bold" gutterBottom>||</Typography>
-                    </Grid>
-                    <Grid item size={12}>
-                        <Item sx={{ height: 500, borderTop: `5px solid ${theme.palette.primary.dark}` }}>
+                    <Grid item size={4}>
+                        <Paper sx={{ borderRadius: 3, boxShadow: '4px 4px 6px 6px rgba(0, 0, 0, 0.1)', cursor: "pointer" }} onClick={handleOpenEmployee}>
                             <Grid container spacing={2}>
-                                <Grid item size={6}>
-                                    <Typography variant='h6' fontWeight="bold" gutterBottom>{t("scanInfo")}</Typography>
+                                <Grid
+                                    item
+                                    size={6}
+                                    sx={{
+                                        backgroundColor: theme.palette.primary.main,
+                                        padding: theme.spacing(2),
+                                        borderTopLeftRadius: 10,
+                                        borderBottomLeftRadius: 10,
+                                        textAlign: "center",
+                                        borderBottom: openEmployee && `5px solid ${theme.palette.primary.dark}`
+                                    }}
+                                >
+                                    <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>{t("allEmployees")}</Typography>
+                                    <BadgeIcon sx={{ color: "white", fontSize: "65px", marginTop: -1, marginBottom: -2 }} />
                                 </Grid>
-                                <Grid item size={6} textAlign="right" marginTop={0.5}>
-                                    <Box display="flex" alignItems="center" justifyContent="right">
-                                        <input
-                                            type="file"
-                                            accept=".xlsx, .xls"
-                                            ref={fileInputRef}
-                                            style={{ display: "none" }}
-                                            onChange={handleFileUpload}
-                                        />
-                                        <Button
-                                            variant="contained"
-                                            color="error"
-                                            size="small"
-                                            sx={{ marginRight: 2 }}
-                                            onClick={handleButtonClick}
-                                        >
-                                            {t("importExcel")}
-                                        </Button>
-                                        <Button
-                                            variant="contained"
-                                            color="success"
-                                            size="small"
-                                            onClick={handleExport}
-                                        >
-                                            {t("exportExcel")}
-                                        </Button>
-                                    </Box>
-                                </Grid>
-                                <Grid item size={12}>
-                                    <TableContainer component={Paper} textAlign="center" sx={{ height: "55vh" }}>
-                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}>
-                                            <TableHead
-                                                sx={{
-                                                    position: "sticky",
-                                                    top: 0,
-                                                    zIndex: 2,
-                                                    backgroundColor: theme.palette.primary.dark,
-                                                }}
-                                            >
-                                                <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                    <TablecellHeader sx={{ width: 100 }}>{t("employeeId")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 300, position: "sticky", left: 0, backgroundColor: theme.palette.primary.dark, borderRight: "2px solid white" }}>{t("name")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 150 }}>{t("date")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 180 }}>{t("schedule")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 120 }}>{t("timeIn")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 120 }}>{t("timeOut")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 120 }}>{t("late")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 120 }}>{t("earlyLeave")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 120 }}>{t("absent")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 120 }}>{t("overtime")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 100 }}>{t("workHours")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 150 }}>{t("exception")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 150 }}>{t("normalDay")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 180 }}>{t("weekend")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 180 }}>{t("totalWorkOvertime")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 180 }}>{t("otNormal")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 180 }}>{t("otWeekend")}</TablecellHeader>
-                                                    <TablecellHeader sx={{ width: 80, position: "sticky", right: 0, backgroundColor: theme.palette.primary.dark, borderLeft: "2px solid white" }} />
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {attendants.map((row, idx) => (
-                                                    <TableRow key={idx}>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.employeeId}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", position: "sticky", left: 0, backgroundColor: "white" }}>{row.name}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.date}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.schedule}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.timeIn ? row.timeIn : "-"}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.timeOut ? row.timeOut : "-"}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.late === "00:00" ? "-" : row.late}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.earlyLeave === "00:00" ? "-" : row.earlyLeave}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.absent ? "✔" : "-"}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.overtime ? row.overtime : "-"}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.workHours ? row.workHours : "-"}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.exception ? row.exception : "-"}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.normalDay ? row.normalDay : "-"}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.weekend ? row.weekend : "-"}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.totalWorkOvertime ? row.totalWorkOvertime : "-"}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.otNormal ? row.otNormal : "-"}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center" }}>{row.otWeekend ? row.otWeekend : "-"}</TableCell>
-                                                        <TableCell sx={{ textAlign: "center", position: "sticky", right: 0, backgroundColor: "white", borderLeft: "2px solid white" }}>
-                                                            <Tooltip title={t("deleteScanData")} placement="left">
-                                                                <Button
-                                                                    variant="contained"
-                                                                    sx={{ height: 25 }}
-                                                                    color="error"
-                                                                    size="small"
-                                                                    endIcon={<DeleteOutlineIcon />}
-                                                                    onClick={() => handleDelete(row.ID)}
-                                                                >
-                                                                    {t("delete")}
-                                                                </Button>
-                                                            </Tooltip>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </TableContainer>
+                                <Grid item size={6} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <Typography variant="h3" sx={{ marginTop: 1, marginRight: 1 }} fontWeight="bold" gutterBottom>{employees.length}</Typography>
+                                    <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>{t("people")}</Typography>
                                 </Grid>
                             </Grid>
-                            <Divider />
-                        </Item>
+                        </Paper>
+                    </Grid>
+                    <Grid item size={4}>
+                        <Paper sx={{ borderRadius: 3, boxShadow: '4px 4px 6px 6px rgba(0, 0, 0, 0.1)', cursor: "pointer" }} onClick={handleOpenSalary}>
+                            <Grid container spacing={2}>
+                                <Grid
+                                    item
+                                    size={6}
+                                    sx={{
+                                        backgroundColor: theme.palette.primary.main,
+                                        padding: theme.spacing(2),
+                                        borderTopLeftRadius: 10,
+                                        borderBottomLeftRadius: 10,
+                                        textAlign: "center",
+                                        borderBottom: openSalary && `5px solid ${theme.palette.primary.dark}`
+                                    }}
+                                >
+                                    <Typography variant="subtitle1" sx={{ color: "white", marginTop: -1 }} fontWeight="bold" gutterBottom>{t("calculateSalary")}</Typography>
+                                    <CurrencyExchangeIcon sx={{ color: "white", fontSize: "65px", marginTop: -1, marginBottom: -2 }} />
+                                </Grid>
+                                <Grid item size={6} sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                    <Typography variant="h3" sx={{ marginTop: 1, marginRight: 1 }} fontWeight="bold" gutterBottom>{Object.values(grouped).length}</Typography>
+                                    <Typography variant="h6" sx={{ marginTop: 3 }} fontWeight="bold" gutterBottom>{t("record")}</Typography>
+                                </Grid>
+                            </Grid>
+                        </Paper>
                     </Grid>
                 </Grid>
-            }
+                {
+                    openTime &&
+                    <Grid container spacing={2} marginTop={1} marginBottom={1}>
+                        <Grid item size={12}>
+                            <Typography variant='h1' sx={{ marginTop: -4.5, marginBottom: -10, color: theme.palette.primary.dark, marginLeft: 11 }} fontWeight="bold" gutterBottom>||</Typography>
+                        </Grid>
+                        <Grid item size={12}>
+                            <Item sx={{ height: 500, borderTop: `5px solid ${theme.palette.primary.dark}` }}>
+                                <Grid container spacing={2}>
+                                    <Grid item size={6}>
+                                        <Typography variant='h6' fontWeight="bold" gutterBottom>{t("scanInfo")}</Typography>
+                                    </Grid>
+                                    <Grid item size={6} textAlign="right" marginTop={0.5}>
+                                        <Box display="flex" alignItems="center" justifyContent="right">
+                                            <input
+                                                type="file"
+                                                accept=".xlsx, .xls"
+                                                ref={fileInputRef}
+                                                style={{ display: "none" }}
+                                                onChange={handleFileUpload}
+                                            />
+                                            <Button
+                                                variant="contained"
+                                                color="error"
+                                                size="small"
+                                                sx={{ marginRight: 2 }}
+                                                onClick={handleButtonClick}
+                                            >
+                                                {t("importExcel")}
+                                            </Button>
+                                            <Button
+                                                variant="contained"
+                                                color="success"
+                                                size="small"
+                                                onClick={handleExport}
+                                            >
+                                                {t("exportExcel")}
+                                            </Button>
+                                        </Box>
+                                    </Grid>
+                                    <Grid item size={12}>
+                                        <TableContainer component={Paper} textAlign="center" sx={{ height: "55vh" }}>
+                                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}>
+                                                <TableHead
+                                                    sx={{
+                                                        position: "sticky",
+                                                        top: 0,
+                                                        zIndex: 2,
+                                                        backgroundColor: theme.palette.primary.dark,
+                                                    }}
+                                                >
+                                                    <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                                        <TablecellHeader sx={{ width: 100 }}>{t("employeeId")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 300, position: "sticky", left: 0, backgroundColor: theme.palette.primary.dark, borderRight: "2px solid white" }}>{t("name")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 150 }}>{t("date")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 180 }}>{t("schedule")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 120 }}>{t("timeIn")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 120 }}>{t("timeOut")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 120 }}>{t("late")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 120 }}>{t("earlyLeave")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 120 }}>{t("absent")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 120 }}>{t("overtime")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 100 }}>{t("workHours")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 150 }}>{t("exception")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 150 }}>{t("normalDay")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 180 }}>{t("weekend")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 180 }}>{t("totalWorkOvertime")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 180 }}>{t("otNormal")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 180 }}>{t("otWeekend")}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 80, position: "sticky", right: 0, backgroundColor: theme.palette.primary.dark, borderLeft: "2px solid white" }} />
+                                                    </TableRow>
+                                                </TableHead>
+                                                <TableBody>
+                                                    {attendants.map((row, idx) => (
+                                                        <TableRow key={idx}>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.employeeId}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", position: "sticky", left: 0, backgroundColor: "white" }}>{row.name}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.date}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.schedule}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.timeIn ? row.timeIn : "-"}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.timeOut ? row.timeOut : "-"}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.late === "00:00" ? "-" : row.late}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.earlyLeave === "00:00" ? "-" : row.earlyLeave}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.absent ? "✔" : "-"}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.overtime ? row.overtime : "-"}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.workHours ? row.workHours : "-"}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.exception ? row.exception : "-"}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.normalDay ? row.normalDay : "-"}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.weekend ? row.weekend : "-"}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.totalWorkOvertime ? row.totalWorkOvertime : "-"}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.otNormal ? row.otNormal : "-"}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>{row.otWeekend ? row.otWeekend : "-"}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", position: "sticky", right: 0, backgroundColor: "white", borderLeft: "2px solid white" }}>
+                                                                <Tooltip title={t("deleteScanData")} placement="left">
+                                                                    <Button
+                                                                        variant="contained"
+                                                                        sx={{ height: 25 }}
+                                                                        color="error"
+                                                                        size="small"
+                                                                        endIcon={<DeleteOutlineIcon />}
+                                                                        onClick={() => handleDelete(row.ID)}
+                                                                    >
+                                                                        {t("delete")}
+                                                                    </Button>
+                                                                </Tooltip>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </TableContainer>
+                                    </Grid>
+                                </Grid>
+                                <Divider />
+                            </Item>
+                        </Grid>
+                    </Grid>
+                }
 
-            {
-                openSalary &&
-                <Caluculate attendant={Object.values(grouped)} />
-            }
+                {
+                    openSalary &&
+                    <Caluculate attendant={Object.values(grouped)} />
+                }
 
-            {
-                openEmployee &&
-                <EmployeeDetail />
-            }
+                {
+                    openEmployee &&
+                    <EmployeeDetail date={date} />
+                }
+            </Box>
         </React.Fragment>
     );
 }

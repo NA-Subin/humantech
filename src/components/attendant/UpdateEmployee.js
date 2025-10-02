@@ -34,7 +34,7 @@ import { useRef } from 'react';
 import { ShowError, ShowSuccess } from '../../sweetalert/sweetalert';
 import { useTranslation } from 'react-i18next';
 
-export default function UpdateEmployee({ item, index, leave }) {
+export default function UpdateEmployee({ item, index, leave, date }) {
     const { firebaseDB, domainKey } = useFirebase();
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -50,12 +50,15 @@ export default function UpdateEmployee({ item, index, leave }) {
     const [department, setDepartment] = useState(item.department);
     const [section, setSection] = useState(item.section);
     const [openSex, setOpenSex] = React.useState(item.sex === "ชาย" ? true : false);
-    const [leavePersonal, setLeavePersonal] = useState(item.leave[0]?.number || 0);
-    const [leaveSick, setLeaveSick] = useState(item.leave[1]?.number || 0);
-    const [leaveVacation, setLeaveVacation] = useState(item.leave[2]?.number || 0);
-    const [leaveTraining, setLeaveTraining] = useState(item.leave[3]?.number || 0);
-    const [leaveMaternity, setLeaveMaternity] = useState(item.leave[4]?.number || 0);
-    const [leaveSterilization, setLeaveSterilization] = useState(item.leave[5]?.number || 0);
+    const [leaves, setLeaves] = useState(item.empleave);
+    const [month, setMonth] = useState(date.month() + 1);
+    const [year, setYear] = useState(date.format("YYYY"));
+    // const [leavePersonal, setLeavePersonal] = useState(item.empleave[0]?.number || 0);
+    // const [leaveSick, setLeaveSick] = useState(item.empleave[1]?.number || 0);
+    // const [leaveVacation, setLeaveVacation] = useState(item.empleave[2]?.number || 0);
+    // const [leaveTraining, setLeaveTraining] = useState(item.empleave[3]?.number || 0);
+    // const [leaveMaternity, setLeaveMaternity] = useState(item.empleave[4]?.number || 0);
+    // const [leaveSterilization, setLeaveSterilization] = useState(item.empleave[5]?.number || 0);
 
     const translateLeaveName = (name, t) => {
         const mapping = {
@@ -103,44 +106,7 @@ export default function UpdateEmployee({ item, index, leave }) {
             department: department,
             section: section,
             sex: openSex ? "ชาย" : "หญิง",
-            leave: {
-                0: {
-                    ID: 0,
-                    name: "ลากิจ",
-                    number: leavePersonal,
-                    max: item.leave[0]?.max || ""
-                },
-                1: {
-                    ID: 1,
-                    name: "ลาป่วย",
-                    number: leaveSick,
-                    max: item.leave[1]?.max || ""
-                },
-                2: {
-                    ID: 2,
-                    name: "ลาพักร้อน",
-                    number: leaveVacation,
-                    max: item.leave[2]?.max || ""
-                },
-                3: {
-                    ID: 3,
-                    name: "ลาฝึกอบรม",
-                    number: leaveTraining,
-                    max: item.leave[3]?.max || ""
-                },
-                4: {
-                    ID: 4,
-                    name: "ลาคลอด",
-                    number: leaveMaternity,
-                    max: item.leave[4]?.max || ""
-                },
-                5: {
-                    ID: 5,
-                    name: "ลาเพื่อทำหมัน",
-                    number: leaveSterilization,
-                    max: item.leave[5]?.max || ""
-                }
-            }
+            leave: ""
         })
             .then(() => {
                 ShowSuccess(t("success"), t("ok"));
@@ -151,21 +117,18 @@ export default function UpdateEmployee({ item, index, leave }) {
                 setDepartment(item.department);
                 setSection(item.section);
                 setOpenSex(item.sex === "ชาย" ? true : false);
-                setLeavePersonal(item.leave[0]?.number || 0);
-                setLeaveSick(item.leave[1]?.number || 0);
-                setLeaveVacation(item.leave[2]?.number || 0);
-                setLeaveTraining(item.leave[3]?.number || 0);
-                setLeaveMaternity(item.leave[4]?.number || 0);
-                setLeaveSterilization(item.leave[5]?.number || 0);
+                // setLeavePersonal(item.empleave[0]?.number || 0);
+                // setLeaveSick(item.empleave[1]?.number || 0);
+                // setLeaveVacation(item.empleave[2]?.number || 0);
+                // setLeaveTraining(item.empleave[3]?.number || 0);
+                // setLeaveMaternity(item.empleave[4]?.number || 0);
+                // setLeaveSterilization(item.empleave[5]?.number || 0);
             })
             .catch((error) => {
                 console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
                 ShowError(t("error"), t("ok"));
             });
     };
-
-    console.log("leave : ", leave);
-    console.log("item.leave : ", item.leave);
 
     return (
         <React.Fragment>
@@ -184,8 +147,8 @@ export default function UpdateEmployee({ item, index, leave }) {
                 <TableCell sx={{ width: 150, textAlign: "center" }}>{openSex ? "ชาย" : "หญิง"}</TableCell>
                 <TableCell sx={{ width: 150, textAlign: "center" }}> </TableCell>
                 {leave.map((header) => {
-                    // sort item.leave ตาม ID ก่อน
-                    const sortedLeave = [...item.leave].sort((a, b) => a.ID - b.ID);
+                    // sort item.empleave ตาม ID ก่อน
+                    const sortedLeave = [...item.empleave].sort((a, b) => a.ID - b.ID);
 
                     // หา leave ของพนักงานที่ตรง header
                     const leaveType = sortedLeave.find(l => l.ID === header.ID);
@@ -195,7 +158,7 @@ export default function UpdateEmployee({ item, index, leave }) {
                     // แสดงค่าตาม no (ถ้ามี) หรือ 0/max
                     return (
                         <TableCell key={header.ID} sx={{ width: 200, textAlign: "center" }}>
-                            {leaveType ? `${leaveType.number || 0}/${leaveType.max}` : `-`}
+                            {leaveType ? `${item.empleaveapprove?.[year]?.[month]?.filter((row) => row.leave === leaveType.name).length || 0}/${leaveType.max}` : `-`}
                         </TableCell>
                     );
                 })}
@@ -331,7 +294,7 @@ export default function UpdateEmployee({ item, index, leave }) {
                     </Grid>
                     <Typography variant="subtitle2" fontWeight="bold" sx={{ marginTop: 2, marginBottom: 1 }} >{t("leaveInfo")}</Typography>
                     <Grid container spacing={2} marginLeft={2}>
-                        {item.leave.map((lv, index) => (
+                        {item.empleave.map((lv, index) => (
                             <Grid item size={6} key={lv.ID}>
                                 <Typography variant="subtitle2" fontWeight="bold">{translateLeaveName(lv.name, t)}</Typography>
                                 <Box display="flex" alignItems="center" justifyContent="center" width="100%">
@@ -340,8 +303,8 @@ export default function UpdateEmployee({ item, index, leave }) {
                                         <TextField
                                             fullWidth
                                             size="small"
-                                            value={lv.number || 0}
-                                            onChange={(e) => setLeavePersonal(e.target.value)}
+                                            value={item.empleaveapprove?.[year]?.[month]?.filter((row) => row.leave === lv.name).length || 0}
+                                            //onChange={(e) => setLeavePersonal(e.target.value)}
                                             sx={{
                                                 position: "absolute",
                                                 top: 0,
@@ -425,7 +388,7 @@ export default function UpdateEmployee({ item, index, leave }) {
                                         }}
                                     >
                                         <Typography variant="subtitle1" fontWeight="bold">
-                                            {item.leave[0]?.max || ""}
+                                            {item.empleave[0]?.max || ""}
                                         </Typography>
                                     </Paper>
                                 </Box>
@@ -479,7 +442,7 @@ export default function UpdateEmployee({ item, index, leave }) {
                                         }}
                                     >
                                         <Typography variant="subtitle1" fontWeight="bold">
-                                            {item.leave[1]?.max || ""}
+                                            {item.empleave[1]?.max || ""}
                                         </Typography>
                                     </Paper>
                                 </Box>
@@ -533,7 +496,7 @@ export default function UpdateEmployee({ item, index, leave }) {
                                         }}
                                     >
                                         <Typography variant="subtitle1" fontWeight="bold">
-                                            {item.leave[2]?.max || ""}
+                                            {item.empleave[2]?.max || ""}
                                         </Typography>
                                     </Paper>
                                 </Box>
@@ -587,7 +550,7 @@ export default function UpdateEmployee({ item, index, leave }) {
                                         }}
                                     >
                                         <Typography variant="subtitle1" fontWeight="bold">
-                                            {item.leave[3]?.max || ""}
+                                            {item.empleave[3]?.max || ""}
                                         </Typography>
                                     </Paper>
                                 </Box>
@@ -641,7 +604,7 @@ export default function UpdateEmployee({ item, index, leave }) {
                                         }}
                                     >
                                         <Typography variant="subtitle1" fontWeight="bold">
-                                            {item.leave[4]?.max || ""}
+                                            {item.empleave[4]?.max || ""}
                                         </Typography>
                                     </Paper>
                                 </Box>
@@ -695,7 +658,7 @@ export default function UpdateEmployee({ item, index, leave }) {
                                         }}
                                     >
                                         <Typography variant="subtitle1" fontWeight="bold">
-                                            {item.leave[5]?.max || ""}
+                                            {item.empleave[5]?.max || ""}
                                         </Typography>
                                     </Paper>
                                 </Box>

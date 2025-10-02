@@ -45,7 +45,7 @@ import { saveAs } from "file-saver";
 import ExcelJS from "exceljs";
 import AddLeave from './AddLeave';
 
-export default function EmployeeDetail() {
+export default function EmployeeDetail({ date }) {
     const { firebaseDB, domainKey } = useFirebase();
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -381,7 +381,7 @@ export default function EmployeeDetail() {
                                         <TableBody>
                                             {
                                                 employees.map((item, index) => (
-                                                    <UpdateEmployee key={item.employeeId} item={item} index={index} leave={leave} />
+                                                    <UpdateEmployee key={item.employeeId} item={item} index={index} leave={leave} date={date} />
                                                 ))
                                             }
                                         </TableBody>

@@ -1,0 +1,107 @@
+{
+  "helmet": {
+    "title": "ไขข้อสงสัย HRBP กับ HRM คืออะไร? และต่างกันอย่างไรบ้าง?",
+    "meta": [
+      {
+        "name": "description",
+        "content": "การบริหารทรัพยากรบุคคลในองค์กรไม่ได้มีเพียงหน้าที่ดูแลเอกสารหรือจัดการเงินเดือนเท่านั้น แต่ยังมีบทบาทเชิงกลยุทธ์ที่ช่วยให้องค์กรเติบโตอย่างยั่งยืน ซึ่งในปัจจุบัน หลายคนอาจสงสัยว่า HRM (Human Resource Management) และ HRBP (Human Resource Business Partner) แตกต่างกันอย่างไร ทั้งสองตำแหน่งต่างมีความสำคัญต่อการพัฒนาองค์กร"
+      },
+      {
+        "name": "keywords",
+        "content": "ไขข้อสงสัย HRBP กับ HRM ,HRM คืออะไร,โปรแกรม HR,โปรแกรม HR ที่ตอบโจทย์ธุรกิจ SME,โปรแกรม HR สำหรับ SME,โปรแกรม HR ออนไลน์,โปรแกรมจัดการงานสำหรับฝ่ายบุคคล,โปรแกรมบริหารทรัพยากรบุคคล"
+      }
+    ],
+    "link": [
+      {
+        "rel": "canonical",
+        "href": "https://www.humantech.asia/new-80"
+      }
+    ]
+  },
+  "body": [
+    {
+      "type": "Image",
+      "props": {
+        "src": "https://via.placeholder.com/800x400",
+        "alt": "เปรียบเทียบHRM และ HRBP",
+        "sx": {
+          "width": "100%",
+          "backgroundColor": "#fff",
+          "mb": 2
+        }
+      }
+    },
+    {
+      "type": "Box",
+      "props": {
+        "sx": {
+          "p": 3,
+          "backgroundColor": "#fff",
+          "borderRadius": 1,
+          "boxShadow": 1
+        },
+        "children": [
+          {
+            "type": "Typography",
+            "props": {
+              "variant": "h5",
+              "fontWeight": "bold",
+              "gutterBottom": true,
+              "sx": {
+                "color": "#212121"
+              },
+              "children": "ไขข้อสงสัย HRBP กับ HRM คืออะไร? และต่างกันอย่างไรบ้าง?"
+            }
+          },
+          {
+            "type": "Typography",
+            "props": {
+              "variant": "body1",
+              "paragraph": true,
+              "sx": {
+                "color": "#212121"
+              },
+              "children": "การบริหารทรัพยากรบุคคลในองค์กรไม่ได้มีเพียงหน้าที่ดูแลเอกสารหรือจัดการเงินเดือนเท่านั้น แต่ยังมีบทบาทเชิงกลยุทธ์ที่ช่วยให้องค์กรเติบโตอย่างยั่งยืน ซึ่งในปัจจุบัน หลายคนอาจสงสัยว่า HRM (Human Resource Management) และ HRBP (Human Resource Business Partner) แตกต่างกันอย่างไร ทั้งสองตำแหน่งต่างมีความสำคัญต่อการพัฒนาองค์กร แต่บทบาทและขอบเขตงานกลับไม่เหมือนกัน บทความนี้จะพาคุณมาทำความเข้าใจให้ชัดเจน"
+            }
+          },
+          {
+            "type": "Typography",
+            "props": {
+              "variant": "h6",
+              "fontWeight": "bold",
+              "gutterBottom": true,
+              "sx": {
+                "mt": 3,
+                "color": "#212121"
+              },
+              "children": "HRM คืออะไร"
+            }
+          },
+          {
+            "type": "Typography",
+            "props": {
+              "variant": "body1",
+              "paragraph": true,
+              "sx": {
+                "color": "#212121"
+              },
+              "children": "HRM (Human Resource Management) คือการจัดการทรัพยากรบุคคลในเชิงปฏิบัติ (Operational) โดยเน้นกระบวนการพื้นฐาน เช่น การสรรหาพนักงาน การจัดทำเงินเดือน สวัสดิการ การบันทึกเวลา การลางาน รวมถึงการพัฒนาและฝึกอบรมบุคลากร HRM เปรียบเสมือน “ฝ่ายงานสนับสนุน” ที่ช่วยให้องค์กรดำเนินงานได้ราบรื่น"
+            }
+          },
+          {
+            "type": "Typography",
+            "props": {
+              "variant": "body1",
+              "paragraph": true,
+              "sx": {
+                "color": "#1976d2",
+                "textDecoration": "none"
+              },
+              "children": "อ่านเพิ่มเติมเกี่ยวกับ HRM ได้ที่ https://www.humantech.asia/new-80"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
