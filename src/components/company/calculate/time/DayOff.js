@@ -242,15 +242,15 @@ const DayOffDetail = (props) => {
         <React.Fragment>
             <Grid item size={editIncomepleteTime ? 12 : 11}>
                 {
-                    editIncomepleteTime ?
-                        <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                            {/* <TableExcel
-                                columns={columns}
-                                initialData={department}
-                                onDataChange={setDepartment}
-                            /> */}
-                        </Paper>
-                        :
+                    // editIncomepleteTime ?
+                    //     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
+                    //         <TableExcel
+                    //             columns={columns}
+                    //             initialData={department}
+                    //             onDataChange={setDepartment}
+                    //         />
+                    //     </Paper>
+                    //     :
                         <TableContainer component={Paper} textAlign="center">
                             <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
                                 <TableHead>
@@ -292,7 +292,7 @@ const DayOffDetail = (props) => {
                         </TableContainer>
                 }
             </Grid>
-            {
+            {/* {
                 !editIncomepleteTime &&
                 <Grid item size={1} textAlign="right">
                     <Box display="flex" justifyContent="center" alignItems="center">
@@ -315,7 +315,7 @@ const DayOffDetail = (props) => {
                         </Button>
                     </Box>
                 </Grid>
-            }
+            } */}
         </React.Fragment>
     )
 }

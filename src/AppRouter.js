@@ -37,6 +37,7 @@ import EmployeeTypeDetail from "./components/company/structure/EmployeeType";
 import DashboardAttendant from "./components/attendant/DashboardAttendant";
 import { database } from "./server/firebase";
 import { onValue, ref } from "firebase/database";
+import { ProjectFirebaseProvider } from "./server/ProjectFirebaseContext";
 
 const ProtectedRouteWrapper = ({ children }) => {
   const location = useLocation();
@@ -282,8 +283,11 @@ export default function AppRouter() {
         path="/"
         element={
           <ProtectedRouteWrapper>
-            <MainEntry />
+            <ProjectFirebaseProvider>
+              <MainEntry />
+            </ProjectFirebaseProvider>
           </ProtectedRouteWrapper>
+
         }
       />
 

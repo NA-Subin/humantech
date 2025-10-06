@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getDatabase } from "firebase/database";
 import FullPageLoading from "../theme/Loading";
+import DomainLogin from "../components/login/login-user/Login";
 
 const ProjectFirebaseContext = createContext(null);
 
@@ -56,7 +57,7 @@ export const ProjectFirebaseProvider = ({ children }) => {
 
   // ✅ ตรวจว่า firebase โหลดครบ
   if (!firebaseApp || !firebaseDB) {
-    return <div style={{ textAlign: "center", marginTop: "20px" }}>ไม่สามารถเชื่อมต่อ Firebase ได้</div>;
+    return <div style={{ textAlign: "center", marginTop: "20px" }}><DomainLogin /></div>;
   }
 
   return (

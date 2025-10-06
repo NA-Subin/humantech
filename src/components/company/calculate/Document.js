@@ -390,7 +390,7 @@ const DocumentDetal = (props) => {
 
     return (
         <React.Fragment>
-            <Box sx={{ marginTop: 5, width: `${windowWidth - 500}px` }}>
+            <Box sx={{ marginTop: 5, width: "100%" }}>
                 <Grid container spacing={2}>
                     {/* <Grid item size={4}>
                         <Typography variant="subtitle1" fontWeight="bold" sx={{ marginTop: 1 }} gutterBottom>

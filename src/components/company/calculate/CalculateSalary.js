@@ -316,7 +316,15 @@ const CalculateSalary = () => {
                                         textAlign: "right",
                                         justifyContent: "flex-end",
                                         fontSize: "13px",
-                                        marginLeft: isSelected && 1
+                                        marginLeft: isSelected && 1,
+                                        "&:hover": {
+                                            backgroundColor: (theme) =>
+                                                isSelected
+                                                    ? theme.palette.primary.dark // ถ้าเลือกแล้วให้เข้มขึ้นเล็กน้อย
+                                                    : theme.palette.primary.main, // ถ้ายังไม่เลือก hover ให้เป็นสี primary
+                                            color: "white",
+                                            marginLeft: 1
+                                        },
                                     }}
                                     onClick={() => {
                                         setMenu(value);
@@ -336,7 +344,7 @@ const CalculateSalary = () => {
                     <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
                         {/* <Typography variant="subtitle1" fontWeight="bold" gutterBottom>{menu.split("-")[1]}</Typography>
                         <Divider sx={{ marginTop: 1, marginBottom: 2 }} /> */}
-                        <Box>
+                        <Box sx={{ width: "100%" }}>
                             {!["2-รายได้", "3-รายจ่าย"].includes(menu) && (
                                 <SelectEmployeeGroup
                                     department={department}

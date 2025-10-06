@@ -79,6 +79,20 @@ const Employee = () => {
     const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
     console.log("checkEmployee : ", checkEmployee);
 
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth); // อัพเดตค่าขนาดหน้าจอ
+        };
+
+        window.addEventListener('resize', handleResize); // เพิ่ม event listener
+
+        // ลบ event listener เมื่อ component ถูกทำลาย
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     const toDateString = (dateObj) => {
         if (!dateObj || !dateObj.day || !dateObj.month || !dateObj.year) return '';
 
@@ -973,7 +987,7 @@ const Employee = () => {
 
 
     return (
-        <Container maxWidth="xl" sx={{ p: 5 }}>
+        <Container maxWidth="xl" sx={{ p: 5, }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
@@ -1061,7 +1075,15 @@ const Employee = () => {
                                         textAlign: "right",
                                         justifyContent: "flex-end",
                                         fontSize: "13px",
-                                        marginLeft: isSelected && 1
+                                        marginLeft: isSelected && 1,
+                                        "&:hover": {
+                                            backgroundColor: (theme) =>
+                                                isSelected
+                                                    ? theme.palette.primary.dark // ถ้าเลือกแล้วให้เข้มขึ้นเล็กน้อย
+                                                    : theme.palette.primary.main, // ถ้ายังไม่เลือก hover ให้เป็นสี primary
+                                            color: "white",
+                                            marginLeft: 1
+                                        },
                                     }}
                                     onClick={() => setMenu(value)}
                                 >
@@ -1075,7 +1097,7 @@ const Employee = () => {
                 </Grid>
                 <Grid item size={11}>
                     <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "70vh" }}>
-                        <Box sx={{ width: "1080px" }}>
+                        <Box sx={{ width: "100%" }}>
                             {/* <SelectEmployeeGroup
                                 department={department}
                                 setDepartment={setDepartment}
@@ -1106,7 +1128,7 @@ const Employee = () => {
                                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                                 <TableExcel
                                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}
+                                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}
                                                     columns={columns}
                                                     initialData={employees}
                                                     onDataChange={setEmployees}
@@ -1117,7 +1139,7 @@ const Employee = () => {
                                             <React.Fragment>
                                                 <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการเปลี่ยนกะการทำงานให้กดชื่อในตารางได้เลย</Typography>
                                                 <TableContainer component={Paper} textAlign="center">
-                                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}>
+                                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                                                         <TableHead>
                                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                                 <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
@@ -1754,7 +1776,7 @@ const Employee = () => {
                         </Box>
                     </Paper>
                     <Paper ref={paperRef} sx={{ p: 5, width: "100%", marginTop: 5, borderRadius: 4 }}>
-                        <Box sx={{ marginTop: -5 }}>
+                        <Box sx={{ marginTop: -5 }} width="100%" >
                             {renderComponentByMenu(menu)}
                         </Box>
                     </Paper>

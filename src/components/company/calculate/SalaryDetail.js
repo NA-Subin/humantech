@@ -615,7 +615,7 @@ const SalaryDetail = (props) => {
 
     return (
         <React.Fragment>
-            <Box sx={{ marginTop: 2, width: `${windowWidth - 500}px` }}>
+            <Box sx={{ marginTop: 2, width: "100%" }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
                         <TableContainer component={Paper} sx={{ height: "70vh" }}>

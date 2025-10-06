@@ -183,7 +183,7 @@ const LeaveEarly = (props) => {
                     //     </Paper>
                     //     :
                     <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", overflow: "auto" }}>
-                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1080px" }}>
+                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                             <TableHead
                                 sx={{
                                     position: "sticky",

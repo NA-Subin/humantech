@@ -194,8 +194,8 @@ const OTDetail = (props) => {
     return (
         <React.Fragment>
             <Grid item size={12}>
-                <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh" }}>
-                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1080px" }}>
+                <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", width: "100%" }}>
+                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                         <TableHead
                             sx={{
                                 position: "sticky",
@@ -216,7 +216,7 @@ const OTDetail = (props) => {
                             {
                                 docOT.length === 0 ?
                                     <TableRow  sx={{ height: "60vh" }}>
-                                        <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                        <TablecellNoData colSpan={5}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                     </TableRow>
                                     :
                                     docOT.map((emp, index) => (

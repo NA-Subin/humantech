@@ -1,6 +1,6 @@
 import React, { useState, useEffect, use } from "react";
 import '../../../App.css'
-import { getDatabase, ref, push, onValue, set, update } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update, get } from "firebase/database";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -237,24 +237,58 @@ const ReportLeave = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId, year, m, dateArray]);
 
-    const handleApprove = (newID) => {
+    const handleApprove = (newID, employ) => {
+        console.log("employee name : ", employ.ID);
         ShowConfirm(
             "อนุมัติเอกสาร",
             "คุณต้องการอนุมัติเอกสารนี้หรือไม่?",
-            () => {
-                const leaveRef = ref(
-                    firebaseDB,
-                    `workgroup/company/${companyId}/documentleave/${year}/${m + 1}/${newID}`
-                );
-                update(leaveRef, {
-                    status: "อนุมัติ",
-                    approveBy: "HR",
-                    approveDate: dayjs().format("DD/MM/YYYY"),
-                    approveTime: dayjs().format("HH:mm:ss")
-                });
+            async () => {
+                try {
+                    const leaveRef = ref(
+                        firebaseDB,
+                        `workgroup/company/${companyId}/documentleave/${year}/${m + 1}/${newID}`
+                    );
+
+                    // ✅ ดึงข้อมูลทั้งหมดจาก documentleave
+                    const snapshot = await get(leaveRef);
+                    if (snapshot.exists()) {
+                        const leaveData = snapshot.val();
+
+                        // ✅ เพิ่มข้อมูลอนุมัติ
+                        const updatedData = {
+                            ...leaveData,
+                            status: "อนุมัติ",
+                            approveBy: "HR",
+                            approveDate: dayjs().format("DD/MM/YYYY"),
+                            approveTime: dayjs().format("HH:mm:ss"),
+                        };
+
+                        // ✅ อัปเดตสถานะใน documentleave เดิม
+                        await update(leaveRef, {
+                            status: "อนุมัติ",
+                            approveBy: "HR",
+                            approveDate: updatedData.approveDate,
+                            approveTime: updatedData.approveTime,
+                        });
+
+                        // ✅ บันทึกไปที่ emploeaveapprove ของพนักงาน
+                        const approveRef = ref(
+                            firebaseDB,
+                            `workgroup/company/${companyId}/employee/${employ?.ID}/empleaveapprove/${year}/${m + 1}/${newID}`
+                        );
+
+                        await set(approveRef, updatedData);
+
+                        console.log("✅ อนุมัติและบันทึกข้อมูลเรียบร้อย");
+                    } else {
+                        console.error("❌ ไม่พบข้อมูลเอกสารที่ต้องการอนุมัติ");
+                    }
+                } catch (error) {
+                    console.error("❌ เกิดข้อผิดพลาด:", error);
+                }
             },
             () => {
-                console.log("ยกเลิกการอนุมัติ");
+                console.log("❌ ยกเลิกการอนุมัติ");
             }
         );
     };
@@ -439,7 +473,7 @@ const ReportLeave = () => {
                                                                                             </IconButton>
                                                                                         </Tooltip>
                                                                                         <Tooltip title="อนุมัติ" placement="top">
-                                                                                            <IconButton size="small" onClick={() => handleApprove(date.ID)} >
+                                                                                            <IconButton size="small" onClick={() => handleApprove(date.ID, emp)} >
                                                                                                 <InsertDriveFileIcon sx={{ color: theme.palette.primary.main, fontSize: "28px" }} />
                                                                                                 <DoneIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
                                                                                             </IconButton>

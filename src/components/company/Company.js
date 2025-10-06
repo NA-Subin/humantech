@@ -89,7 +89,7 @@ const Company = () => {
         const workgroupRef = ref(firebaseDB, "workgroup");
         const unsubscribe = onValue(workgroupRef, (snapshot) => {
             const data = snapshot.exists() ? snapshot.val() : {};
-            setWorkgroup(data.grouptype);
+            setWorkgroup(data.payment.name);
         });
 
         return () => unsubscribe();

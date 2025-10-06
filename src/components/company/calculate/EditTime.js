@@ -398,7 +398,7 @@ const EditTimeDetail = (props) => {
 
     return (
         <React.Fragment>
-            <Box sx={{ marginTop: 5, width: `${windowWidth - 500}px` }}>
+            <Box sx={{ marginTop: 5, width: "100%" }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
                         <FormGroup

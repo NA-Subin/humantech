@@ -252,7 +252,7 @@ const OTDetail = (props) => {
                         </Paper>
                         :
                         <TableContainer component={Paper} textAlign="center">
-                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
+                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                                 <TableHead>
                                     <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                         <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>

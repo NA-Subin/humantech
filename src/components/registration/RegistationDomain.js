@@ -45,9 +45,10 @@ const RequestDomainForm = () => {
     return () => unsubscribe();
   }, [database]);
 
-  const handleSelectedPlan = (newName, newPrice, newUsers) => {
+  const handleSelectedPlan = (newName, newPrice, newUsers, newNames) => {
     setSelectedPlan({
       name: newName,
+      fullname: newNames,
       price: newPrice,
       users: newUsers,
       latePaymentDays: 7, // เพิ่มจำนวนวันที่สามารถชำระล่าช้าได้
@@ -129,6 +130,8 @@ const RequestDomainForm = () => {
     }
   };
 
+  console.log("selectedPlan : ", selectedPlan);
+
   return (
     <Container maxWidth="md" sx={{ marginTop: 2 }}>
       <Card sx={{
@@ -190,6 +193,20 @@ const RequestDomainForm = () => {
               </Divider>
               <Box sx={{ overflowX: "auto", display: "flex", gap: 3, mt: 2, pb: 2 }}>
                 {[
+                  {
+                    name: "Attendant",
+                    price: 0,
+                    employees: 100,
+                    key: "attendant",
+                    features: (
+                      <Typography variant="body2">
+                        - การลงเวลาเข้าออกงาน <br />
+                        - ข้อมูลประวัติพนักงาน <br />
+                        - คำนวณเงินเดือนอัตโนมัติ <br />
+                        - เปลี่ยนภาษา
+                      </Typography>
+                    ),
+                  },
                   {
                     name: "Free",
                     price: 0,
@@ -257,6 +274,7 @@ const RequestDomainForm = () => {
                     price: 3900,
                     employees: 100,
                     key: "pro",
+                    tag: "*ใช้งานมากที่สุด",
                     highlight: true,
                     features: (
                       <Typography variant="body2">
@@ -275,8 +293,9 @@ const RequestDomainForm = () => {
                     price={plan.price}
                     employees={plan.employees}
                     features={plan.features}
+                    tag={plan.tag}
                     isSelected={selectedPlan?.name === plan.key}
-                    onSelect={() => handleSelectedPlan(plan.key, plan.price, plan.employees)}
+                    onSelect={() => handleSelectedPlan(plan.key, plan.price, plan.employees, plan.name)}
                     highlight={plan.highlight}
                     theme={theme}
                   />
@@ -435,12 +454,12 @@ const RequestDomainForm = () => {
                               <Grid container spacing={2}>
                                 <Grid item size={6}>
                                   <Typography gutterBottom variant="h5" component="div" color="white" fontWeight="bold">
-                                    {selectedPlan?.name}
+                                    {selectedPlan?.fullname}
                                   </Typography>
                                 </Grid>
                                 <Grid item size={6}>
                                   <Typography gutterBottom variant="h6" component="div" color="white" fontWeight="bold" textAlign="right" sx={{ marginRight: 3 }}>
-                                    {selectedPlan?.price}/เดือน
+                                    {selectedPlan?.name === 'attendant' ? "ทดสอบฟรี" : `${selectedPlan?.price}/เดือน`}
                                   </Typography>
                                 </Grid>
                               </Grid>
@@ -460,10 +479,13 @@ const RequestDomainForm = () => {
                                 }}
                               >
                                 {
-                                  selectedPlan?.name === 'free' ? (
+                                  selectedPlan?.name === 'attendant' ? (
                                     <React.Fragment>
                                       <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                        ทุกฟังก์ชั่นพื้นฐานของระบบ <br />
+                                        - การลงเวลาเข้าออกงาน <br />
+                                        - ข้อมูลประวัติพนักงาน <br />
+                                        - คำนวณเงินเดือนอัตโนมัติ <br />
+                                        - เปลี่ยนภาษา
                                       </Typography>
                                       <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
                                       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: "center" }}>
@@ -489,25 +511,17 @@ const RequestDomainForm = () => {
                                     </React.Fragment>
                                   )
                                     :
-                                    selectedPlan?.name === 'lite' ? (
+                                    selectedPlan?.name === 'free' ? (
                                       <React.Fragment>
                                         <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                          - การลงเวลาเข้าออกงาน <br />
-                                          - ข้อมูลประวัติพนักงาน <br />
-                                          - คำนวณเงินเดือนอัตโนมัติ <br />
-                                          - จัดการกะการทำงาน <br />
-                                          - ยื่นเอกสาร-อนุมัติเอกสาร <br />
-                                          - การฝึกอบรม(สูงสุด 1 คอร์ส) <br />
-                                          - รายงาน HR และ Payroll <br />
-                                          - ระบบสแกนใบหน้า <br />
-                                          - ปฏิทินการทำงาน
+                                          ทุกฟังก์ชั่นพื้นฐานของระบบ <br />
                                         </Typography>
                                         <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
                                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: "center" }}>
                                           <Box>
                                             <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: "bold", color: theme.palette.primary.dark }} >
-                                              เหมาะสำหรับ <br />
-                                              พนักงาน
+                                              ภายใน <br />
+                                              ระยะเวลา
                                             </Typography>
                                             <Typography
                                               variant="h4"
@@ -518,28 +532,27 @@ const RequestDomainForm = () => {
                                                 marginLeft: 2
                                               }}
                                             >
-                                              10 <br />
-                                              คน
+                                              1 <br />
+                                              เดือน
                                             </Typography>
                                           </Box>
                                         </Box>
                                       </React.Fragment>
                                     )
                                       :
-                                      selectedPlan?.name === 'basic' ? (
+                                      selectedPlan?.name === 'lite' ? (
                                         <React.Fragment>
-                                          <Box>
-                                            <Typography variant="body2" sx={{ color: 'red' }}>
-                                              - ทุกฟีเจอร์ในLite และ
-                                            </Typography>
-                                            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                              - การฝึกอบรม(สูงสุด 2 คอร์ส)  <br />
-                                              - รายงาน HR และ Payroll  <br />
-                                              - ประกันสังคมและภาษี  <br />
-                                              - กองทุนสำรองเลี้ยงชีพ  <br />
-                                              - กำหนดสิทธิ์เข้าถึงข้อมูล  <br />
-                                            </Typography>
-                                          </Box>
+                                          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                            - การลงเวลาเข้าออกงาน <br />
+                                            - ข้อมูลประวัติพนักงาน <br />
+                                            - คำนวณเงินเดือนอัตโนมัติ <br />
+                                            - จัดการกะการทำงาน <br />
+                                            - ยื่นเอกสาร-อนุมัติเอกสาร <br />
+                                            - การฝึกอบรม(สูงสุด 1 คอร์ส) <br />
+                                            - รายงาน HR และ Payroll <br />
+                                            - ระบบสแกนใบหน้า <br />
+                                            - ปฏิทินการทำงาน
+                                          </Typography>
                                           <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
                                           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: "center" }}>
                                             <Box>
@@ -556,7 +569,7 @@ const RequestDomainForm = () => {
                                                   marginLeft: 2
                                                 }}
                                               >
-                                                20 <br />
+                                                10 <br />
                                                 คน
                                               </Typography>
                                             </Box>
@@ -564,16 +577,18 @@ const RequestDomainForm = () => {
                                         </React.Fragment>
                                       )
                                         :
-                                        selectedPlan?.name === 'standard' ? (
+                                        selectedPlan?.name === 'basic' ? (
                                           <React.Fragment>
                                             <Box>
                                               <Typography variant="body2" sx={{ color: 'red' }}>
-                                                - ทุกฟีเจอร์ในBasic และ
+                                                - ทุกฟีเจอร์ในLite และ
                                               </Typography>
                                               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                                - การฝึกอบรม(สูงสุด 3 คอร์ส) <br />
-                                                - ระบบรับสมัครพนักงาน <br />
-                                                - ประกาศข่าวสาร
+                                                - การฝึกอบรม(สูงสุด 2 คอร์ส)  <br />
+                                                - รายงาน HR และ Payroll  <br />
+                                                - ประกันสังคมและภาษี  <br />
+                                                - กองทุนสำรองเลี้ยงชีพ  <br />
+                                                - กำหนดสิทธิ์เข้าถึงข้อมูล  <br />
                                               </Typography>
                                             </Box>
                                             <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
@@ -592,7 +607,7 @@ const RequestDomainForm = () => {
                                                     marginLeft: 2
                                                   }}
                                                 >
-                                                  50 <br />
+                                                  20 <br />
                                                   คน
                                                 </Typography>
                                               </Box>
@@ -600,17 +615,16 @@ const RequestDomainForm = () => {
                                           </React.Fragment>
                                         )
                                           :
-                                          selectedPlan?.name === 'pro' ? (
+                                          selectedPlan?.name === 'standard' ? (
                                             <React.Fragment>
                                               <Box>
                                                 <Typography variant="body2" sx={{ color: 'red' }}>
-                                                  - ทุกฟีเจอร์ในStandard และ
+                                                  - ทุกฟีเจอร์ในBasic และ
                                                 </Typography>
                                                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                                  - การฝึกอบรม(สูงสุด 4 คอร์ส) <br />
+                                                  - การฝึกอบรม(สูงสุด 3 คอร์ส) <br />
                                                   - ระบบรับสมัครพนักงาน <br />
-                                                  - ประกาศข่าวสาร <br />
-                                                  - ที่ปรึกษา
+                                                  - ประกาศข่าวสาร
                                                 </Typography>
                                               </Box>
                                               <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
@@ -629,7 +643,7 @@ const RequestDomainForm = () => {
                                                       marginLeft: 2
                                                     }}
                                                   >
-                                                    100 <br />
+                                                    50 <br />
                                                     คน
                                                   </Typography>
                                                 </Box>
@@ -637,11 +651,19 @@ const RequestDomainForm = () => {
                                             </React.Fragment>
                                           )
                                             :
-                                            (
+                                            selectedPlan?.name === 'pro' ? (
                                               <React.Fragment>
-                                                <Typography variant="body2" sx={{ color: 'red' }}>
-                                                  กรุณาเลือกแพ็คเกจที่ต้องการ
-                                                </Typography>
+                                                <Box>
+                                                  <Typography variant="body2" sx={{ color: 'red' }}>
+                                                    - ทุกฟีเจอร์ในStandard และ
+                                                  </Typography>
+                                                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                                    - การฝึกอบรม(สูงสุด 4 คอร์ส) <br />
+                                                    - ระบบรับสมัครพนักงาน <br />
+                                                    - ประกาศข่าวสาร <br />
+                                                    - ที่ปรึกษา
+                                                  </Typography>
+                                                </Box>
                                                 <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
                                                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: "center" }}>
                                                   <Box>
@@ -658,13 +680,42 @@ const RequestDomainForm = () => {
                                                         marginLeft: 2
                                                       }}
                                                     >
-                                                      0 <br />
+                                                      100 <br />
                                                       คน
                                                     </Typography>
                                                   </Box>
                                                 </Box>
                                               </React.Fragment>
                                             )
+                                              :
+                                              (
+                                                <React.Fragment>
+                                                  <Typography variant="body2" sx={{ color: 'red' }}>
+                                                    กรุณาเลือกแพ็คเกจที่ต้องการ
+                                                  </Typography>
+                                                  <Divider orientation="vertical" variant="middle" flexItem sx={{ marginLeft: 2, border: `1px solid ${theme.palette.primary.dark}` }} />
+                                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: "center" }}>
+                                                    <Box>
+                                                      <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: "bold", color: theme.palette.primary.dark }} >
+                                                        เหมาะสำหรับ <br />
+                                                        พนักงาน
+                                                      </Typography>
+                                                      <Typography
+                                                        variant="h4"
+                                                        sx={{
+                                                          color: theme.palette.primary.dark,
+                                                          fontWeight: "bold",
+                                                          lineHeight: 1.4,
+                                                          marginLeft: 2
+                                                        }}
+                                                      >
+                                                        0 <br />
+                                                        คน
+                                                      </Typography>
+                                                    </Box>
+                                                  </Box>
+                                                </React.Fragment>
+                                              )
                                 }
                               </Box>
                             </CardContent>

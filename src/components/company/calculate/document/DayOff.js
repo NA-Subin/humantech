@@ -213,8 +213,8 @@ const DayOffDetail = (props) => {
     return (
         <React.Fragment>
             <Grid item size={12}>
-                <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh" }}>
-                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1080px" }}>
+                <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", width: "100%" }}>
+                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                         <TableHead
                             sx={{
                                 position: "sticky",

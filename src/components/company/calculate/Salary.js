@@ -269,7 +269,7 @@ const Salary = () => {
 
     return (
         <React.Fragment>
-            <Box sx={{ marginTop: 2, width: `${windowWidth - 500}px` }}>
+            <Box sx={{ marginTop: 2, width: "100%" }}>
                 <Grid container spacing={2}>
                     <Grid item size={editLeave ? 12 : 11}>
                         {

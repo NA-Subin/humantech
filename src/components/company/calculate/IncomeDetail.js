@@ -381,7 +381,7 @@ const IncomeDetail = (props) => {
 
     return (
         <React.Fragment>
-            <Box sx={{ marginTop: -3, width: `${windowWidth - 500}px` }}>
+            <Box sx={{ marginTop: -3, width: "100%" }}>
                 <Grid container spacing={2}>
                     <Grid item size={editIncome ? 12 : 11}>
                         {

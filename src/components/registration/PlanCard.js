@@ -66,7 +66,7 @@ const PlanCard = ({
                       }}
                     >
                       <Typography fontSize="12px" fontWeight="bold" color="red">
-                        *ยอดนิยม
+                        {tag}
                       </Typography>
                     </Box>
                   )}
@@ -112,9 +112,9 @@ const PlanCard = ({
                   fontWeight="bold"
                   color={theme.palette.primary.dark}
                 >
-                  {employees === 0 ? "ภายใน" : "เหมาะสำหรับ"}
+                  {name === "Attendant" ? "ภายใน" : "เหมาะสำหรับ"}
                   <br />
-                  {employees === 0 ? "ระยะเวลา" : "พนักงาน"}
+                  {name === "Attendant" ? "ระยะเวลา" : "พนักงาน"}
                 </Typography>
                 <Typography
                   variant="h4"
@@ -122,10 +122,10 @@ const PlanCard = ({
                   color={theme.palette.primary.dark}
                   sx={{ lineHeight: 1.4 }}
                 >
-                  {employees === 0 ? "1" : employees}
+                  {name === "Attendant" ? "1" : employees}
                 </Typography>
                 <Typography variant="h4" fontWeight="bold" color={theme.palette.primary.dark}>
-                  {employees === 0 ? "เดือน" : "คน"}
+                  {name === "Attendant" ? "เดือน" : "คน"}
                 </Typography>
               </Box>
             </Box>

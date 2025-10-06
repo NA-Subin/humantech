@@ -24,7 +24,7 @@ import { IconButtonError, Item, ItemReport, TablecellHeader } from '../../theme/
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useFirebase } from '../../server/ProjectFirebaseContext';
 import { useState } from 'react';
-import { Button, Dialog, DialogContent, DialogTitle, InputAdornment, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
+import { Button, Chip, Dialog, DialogContent, DialogTitle, InputAdornment, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField } from '@mui/material';
 import { PieChart } from '@mui/x-charts/PieChart';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -53,12 +53,26 @@ export default function UpdateEmployee({ item, index, leave, date }) {
     const [leaves, setLeaves] = useState(item.empleave);
     const [month, setMonth] = useState(date.month() + 1);
     const [year, setYear] = useState(date.format("YYYY"));
+    const [selected, setSelected] = useState([]);
     // const [leavePersonal, setLeavePersonal] = useState(item.empleave[0]?.number || 0);
     // const [leaveSick, setLeaveSick] = useState(item.empleave[1]?.number || 0);
     // const [leaveVacation, setLeaveVacation] = useState(item.empleave[2]?.number || 0);
     // const [leaveTraining, setLeaveTraining] = useState(item.empleave[3]?.number || 0);
     // const [leaveMaternity, setLeaveMaternity] = useState(item.empleave[4]?.number || 0);
     // const [leaveSterilization, setLeaveSterilization] = useState(item.empleave[5]?.number || 0);
+
+    const [editingLeave, setEditingLeave] = useState(null); // เก็บ leave ที่กำลังแก้ไข
+    const [empleave, setEmpleave] = useState(item.empleave); // เก็บ list ปัจจุบัน
+
+    const handleMaxChange = (name, value) => {
+        setEmpleave(prev =>
+            prev.map(lv =>
+                lv.name === name
+                    ? { ...lv, max: value } // อัปเดตค่า max เฉพาะ leave ที่ชื่อเดียวกัน
+                    : lv
+            )
+        );
+    };
 
     const translateLeaveName = (name, t) => {
         const mapping = {
@@ -129,6 +143,12 @@ export default function UpdateEmployee({ item, index, leave, date }) {
                 ShowError(t("error"), t("ok"));
             });
     };
+
+    console.log("item.empleave : ", item.empleave);
+    console.log("item.empleaveapprove : ", item.empleaveapprove?.[year]?.[month]);
+    console.log("ลาป่วย : ", item.empleaveapprove?.[year]?.[month]?.filter(
+        (row) => row.leave === "ลาป่วย"
+    ).length)
 
     return (
         <React.Fragment>
@@ -293,13 +313,138 @@ export default function UpdateEmployee({ item, index, leave, date }) {
                         </Grid>
                     </Grid>
                     <Typography variant="subtitle2" fontWeight="bold" sx={{ marginTop: 2, marginBottom: 1 }} >{t("leaveInfo")}</Typography>
-                    <Grid container spacing={2} marginLeft={2}>
-                        {item.empleave.map((lv, index) => (
+                    <Box marginLeft={2}>
+                        {empleave.map((it, index) => {
+                            const number =
+                                item.empleaveapprove?.[year]?.[month]?.filter(
+                                    (row) => row.leave === it.name
+                                ).length ?? 0;
+
+                            const isEditing = editingLeave === it.name;
+
+                            return (
+                                <Chip
+                                    key={index}
+                                    label={
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                width: "auto", // ✅ ให้ขนาดตาม content
+                                                textAlign: "center",
+                                                p: 0,
+                                            }}
+                                        >
+                                            <Typography
+                                                variant="subtitle2"
+                                                sx={{
+                                                    fontWeight: "bold",
+                                                    whiteSpace: "nowrap",
+                                                }}
+                                            >
+                                                {translateLeaveName(it.name, t)}
+                                            </Typography>
+
+                                            {/* ปุ่ม Close */}
+                                            {
+                                                isEditing &&
+                                                <IconButtonError
+                                                    onClick={() => setEditingLeave(null)}
+                                                    sx={{
+                                                        position: "absolute", // ✅ วางแบบ absolute
+                                                        top: 3,               // ✅ ระยะจากบน
+                                                        right: 3,             // ✅ ระยะจากขวา
+                                                        padding: "2px",       // ✅ ลดพื้นที่รอบไอคอน
+                                                        minWidth: "auto",     // ✅ ลบ minWidth ของ IconButton
+                                                        width: 20,            // ✅ ขนาดปุ่ม
+                                                        height: 20,           // ✅ ขนาดปุ่ม
+                                                    }}
+                                                >
+                                                    <CloseIcon sx={{ fontSize: 12 }} /> {/* ✅ ไอคอนเล็กลง */}
+                                                </IconButtonError>
+                                            }
+
+                                            {isEditing ? (
+                                                <TextField
+                                                    type="number"
+                                                    size="small"
+                                                    variant="standard"
+                                                    value={it.max}
+                                                    fullWidth
+                                                    onChange={(e) =>
+                                                        handleMaxChange(it.name, Number(e.target.value))
+                                                    }
+                                                    // onBlur={() => setEditingLeave(null)}
+                                                    // onKeyDown={(e) => {
+                                                    //     if (e.key === "Enter") setEditingLeave(null);
+                                                    // }}
+                                                    InputProps={{
+                                                        startAdornment: (
+                                                            <Typography
+                                                                variant="caption"
+                                                                sx={{
+                                                                    fontWeight: "bold",
+                                                                    mr: 0.5,
+                                                                    whiteSpace: "nowrap",
+                                                                }}
+                                                            >
+                                                                {t("max")}
+                                                            </Typography>
+                                                        ),
+                                                        sx: {
+                                                            height: 28,
+                                                            "& input": {
+                                                                textAlign: "center",
+                                                                fontSize: "0.9rem",
+                                                                padding: "2px 0px",
+                                                            },
+                                                        },
+                                                    }}
+                                                    sx={{
+                                                        width: "100%",
+                                                        "& .MuiInputBase-root": { height: 28, p: 0 },
+                                                    }}
+                                                />
+                                            ) : (
+                                                <Typography
+                                                    variant="subtitle2"
+                                                    sx={{ color: "text.secondary", fontSize: "0.8rem" }}
+                                                >
+                                                    {number}/{it.max}
+                                                </Typography>
+                                            )}
+                                        </Box>
+                                    }
+                                    onClick={() => setEditingLeave(it.name)}
+                                    color="default"
+                                    variant="outlined"
+                                    sx={{
+                                        borderRadius: 1.5,
+                                        cursor: "pointer",
+                                        display: "inline-flex", // ✅ ปรับขนาดตาม content
+                                        height: "auto",
+                                        fontSize: "14px",
+                                        background: (theme) =>
+                                            isEditing
+                                                ? `linear-gradient(to bottom, ${theme.palette.primary.main} 50%, #fff 50%)`
+                                                : "#fff",
+                                        color: isEditing ? "white" : "inherit",
+                                        p: "4px 8px", // ✅ padding รอบ ๆ ตัวหนังสือ
+                                        marginTop: 2,
+                                        marginRight: 2,
+                                    }}
+                                />
+                            );
+                        })}
+
+
+                        {/* {item.empleave.map((lv, index) => (
                             <Grid item size={6} key={lv.ID}>
                                 <Typography variant="subtitle2" fontWeight="bold">{translateLeaveName(lv.name, t)}</Typography>
                                 <Box display="flex" alignItems="center" justifyContent="center" width="100%">
                                     <Box sx={{ position: "relative", width: "100%", height: 40 }}>
-                                        {/* TextField ครึ่งซ้าย */}
                                         <TextField
                                             fullWidth
                                             size="small"
@@ -315,7 +460,6 @@ export default function UpdateEmployee({ item, index, leave, date }) {
                                             }}
                                         />
 
-                                        {/* Paper ครึ่งขวา */}
                                         <Paper
                                             sx={{
                                                 position: "absolute",
@@ -338,8 +482,8 @@ export default function UpdateEmployee({ item, index, leave, date }) {
                                     </Box>
                                 </Box>
                             </Grid>
-                        ))}
-                    </Grid>
+                        ))} */}
+                    </Box>
                     <Grid container spacing={2} marginLeft={2}>
                         {/*     <Grid item size={3}>
                             <Typography variant="subtitle2" fontWeight="bold">{t("personalLeave")}</Typography>
