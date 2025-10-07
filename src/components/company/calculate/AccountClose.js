@@ -1,4 +1,6 @@
 import React, { useState, useEffect, use } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import '../../../App.css'
 import { getDatabase, ref, push, onValue, set } from "firebase/database";
 import Box from '@mui/material/Box';
@@ -27,7 +29,7 @@ import theme from "../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Item, TablecellHeader, TablecellBody, ItemButton, TablecellNoData, BorderLinearProgressCompany } from "../../../theme/style"
-
+import DownloadIcon from '@mui/icons-material/Download';
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { InputAdornment } from "@mui/material";
 import { HotTable } from '@handsontable/react';
@@ -37,8 +39,18 @@ import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import SelectEmployeeGroup from "../../../theme/SearchEmployee";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
+import { formatThaiFull } from "../../../theme/DateTH";
+import "dayjs/locale/th";
+import ThaiDateSelector from "../../../theme/ThaiDateSelector";
+import { saveAs } from "file-saver";
+import ExcelJS from "exceljs";
+dayjs.locale("th");
 
-const AccountDetail = () => {
+const AccountDetail = (props) => {
+    const { department, section, position, employee, month } = props;
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
@@ -52,10 +64,22 @@ const AccountDetail = () => {
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
-    const [department, setDepartment] = useState("");
-    const [section, setSection] = useState("");
-    const [position, setPosition] = useState("");
-    const [employee, setEmployee] = useState("");
+    const [selectedDateStart, setSelectDateStart] = useState(null);
+    const [selectedDateEnd, setSelectDateEnd] = useState(null);
+    const [closeAccount, setCloseAccount] = useState(false);
+
+    const [income, setIncome] = useState([]);
+    const [deduction, setDeduction] = useState([]);
+    const [documentincome, setDocumentIncome] = useState([]);
+    const [documentdeduction, setDocumentDeduction] = useState([]);
+    const [documentleave, setDocumentLeave] = useState([]);
+    const [documentot, setDocumentOT] = useState([]);
+    const [holiday, setHoliday] = useState([]);
+
+    const year = month.year();
+    const m = month.month();
+    const daysInMonth = month.daysInMonth();
+
     const [menu, setMenu] = useState('0-แก้ไขเวลา');
 
     console.log("Menu : ", menu);
@@ -69,6 +93,265 @@ const AccountDetail = () => {
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
+
+    const holidaysInMonth = holiday.filter(h =>
+        parseInt(h.YYYY) === year && parseInt(h.MM) === m + 1
+    );
+    const holidayCount = holidaysInMonth.length;
+
+    const workingDays = daysInMonth - holidayCount;
+
+    console.log('จำนวนวันทำงานจริง:', workingDays);
+
+    // แยก companyId จาก companyName (เช่น "0:HPS-0000")
+
+    const incomeActive = income.filter(row => row.status === 1);
+    const deductionActive = deduction.filter(row => row.status === 1);
+
+    // 1️⃣ กรอง employees ตาม props
+    let filteredEmployees = employees.length !== 0 ? employees : [];
+
+    if (department && department !== "all-ทั้งหมด") {
+        filteredEmployees = filteredEmployees.filter(e => e.department === department);
+    }
+
+    if (section && section !== "all-ทั้งหมด") {
+        filteredEmployees = filteredEmployees.filter(e => e.section === section);
+    }
+
+    if (position && position !== "all-ทั้งหมด") {
+        filteredEmployees = filteredEmployees.filter(e => e.position === position);
+    }
+
+    if (employee && employee !== "all-ทั้งหมด") {
+        const empId = Number(employee.split("-")[0]);
+        filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
+    }
+
+    console.log("filteredEmployees : ", filteredEmployees);
+
+    const dayNameMap = {
+        Sunday: "อาทิตย์",
+        Monday: "จันทร์",
+        Tuesday: "อังคาร",
+        Wednesday: "พุธ",
+        Thursday: "พฤหัสบดี",
+        Friday: "ศุกร์",
+        Saturday: "เสาร์",
+    };
+
+    const generateHolidayDatesFromHistories = (
+        employeeID,
+        employeecode,
+        nickname,
+        employname,
+        department,
+        section,
+        position,
+        workshifthistories,
+        filterYear,
+        filterMonth
+    ) => {
+        if (!Array.isArray(workshifthistories)) return {
+            employeeID,
+            employeecode,
+            nickname,
+            employname,
+            department,
+            section,
+            position,
+            holidayDates: []
+        };
+
+        const parseYear = (y) =>
+            y === "now" ? dayjs().year() : parseInt(y) > 2500 ? parseInt(y) - 543 : parseInt(y);
+        const parseMonth = (m) =>
+            m === "now" ? dayjs().month() : parseInt(m) - 1;
+        const parseDay = (d) =>
+            d === "now" ? dayjs().date() : parseInt(d);
+
+        const allHolidayDates = [];
+
+        workshifthistories.forEach((history) => {
+            const holidays = history.holiday?.map(h => h.name) || [];
+
+            const startYear = parseYear(history.YYYYstart);
+            const startMonth = parseMonth(history.MMstart);
+            const startDay = parseDay(history.DDstart);
+
+            const endYear = parseYear(history.YYYYend);
+            const endMonth = parseMonth(history.MMend);
+            const endDay = parseDay(history.DDend);
+
+            let current = dayjs().year(startYear).month(startMonth).date(startDay);
+            const end = dayjs().year(endYear).month(endMonth).date(endDay);
+
+            while (current.isSameOrBefore(end, "day")) {
+                const currentDateStr = current.format("DD/MM/YYYY");
+                const dayName = dayNameMap[current.format("dddd")];
+
+                // ✅ ใช้ holiday ของช่วงนั้นเท่านั้น
+                if (holidays.includes(dayName)) {
+                    if (current.year() === filterYear && current.month() === filterMonth) {
+                        allHolidayDates.push({
+                            date: currentDateStr,
+                            dayName,
+                            workshift: history.workshift || null,
+                            periodID: history.ID,
+                        });
+                    }
+                }
+
+                current = current.add(1, "day");
+            }
+        });
+
+        allHolidayDates.sort((a, b) =>
+            dayjs(a.date, "DD/MM/YYYY").unix() - dayjs(b.date, "DD/MM/YYYY").unix()
+        );
+
+        return {
+            employeeID,
+            employeecode,
+            nickname,
+            employname,
+            department,
+            section,
+            position,
+            holidayDates: allHolidayDates
+        };
+    };
+
+    // 3️⃣ สร้าง Rows จาก filteredEmployees
+    const Rows = filteredEmployees.map(emp => {
+        const docIncome = documentincome.find(doc => doc.employid === emp.ID);
+        const docDeduction = documentdeduction.find(doc => doc.employid === emp.ID);
+        const attendantCount = emp.attendant?.[year]?.[m + 1]?.filter(item =>
+            Number(item.status) === 2
+        ).length ?? 0;
+
+        const leave = documentleave.filter((doc) => doc.empid === emp.ID);
+
+        let otHours = 0; // ตัวแปรเก็บผลรวมชั่วโมง OT
+
+        const ot = documentot.filter(doc => doc.empid === emp.ID);
+
+        ot.forEach(doc => {
+            let start = dayjs(doc.timestart, "HH:mm");
+            let end = dayjs(doc.timeend, "HH:mm");
+
+            // ถ้า OT ข้ามวัน (end < start) → บวกเพิ่ม 1 วัน
+            if (end.isBefore(start)) {
+                end = end.add(1, "day");
+            }
+
+            // คำนวณชั่วโมง OT
+            const hours = end.diff(start, "minute") / 60;
+
+            // รวมเข้ากับ otHours
+            otHours += hours;
+        });
+
+        // ✅ generate holidayDates ของพนักงานคนนี้
+        const holidayResult = generateHolidayDatesFromHistories(
+            emp.ID,
+            emp.employeecode,
+            emp.nickname,
+            emp.employname,
+            emp.department,
+            emp.section,
+            emp.position,
+            emp.workshifthistory,
+            year,
+            m
+        );
+
+        const employeetype = emp.employmenttype ? emp.employmenttype.split("-")[1] : 0
+
+        const row = {
+            employeecode: emp.employeecode,
+            employeetype: emp.employmenttype,
+            department: emp.department,
+            section: emp.section,
+            position: emp.position,
+            workshift: emp.workshift,
+            salary: Number(emp.salary),
+            employid: emp.ID,
+            employname: `${emp.employname} (${emp.nickname})`,
+            workday: employeetype !== 0 ? workingDays : 0,
+            attendantCount: attendantCount,
+            holidayCount: holidayResult.holidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
+            holiday: holidayResult.holidayDates, // ✅ เพิ่มจำนวนวันหยุด
+            leaveCount: leave.length,
+            otHours: otHours,
+            missingWork: (employeetype !== 0 ? workingDays : 0) - (attendantCount + holidayResult.holidayDates.length + leave.length),
+            totalIncome: 0,
+            totalDeduction: 0,
+            total: 0
+        };
+
+        // income flat
+        incomeActive.forEach(inc => {
+            const docIncomes = docIncome?.income?.find(item => item.ID === inc.ID);
+            const incomeValue = docIncomes?.income || 0;
+            row[`income${inc.ID}`] = incomeValue;
+            row.totalIncome += incomeValue;
+        });
+
+        // deduction flat
+        deductionActive.forEach(ded => {
+            const docDeductions = docDeduction?.deduction?.find(item => item.ID === ded.ID);
+            const deductionValue = docDeductions?.deduction || 0;
+            row[`deduction${ded.ID}`] = deductionValue;
+            row.totalDeduction += deductionValue;
+        });
+
+        row.total = (Number(emp.salary) + row.totalIncome) - row.totalDeduction;
+
+        return row;
+    });
+
+    // 4️⃣ กรอง columns ที่มีค่าไม่เป็น 0 อย่างน้อย 1 แถว
+    const visibleIncome = incomeActive.filter(inc =>
+        Rows.some(row => (row[`income${inc.ID}`] ?? 0) !== 0)
+    );
+
+    const visibleDeduction = deductionActive.filter(ded =>
+        Rows.some(row => (row[`deduction${ded.ID}`] ?? 0) !== 0)
+    );
+
+    // 5️⃣ Group ข้อมูลตาม ฝ่ายงาน / ส่วนงาน / ตำแหน่ง
+    const groupedRows = Rows.reduce((acc, row) => {
+        const dept = row.department || "ไม่ระบุฝ่าย";
+        const sec = row.section || "ไม่ระบุส่วน";
+        const pos = row.position || "ไม่ระบุตำแหน่ง";
+
+        if (!acc[dept]) acc[dept] = {};
+        if (!acc[dept][sec]) acc[dept][sec] = {};
+        if (!acc[dept][sec][pos]) acc[dept][sec][pos] = [];
+
+        acc[dept][sec][pos].push(row);
+        return acc;
+    }, {});
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const holidayRef = ref(firebaseDB, `workgroup/company/${companyId}/holiday`);
+
+        const unsubscribe = onValue(holidayRef, (snapshot) => {
+            const holidaysData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!holidaysData) {
+                setHoliday([{ ID: 0, name: '' }]);
+            } else {
+                setHoliday(holidaysData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
 
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -146,6 +429,119 @@ const AccountDetail = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const incomeRef = ref(firebaseDB, `workgroup/company/${companyId}/income`);
+
+        const unsubscribe = onValue(incomeRef, (snapshot) => {
+            const incomeData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!incomeData) {
+                setIncome([{ ID: 0, name: '' }]);
+            } else {
+                setIncome(incomeData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const deductionRef = ref(firebaseDB, `workgroup/company/${companyId}/deductions`);
+
+        const unsubscribe = onValue(deductionRef, (snapshot) => {
+            const deductionData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!deductionData) {
+                setDeduction([{ ID: 0, name: '' }]);
+            } else {
+                setDeduction(deductionData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentincome/${dayjs(month).format("YYYY/M")}`);
+
+        const unsubscribe = onValue(documentRef, (snapshot) => {
+            const documentData = snapshot.val();
+
+            if (!documentData) {
+                setDocumentIncome([]);
+            } else {
+                const documentArray = Object.values(documentData);
+                setDocumentIncome(documentArray); // default: แสดงทั้งหมด
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId, month]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const documentRef = ref(firebaseDB, `workgroup/company/${companyId}/documentdeductions/${dayjs(month).format("YYYY/M")}`);
+
+        const unsubscribe = onValue(documentRef, (snapshot) => {
+            const documentData = snapshot.val();
+
+            if (!documentData) {
+                setDocumentDeduction([]);
+            } else {
+                const documentArray = Object.values(documentData);
+                setDocumentDeduction(documentArray); // default: แสดงทั้งหมด
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId, month]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/documentleave/${dayjs(month).format("YYYY/M")}`);
+
+        const unsubscribe = onValue(leaveRef, (snapshot) => {
+            const leaveData = snapshot.val();
+
+            if (!leaveData) {
+                setDocumentLeave([]);
+            } else {
+                const documentArray = Object.values(leaveData);
+                setDocumentLeave(documentArray); // default: แสดงทั้งหมด
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId, month]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const OTRef = ref(firebaseDB, `workgroup/company/${companyId}/documentot/${dayjs(month).format("YYYY/M")}`);
+
+        const unsubscribe = onValue(OTRef, (snapshot) => {
+            const OTData = snapshot.val();
+
+            if (!OTData) {
+                setDocumentOT([]);
+            } else {
+                const documentArray = Object.values(OTData);
+                setDocumentOT(documentArray); // default: แสดงทั้งหมด
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId, month]);
 
     useEffect(() => {
         if (!firebaseDB) return;
@@ -253,101 +649,528 @@ const AccountDetail = () => {
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
+    console.log("group rows : ", Object.entries(groupedRows));
+
+    const exportSocialSecurityToExcel = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("000000");
+
+        // ✅ ตั้งค่าหัวคอลัมน์ตรง Row 1
+        worksheet.columns = [
+            { header: "เลขประจำตัวประชาชน", key: "citizenId", width: 20 },
+            { header: "คำนำหน้าชื่อ", key: "prefix", width: 15 },
+            { header: "ชื่อผู้ประกันตน", key: "firstName", width: 20 },
+            { header: "นามสกุลผู้ประกันตน", key: "lastName", width: 20 },
+            { header: "ค่าจ้าง", key: "salary", width: 15 },
+            { header: "จำนวนเงินสมทบ", key: "socialSecurity", width: 18 },
+        ];
+
+        // ✅ เพิ่มสไตล์ให้ header (Row 1)
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true };
+        headerRow.alignment = { horizontal: "center", vertical: "middle" };
+        headerRow.height = 30;
+
+        headerRow.eachCell((cell) => {
+            cell.fill = { type: "pattern" };
+            cell.border = { bottom: { style: "medium" } };
+            cell.height = 25
+        });
+
+        // เพิ่มข้อมูลพนักงาน
+        employees.forEach(emp => {
+            const row = worksheet.addRow({
+                citizenId: emp.citizenId,
+                prefix: emp.prefix || "นาย",
+                firstName: emp.firstName || "",
+                lastName: emp.lastName || "",
+                salary: Number(emp.salary || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 }),
+                socialSecurity: Number(emp.socialSecurity || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 }),
+            });
+
+            // กำหนดความสูงแต่ละ row
+            row.height = 25;
+
+            // จัดข้อความและฟอนต์
+            row.alignment = { horizontal: "center", vertical: "middle" };
+            row.getCell('F').font = { name: 'Arial', color: { argb: 'FF0000' } };
+        });
+
+        // ✅ ดาวน์โหลดไฟล์
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), `SampleExcel.xlsx`);
+    };
+
+    const exportEmployeesToExcel = async () => {
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("รายงานสรุป");
+
+        // 🟩 สร้างหัวคอลัมน์
+        const baseHeaders = [
+            { header: "รหัส", key: "employeecode", width: 15 },
+            { header: "ชื่อ", key: "employname", width: 25 },
+            { header: "มาทำงาน", key: "attendantCount", width: 15 },
+            { header: "วันหยุดตามกะ", key: "holidayCount", width: 15 },
+            { header: "ลางาน", key: "leaveCount", width: 15 },
+            { header: "ขาดงาน", key: "missingWork", width: 15 },
+            { header: "โอที", key: "otHours", width: 15 },
+            { header: "วันทำงาน", key: "workday", width: 15 },
+            { header: "เงินเดือน", key: "salary", width: 15 },
+        ];
+
+        const incomeHeaders = visibleIncome.map(inc => ({
+            header: inc.name,
+            key: `income${inc.ID}`,
+            width: 18,
+        }));
+
+        const deductionHeaders = visibleDeduction.map(ded => ({
+            header: ded.name,
+            key: `deduction${ded.ID}`,
+            width: 18,
+        }));
+
+        const finalHeaders = [
+            ...baseHeaders,
+            ...incomeHeaders,
+            ...(visibleIncome.length !== 0 ? [{ header: "รวมรายรับ", key: "totalIncome", width: 18 }] : []),
+            ...deductionHeaders,
+            ...(visibleDeduction.length !== 0 ? [{ header: "รวมรายจ่าย", key: "totalDeduction", width: 18 }] : []),
+            { header: "รวมทั้งหมด", key: "total", width: 18 },
+        ];
+
+        worksheet.columns = finalHeaders;
+
+        // 🟦 สไตล์ Header
+        const headerRow = worksheet.getRow(1);
+        headerRow.font = { bold: true };
+        headerRow.alignment = { horizontal: "center", vertical: "middle" };
+        headerRow.height = 30;
+        headerRow.eachCell(cell => {
+            cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFB2DFDB" } };
+            cell.border = { bottom: { style: "medium" } };
+        });
+
+        // 🟨 วน loop group ข้อมูล
+        Object.entries(groupedRows).forEach(([dept, secObj]) => {
+            // ✅ ฝ่ายงาน
+            const deptRow = worksheet.addRow([`ฝ่ายงาน: ${dept.split("-")[1]}`]);
+            worksheet.mergeCells(`A${deptRow.number}:${String.fromCharCode(64 + finalHeaders.length)}${deptRow.number}`);
+            deptRow.font = { bold: true };
+            deptRow.alignment = { horizontal: "left" };
+            deptRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFB2DFDB" } };
+
+            Object.entries(secObj).forEach(([sec, posObj]) => {
+                // ✅ ส่วนงาน
+                if (sec.split("-")[1] !== "ไม่มี") {
+                    const secRow = worksheet.addRow([`ส่วนงาน: ${sec.split("-")[1]}`]);
+                    worksheet.mergeCells(`A${secRow.number}:${String.fromCharCode(64 + finalHeaders.length)}${secRow.number}`);
+                    secRow.font = { bold: true };
+                    secRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFCEE8E7" } };
+                }
+
+                Object.entries(posObj).forEach(([pos, empList]) => {
+                    // ✅ ตำแหน่ง
+                    const posRow = worksheet.addRow([`ตำแหน่ง: ${pos.split("-")[1]}`]);
+                    worksheet.mergeCells(`A${posRow.number}:${String.fromCharCode(64 + finalHeaders.length)}${posRow.number}`);
+                    posRow.font = { bold: true };
+                    posRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE5F4F3" } };
+
+                    // ✅ พนักงาน
+                    empList.forEach(row => {
+                        const dataRow = {
+                            employeecode: row.employeecode,
+                            employname: row.employname,
+                            attendantCount: row.attendantCount ? `${row.attendantCount} วัน` : "-",
+                            holidayCount: row.holidayCount ? `${row.holidayCount} วัน` : "-",
+                            leaveCount: row.leaveCount ? `${row.leaveCount} วัน` : "-",
+                            missingWork: row.missingWork ? `${row.missingWork} วัน` : "-",
+                            otHours: row.otHours ? `${row.otHours} ชม.` : "-",
+                            workday: row.workday ? `${row.workday} วัน` : "-",
+                            salary: new Intl.NumberFormat("en-US").format(row.salary),
+                            ...Object.fromEntries(visibleIncome.map(inc => [`income${inc.ID}`, row[`income${inc.ID}`] ? new Intl.NumberFormat("en-US").format(row[`income${inc.ID}`]) : "-"])),
+                            ...(visibleIncome.length ? { totalIncome: new Intl.NumberFormat("en-US").format(row.totalIncome || 0) } : {}),
+                            ...Object.fromEntries(visibleDeduction.map(ded => [`deduction${ded.ID}`, row[`deduction${ded.ID}`] ? new Intl.NumberFormat("en-US").format(-Math.abs(row[`deduction${ded.ID}`])) : "-"])),
+                            ...(visibleDeduction.length ? { totalDeduction: new Intl.NumberFormat("en-US").format(-Math.abs(row.totalDeduction || 0)) } : {}),
+                            total: new Intl.NumberFormat("en-US").format(row.total),
+                        };
+
+                        const r = worksheet.addRow(dataRow);
+                        r.alignment = { horizontal: "center", vertical: "middle" };
+                        r.height = 25;
+                        r.eachCell(cell => {
+                            cell.border = {
+                                top: { style: "thin" },
+                                left: { style: "thin" },
+                                bottom: { style: "thin" },
+                                right: { style: "thin" }
+                            };
+                        });
+                    });
+                });
+            });
+        });
+
+        // 📦 ดาวน์โหลดไฟล์
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), "รายงานสรุป.xlsx");
+    };
+
+    const exportEmployeesToPDF = () => {
+        const doc = new jsPDF();
+
+        autoTable(doc, {   // ✅ ต้องเรียกผ่านฟังก์ชัน autoTable(doc, {...})
+            head: [
+                ["เลขประจำตัวประชาชน", "คำนำหน้า", "ชื่อผู้ประกันตน", "นามสกุลผู้ประกันตน", "ค่าจ้าง", "จำนวนเงินสมทบ"]
+            ],
+            body: employees.map(emp => [
+                emp.citizenId,
+                emp.prefix || "นาย",
+                emp.firstName || "",
+                emp.lastName || "",
+                Number(emp.salary || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 }),
+                Number(emp.socialSecurity || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 }),
+            ]),
+            styles: { fontSize: 12, halign: "center", valign: "middle" },
+            headStyles: { fillColor: [200, 200, 200], fontStyle: "bold" },
+            margin: { top: 20 },
+        });
+
+        doc.save("SampleEmployees.pdf");
+    };
+
     return (
         <React.Fragment>
             <Grid container spacing={2}>
                 <Grid item size={12}>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>ปิดงบบัญชี</Typography>
+                    <Divider sx={{ marginTop: 1 }} />
+                </Grid>
+                <Grid item size={6}>
+                    <Grid container spacing={1}>
+                        <Grid item size={12}>
+                            {/* <Typography variant="subtitle2" fontWeight="bold" >กรอกข้อมูลวันที่จ่าย</Typography> */}
+                            <ThaiDateSelector
+                                label="วันที่จ่าย"
+                                value={selectedDateStart}
+                                onChange={(val) => setSelectDateStart(val)}
+                            />
+                        </Grid>
+                        <Grid item size={12}>
+                            {/* <Typography variant="subtitle2" fontWeight="bold" >กรอกข้อมูลวันที่จ่ายภาษี</Typography> */}
+                            <ThaiDateSelector
+                                label="วันที่จ่ายภาษี"
+                                value={selectedDateEnd}
+                                onChange={(val) => setSelectDateEnd(val)}
+                            />
+                        </Grid>
+                    </Grid>
+                </Grid>
+                <Grid item size={6}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between", // ✅ แยกซ้าย-ขวา
+                            marginTop: 7.5,
+                        }}
+                    >
+                        <Button variant="contained" color="success" size="small" sx={{ marginLeft: 5 }}>
+                            บันทึก
+                        </Button>
+
+                        <Box display="flex" justifyContent="center" alignItems="center" >
+                            {
+                                closeAccount ?
+                                    <React.Fragment>
+                                        <Button variant="contained" color="warning" size="small" sx={{ marginRight: 2 }} onClick={() => setCloseAccount(false)}>
+                                            แก้ไข
+                                        </Button>
+                                        <Button variant="contained" color="error" size="small" onClick={() => setCloseAccount(false)}>
+                                            ยกเลิก
+                                        </Button>
+                                    </React.Fragment>
+                                    :
+                                    <Button variant="contained" color="primary" size="small" onClick={() => setCloseAccount(true)}>
+                                        ปิดงวดบัญชี
+                                    </Button>
+                            }
+                        </Box>
+                    </Box>
                 </Grid>
                 <Grid item size={12}>
-                    <Divider sx={{ marginTop: -1 }} />
-                </Grid>
-                <Grid item size={editLeave ? 12 : 11}>
-                    {
-                        editLeave ?
-                            <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
-                                <TableExcel
-                                    columns={columns}
-                                    initialData={department}
-                                    onDataChange={setDepartment}
-                                />
-                            </Paper>
-                            :
-                            <TableContainer component={Paper} textAlign="center">
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
-                                    <TableHead>
-                                        <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                            <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                            <TablecellHeader>ชื่อ</TablecellHeader>
-                                            <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                            <TablecellHeader>ฐานเงินเดือน</TablecellHeader>
-                                            <TablecellHeader>รายได้รายหัก</TablecellHeader>
-                                            <TablecellHeader>ภาษี</TablecellHeader>
-                                            <TablecellHeader>ประกันสังคม</TablecellHeader>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {
-                                            employees.length === 0 ?
-                                                <TableRow>
-                                                    <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                                </TableRow>
-                                                :
-                                                employees
-                                                    .filter(emp => {
-                                                        if (!department) return false;
-                                                        if (section === "" && position === "" && employee === "") {
-                                                            return emp.department === department;
-                                                        }
-                                                        if (section !== "" && position === "" && employee === "") {
-                                                            return emp.department === department && emp.section === section;
-                                                        }
-                                                        if (section !== "" && position !== "" && employee === "") {
-                                                            return emp.department === department && emp.section === section && emp.position === position;
-                                                        }
-                                                        return false;
-                                                    })
-                                                    .map((emp, index) => (
-                                                        <TableRow key={emp.ID ?? index}>
-                                                            <TableCell align="center">{index + 1}</TableCell>
-                                                            <TableCell align="center">{emp.name}</TableCell>
-                                                            <TableCell align="center">{emp.position}</TableCell>
-                                                            <TableCell align="center">{emp.salary}</TableCell>
-                                                            <TableCell align="center">{emp.earningsDeductions}</TableCell>
-                                                            <TableCell align="center">{emp.tax}</TableCell>
-                                                            <TableCell align="center">{emp.socialSecurity}</TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                    </TableBody>
+                    <TableContainer component={Paper} textAlign="center">
+                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
+                            <TableHead>
+                                <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                    <TablecellHeader sx={{ width: 450 }}>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>
+                                            รายงาน
+                                        </Typography>
+                                    </TablecellHeader>
+                                    <TablecellHeader>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>
+                                            จำนวนพนักงาน
+                                        </Typography>
+                                    </TablecellHeader>
+                                    <TablecellHeader sx={{ width: 300 }} />
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                <TableRow sx={{ backgroundColor: "#e0f2f1" }}>
+                                    <TableCell colSpan={3}>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>เงินเดือน</Typography>
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>รายงานผลการสรุปเงินเดือนสุทธิงวดปกติ</Typography>
+                                    </TableCell>
+                                    <TableCell sx={{ textAlign: "center" }}>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>{filteredEmployees.length}</Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
+                                            <Button
+                                                variant={closeAccount ? "outlined" : "contained"}
+                                                size="small"
+                                                color="error"
+                                                sx={{
+                                                    marginRight: 1,
+                                                    height: "25px"
+                                                }}
+                                                startIcon={
+                                                    <DownloadIcon />
+                                                }
+                                                disabled={!closeAccount}
+                                            >
+                                                PDF
+                                            </Button>
+                                            <Button
+                                                variant={closeAccount ? "outlined" : "contained"}
+                                                size="small"
+                                                color="success"
+                                                sx={{
+                                                    marginRight: 1,
+                                                    height: "25px"
+                                                }}
+                                                startIcon={
+                                                    <DownloadIcon />
+                                                }
+                                                onClick={exportEmployeesToExcel}
+                                                disabled={!closeAccount}
+                                            >
+                                                Excel
+                                            </Button>
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell colSpan={2}>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>รายงานสรุปเงินที่ต้องจ่าย</Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
+                                            <Button
+                                                variant={closeAccount ? "outlined" : "contained"}
+                                                size="small"
+                                                color="error"
+                                                sx={{
+                                                    marginRight: 1,
+                                                    height: "25px"
+                                                }}
+                                                startIcon={
+                                                    <DownloadIcon />
+                                                }
+                                                disabled={!closeAccount}
+                                            >
+                                                PDF
+                                            </Button>
+                                            <Button
+                                                variant={closeAccount ? "outlined" : "contained"}
+                                                size="small"
+                                                color="success"
+                                                sx={{
+                                                    marginRight: 1,
+                                                    height: "25px"
+                                                }}
+                                                startIcon={
+                                                    <DownloadIcon />
+                                                }
+                                                disabled={!closeAccount}
+                                            >
+                                                Excel
+                                            </Button>
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell colSpan={2}>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>สลิปเงินเดือน</Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
+                                            <Button
+                                                variant={closeAccount ? "outlined" : "contained"}
+                                                size="small"
+                                                color="error"
+                                                sx={{
+                                                    marginRight: 1,
+                                                    height: "25px"
+                                                }}
+                                                startIcon={
+                                                    <DownloadIcon />
+                                                }
+                                                disabled={!closeAccount}
+                                            >
+                                                PDF
+                                            </Button>
+                                            <Button
+                                                variant={closeAccount ? "outlined" : "contained"}
+                                                size="small"
+                                                color="success"
+                                                sx={{
+                                                    marginRight: 1,
+                                                    height: "25px"
+                                                }}
+                                                startIcon={
+                                                    <DownloadIcon />
+                                                }
+                                                disabled={!closeAccount}
+                                            >
+                                                Excel
+                                            </Button>
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow sx={{ backgroundColor: "#e0f2f1" }}>
+                                    <TableCell colSpan={3}>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>ภาษีประกันสังคม</Typography>
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell colSpan={2}>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>รายงานประกันสังคม</Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
+                                            <Button
+                                                variant={closeAccount ? "outlined" : "contained"}
+                                                size="small"
+                                                color="error"
+                                                sx={{
+                                                    marginRight: 1,
+                                                    height: "25px"
+                                                }}
+                                                startIcon={
+                                                    <DownloadIcon />
+                                                }
+                                                onClick={exportEmployeesToPDF}
+                                                disabled={!closeAccount}
+                                            >
+                                                PDF
+                                            </Button>
+                                            <Button
+                                                variant={closeAccount ? "outlined" : "contained"}
+                                                size="small"
+                                                color="success"
+                                                sx={{
+                                                    marginRight: 1,
+                                                    height: "25px"
+                                                }}
+                                                startIcon={
+                                                    <DownloadIcon />
+                                                }
+                                                onClick={exportSocialSecurityToExcel}
+                                                disabled={!closeAccount}
+                                            >
+                                                Excel
+                                            </Button>
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell colSpan={2}>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>รายงานภาษี ภงด.1</Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
+                                            <Button
+                                                variant={closeAccount ? "outlined" : "contained"}
+                                                size="small"
+                                                color="error"
+                                                sx={{
+                                                    marginRight: 1,
+                                                    height: "25px"
+                                                }}
+                                                startIcon={
+                                                    <DownloadIcon />
+                                                }
+                                                disabled={!closeAccount}
+                                            >
+                                                PDF
+                                            </Button>
+                                            <Button
+                                                variant={closeAccount ? "outlined" : "contained"}
+                                                size="small"
+                                                color="success"
+                                                sx={{
+                                                    marginRight: 1,
+                                                    height: "25px"
+                                                }}
+                                                startIcon={
+                                                    <DownloadIcon />
+                                                }
+                                                disabled={!closeAccount}
+                                            >
+                                                Excel
+                                            </Button>
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell colSpan={2}>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>รายงานภาษี ภงด.3</Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
+                                            <Button
+                                                variant={closeAccount ? "outlined" : "contained"}
+                                                size="small"
+                                                color="error"
+                                                sx={{
+                                                    marginRight: 1,
+                                                    height: "25px"
+                                                }}
+                                                startIcon={
+                                                    <DownloadIcon />
+                                                }
+                                                disabled={!closeAccount}
+                                            >
+                                                PDF
+                                            </Button>
+                                            <Button
+                                                variant={closeAccount ? "outlined" : "contained"}
+                                                size="small"
+                                                color="success"
+                                                sx={{
+                                                    marginRight: 1,
+                                                    height: "25px"
+                                                }}
+                                                startIcon={
+                                                    <DownloadIcon />
+                                                }
+                                                disabled={!closeAccount}
+                                            >
+                                                Excel
+                                            </Button>
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+                            </TableBody>
 
-                                </Table>
-                            </TableContainer>
-                    }
+                        </Table>
+                    </TableContainer>
                 </Grid>
-                {
-                    !editLeave &&
-                    <Grid item size={1} textAlign="right">
-                        <Box display="flex" justifyContent="center" alignItems="center">
-                            <Button
-                                variant="contained"
-                                size="small"
-                                color="warning"
-                                fullWidth
-                                sx={{
-                                    height: "60px",
-                                    flexDirection: "column",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                    textTransform: "none",
-                                }}
-                                onClick={() => setEditLeave(true)}
-                            >
-                                <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
-                                แก้ไข
-                            </Button>
-                        </Box>
-                    </Grid>
-                }
             </Grid>
         </React.Fragment>
     )

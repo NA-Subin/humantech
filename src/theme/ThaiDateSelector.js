@@ -11,7 +11,7 @@ const monthNames = [
 export default function ThaiDateSelector({ label = "", value, onChange, disabled }) {
   const [selectedDay, setSelectedDay] = useState(value?.day || "");
   const [selectedMonth, setSelectedMonth] = useState(value?.month || "");
-  const [selectedYear, setSelectedYear] = useState(value?.year || "");
+  const [selectedYear, setSelectedYear] = useState(value?.year || "2568");
 
   const getDaysInMonth = (month, year) => {
     if (!month || !year) return 31;
@@ -91,6 +91,7 @@ export default function ThaiDateSelector({ label = "", value, onChange, disabled
         <Typography variant="subtitle2" fontWeight="bold">ปี (พ.ศ.)</Typography>
         <TextField
           fullWidth
+          type="number"
           size="small"
           value={selectedYear}
           onChange={handleYearChange}

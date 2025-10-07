@@ -112,7 +112,7 @@ const CalculateSalary = () => {
             //     return <Salary data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'สรุปผลการคำนวณ':
                 return <SalaryDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
-            case 'ปิดงบบัญชี':
+            case 'ปิดงวดบัญชี':
                 return <AccountDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             default:
                 return null;
@@ -300,7 +300,7 @@ const CalculateSalary = () => {
                             'รายจ่าย',
                             // 'ตรวจสอบเงินเดือน',
                             'สรุปผลการคำนวณ',
-                            'ปิดงบบัญชี',
+                            'ปิดงวดบัญชี',
                         ].map((text, index) => {
                             const value = `${index}-${text}`;
                             const isSelected = menu === value;
