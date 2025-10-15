@@ -441,25 +441,31 @@ const PersonalDetail = (props) => {
                                 <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลทั่วไปรายคนให้กดชื่อในตารางได้เลย</Typography>
                                 <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
                                     <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2500px" }}>
-                                        <TableHead>
+                                        <TableHead
+                                            sx={{
+                                                position: "sticky",
+                                                top: 0,
+                                                zIndex: 2,
+                                            }}
+                                        >
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 300 }}>ชื่อ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 200 }}>ตำแหน่ง</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>เพศ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 150 }}>สถานภาพทางทหาร</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 120 }}>ตำบล</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 120 }}>อำเภอ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 120 }}>จังหวัด</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>รหัสไปรณีย์</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>สัญชาติ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>ศาสนา</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>ส่วนสูง</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>น้ำหนัก</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 100 }}>สถานภาพ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 120 }}>เบอร์โทรศัพท์</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 120 }}>โทรศัพท์บ้าน</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 150 }}>Line ID</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 50, borderRight: "2px solid white" }}>ลำดับ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 300, borderRight: "2px solid white", position: "sticky", left: 0, zIndex: 2, backgroundColor: theme.palette.primary.dark }}>ชื่อ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 200, borderRight: "2px solid white" }}>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100, borderRight: "2px solid white" }}>เพศ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150, borderRight: "2px solid white" }}>สถานภาพทางทหาร</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120, borderRight: "2px solid white" }}>ตำบล</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120, borderRight: "2px solid white" }}>อำเภอ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120, borderRight: "2px solid white" }}>จังหวัด</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100, borderRight: "2px solid white" }}>รหัสไปรณีย์</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100, borderRight: "2px solid white" }}>สัญชาติ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100, borderRight: "2px solid white" }}>ศาสนา</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100, borderRight: "2px solid white" }}>ส่วนสูง</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100, borderRight: "2px solid white" }}>น้ำหนัก</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100, borderRight: "2px solid white" }}>สถานภาพ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120, borderRight: "2px solid white" }}>เบอร์โทรศัพท์</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 120, borderRight: "2px solid white" }}>โทรศัพท์บ้าน</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150, borderRight: "2px solid white" }}>Line ID</TablecellHeader>
                                                 <TablecellHeader sx={{ width: 150 }}>ประเทศ</TablecellHeader>
                                             </TableRow>
                                         </TableHead>
@@ -481,24 +487,62 @@ const PersonalDetail = (props) => {
                                                                 backgroundColor: hoveredEmpID === row.employeecode ? theme.palette.primary.light : 'inherit',
                                                             }}
                                                         >
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{index + 1}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.employname}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.position}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.sex}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.militaryStatus}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.tambon.split("-")[1]}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.amphure.split("-")[1]}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.province.split("-")[1]}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.zipCode}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.nationality}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.religion}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.height}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.weight}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.statusEmployee}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.phone}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.homephone}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.lineID}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal' }}>{row.country}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{index + 1}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "left", position: "sticky", left: 0, zIndex: 2, backgroundColor: "#f5f5f5" }}>
+                                                                <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>
+                                                                    {row.employname}
+                                                                </Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "left" }}>
+                                                                <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.position}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.sex}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.militaryStatus}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.tambon.split("-")[1]}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.amphure.split("-")[1]}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.province.split("-")[1]}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.zipCode}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.nationality}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.religion}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.height}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.weight}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.statusEmployee}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.phone}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.homephone}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.lineID}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.country}</Typography>
+                                                            </TableCell>
                                                         </TableRow>
                                                     ))}
                                         </TableBody>

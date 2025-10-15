@@ -331,16 +331,22 @@ const TrainingDetail = (props) => {
                                 <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลการฝึกอบรมรายคนให้กดชื่อในตารางได้เลย</Typography>
                                 <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
                                     <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
-                                        <TableHead>
+                                        <TableHead
+                                            sx={{
+                                                position: "sticky",
+                                                top: 0,
+                                                zIndex: 3,
+                                            }}
+                                        >
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                                <TablecellHeader rowSpan={2}>ชื่อ</TablecellHeader>
-                                                <TablecellHeader rowSpan={2}>ตำแหน่ง</TablecellHeader>
-                                                <TablecellHeader rowSpan={2}>วันที่เริ่มต้น</TablecellHeader>
-                                                <TablecellHeader rowSpan={2}>จนถึงวันที่</TablecellHeader>
-                                                <TablecellHeader rowSpan={2}>สถานบัน</TablecellHeader>
-                                                <TablecellHeader rowSpan={2}>หลักสูตร</TablecellHeader>
-                                                <TablecellHeader colSpan={2}>file</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 200, position: "sticky", left: 0, zIndex: 2, backgroundColor: theme.palette.primary.dark }}>ชื่อ</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 150 }}>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 80 }}>วันที่เริ่มต้น</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 80 }}>จนถึงวันที่</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 150 }}>สถานบัน</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 150 }}>หลักสูตร</TablecellHeader>
+                                                <TablecellHeader colSpan={2} sx={{ width: 300 }}>file</TablecellHeader>
                                             </TableRow>
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                 <TablecellHeader>เอกสาร</TablecellHeader>
@@ -367,8 +373,16 @@ const TrainingDetail = (props) => {
                                                             {row.isFirst && (
                                                                 <>
                                                                     <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{index + 1}</TableCell>
-                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.employname}</TableCell>
-                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.position}</TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "left" }}>
+                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>
+                                                                            {row.employname}
+                                                                        </Typography>
+                                                                        </TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "left" }}>
+                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>
+                                                                            {row.position}
+                                                                        </Typography>
+                                                                        </TableCell>
                                                                 </>
                                                             )}
                                                             <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.dateStart}</TableCell>

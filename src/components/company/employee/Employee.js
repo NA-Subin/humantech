@@ -1096,7 +1096,7 @@ const Employee = () => {
 
                 </Grid>
                 <Grid item size={11}>
-                    <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "70vh" }}>
+                    <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "80vh" }}>
                         <Box sx={{ width: "100%" }}>
                             {/* <SelectEmployeeGroup
                                 department={department}
@@ -1127,8 +1127,8 @@ const Employee = () => {
                                         editEmployee ?
                                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                                 <TableExcel
-                                                    styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}
+                                                    styles={{ height: "62vh" }} // ✅ ส่งเป็น object
+                                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}
                                                     columns={columns}
                                                     initialData={employees}
                                                     onDataChange={setEmployees}
@@ -1138,18 +1138,24 @@ const Employee = () => {
                                             :
                                             <React.Fragment>
                                                 <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการเปลี่ยนกะการทำงานให้กดชื่อในตารางได้เลย</Typography>
-                                                <TableContainer component={Paper} textAlign="center">
-                                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
-                                                        <TableHead>
+                                                <TableContainer component={Paper} textAlign="center" sx={{ height: "62vh" }}>
+                                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}>
+                                                        <TableHead
+                                                            sx={{
+                                                                position: "sticky",
+                                                                top: 0,
+                                                                zIndex: 2,
+                                                            }}
+                                                        >
                                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                                <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: "10%" }}>รหัสพนักงาน</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: "25%" }}>ชื่อ</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: "15%" }}>ฝ่ายงาน</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: "15%" }}>ส่วนงาน</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: "15%" }}>ตำแหน่ง</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: "15%" }}>ประเภทการจ้าง</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: "15%" }}>เงินเดือน</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 40, borderRight: "2px solid white" }}>ลำดับ</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 70, borderRight: "2px solid white" }}>รหัสพนักงาน</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 250, borderRight: "2px solid white", position: "sticky", left: 0, zIndex: 2, backgroundColor: theme.palette.primary.dark }}>ชื่อ</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 140, borderRight: "2px solid white" }}>ฝ่ายงาน</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 140, borderRight: "2px solid white" }}>ส่วนงาน</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 140, borderRight: "2px solid white" }}>ตำแหน่ง</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 100, borderRight: "2px solid white" }}>ประเภทการจ้าง</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 100 }}>เงินเดือน</TablecellHeader>
                                                             </TableRow>
                                                         </TableHead>
                                                         <TableBody>
@@ -1168,22 +1174,30 @@ const Employee = () => {
                                                                             onMouseEnter={() => setHoveredEmpCode(row.employeecode)}
                                                                             onMouseLeave={() => setHoveredEmpCode(null)}
                                                                             onClick={() => setOpenDetail(row)}>
-                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{index + 1}</TableCell>
-                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.employeecode}</TableCell>
-                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{`${row.employname} ${row.nickname === undefined ? "" : `(${row.nickname})`}`}</TableCell>
-                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>
-                                                                                {row.department?.includes("-") ? row.department.split("-")[1] : row.department}
+                                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                                <Typography variant="subtitle2" sx={{ marginLeft: 1, lineHeight: 1, whiteSpace: "nowrap", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{index + 1}</Typography>
                                                                             </TableCell>
-                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>
-                                                                                {row.section?.includes("-") ? row.section.split("-")[1] : row.section}
+                                                                            <TableCell sx={{ textAlign: "left" }}>
+                                                                                <Typography variant="subtitle2" sx={{ marginLeft: 1, lineHeight: 1, whiteSpace: "nowrap", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{row.employeecode}</Typography>
                                                                             </TableCell>
-                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>
-                                                                                {row.position?.includes("-") ? row.position.split("-")[1] : row.position}
+                                                                            <TableCell sx={{ textAlign: "left", position: "sticky", left: 0, zIndex: 2, backgroundColor: "#f5f5f5" }}>
+                                                                                <Typography variant="subtitle2" sx={{ marginLeft: 2, lineHeight: 1, whiteSpace: "nowrap", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{`${row.employname} ${row.nickname === undefined ? "" : `(${row.nickname})`}`}</Typography>
                                                                             </TableCell>
-                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>
-                                                                                {row.employmenttype?.includes("-") ? row.employmenttype.split("-")[1] : row.employmenttype}
+                                                                            <TableCell sx={{ textAlign: "left" }}>
+                                                                                <Typography variant="subtitle2" sx={{ marginLeft: 2, lineHeight: 1, whiteSpace: "nowrap", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{row.department?.includes("-") ? row.department.split("-")[1] : row.department}</Typography>
                                                                             </TableCell>
-                                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{new Intl.NumberFormat("en-US").format(row.salary)}</TableCell>
+                                                                            <TableCell sx={{ textAlign: "left" }}>
+                                                                                <Typography variant="subtitle2" sx={{ marginLeft: 2, lineHeight: 1, whiteSpace: "nowrap", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{row.section?.includes("-") ? row.section.split("-")[1] : row.section}</Typography>
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ textAlign: "left" }}>
+                                                                                <Typography variant="subtitle2" sx={{ marginLeft: 2, lineHeight: 1, whiteSpace: "nowrap", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{row.position?.includes("-") ? row.position.split("-")[1] : row.position}</Typography>
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{row.employmenttype?.includes("-") ? row.employmenttype.split("-")[1] : row.employmenttype}</Typography>
+                                                                            </TableCell>
+                                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                                <Typography variant="subtitle2" sx={{ marginLeft: 1, lineHeight: 1, whiteSpace: "nowrap", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{new Intl.NumberFormat("en-US").format(row.salary)}</Typography>
+                                                                            </TableCell>
                                                                         </TableRow>
                                                                     ))}
                                                         </TableBody>

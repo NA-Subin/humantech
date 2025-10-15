@@ -37,6 +37,7 @@ import { Dialog, DialogContent, DialogTitle } from "@mui/material";
 
 const EducationDetail = (props) => {
     const { menu, data } = props;
+    let count = 0;
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
@@ -296,20 +297,26 @@ const EducationDetail = (props) => {
                                 <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลการศึกษารายคนให้กดชื่อในตารางได้เลย</Typography>
                                 <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
                                     <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
-                                        <TableHead>
+                                        <TableHead
+                                            sx={{
+                                                position: "sticky",
+                                                top: 0,
+                                                zIndex: 3,
+                                            }}
+                                        >
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                 <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                                <TablecellHeader>ชื่อ</TablecellHeader>
-                                                <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                                <TablecellHeader>สถานภาพการศึกษา</TablecellHeader>
-                                                <TablecellHeader>ระดับการศึกษา</TablecellHeader>
-                                                <TablecellHeader>สถานศึกษา</TablecellHeader>
-                                                <TablecellHeader>หมวดการศึกษา</TablecellHeader>
-                                                <TablecellHeader>คณะ</TablecellHeader>
-                                                <TablecellHeader>สาขา</TablecellHeader>
-                                                <TablecellHeader>ชื่อปริญญา</TablecellHeader>
-                                                <TablecellHeader>ปีที่สำเร็จการศึกษา</TablecellHeader>
-                                                <TablecellHeader>เกรดเฉลี่ย</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 200, position: "sticky", left: 0, zIndex: 2, backgroundColor: theme.palette.primary.dark }}>ชื่อ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 150 }}>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>สถานภาพการศึกษา</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>ระดับการศึกษา</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>สถานศึกษา</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>หมวดการศึกษา</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 130 }}>คณะ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 130 }}>สาขา</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 130 }}>ชื่อปริญญา</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>ปีที่สำเร็จการศึกษา</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 100 }}>เกรดเฉลี่ย</TablecellHeader>
                                             </TableRow>
                                         </TableHead>
                                         <TableBody>
@@ -330,14 +337,14 @@ const EducationDetail = (props) => {
                                                                 backgroundColor: hoveredEmpCode === row.employeecode ? theme.palette.primary.light : 'inherit',
                                                             }}
                                                         >
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{index + 1}</TableCell>
                                                             {row.isFirst && (
                                                                 <>
-                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>
-                                                                        {row.employname}
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{count = count + 1}</TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "left", position: "sticky", left: 0, zIndex: 2, backgroundColor: "#f5f5f5" }}>
+                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{row.employname}</Typography>
                                                                     </TableCell>
-                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>
-                                                                        {row.position}
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "left" }}>
+                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{row.position}</Typography>
                                                                     </TableCell>
                                                                 </>
                                                             )}
