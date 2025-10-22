@@ -33,6 +33,20 @@ export default function ThaiDateSelector({ label = "", value, onChange, disabled
     }
   }, [selectedDay, selectedMonth, selectedYear]);
 
+  // อัปเดต state ตาม prop value
+  useEffect(() => {
+    if (value) {
+      setSelectedDay(value.day || "");
+      setSelectedMonth(value.month || "");
+      setSelectedYear(value.year || "2568");
+    } else {
+      setSelectedDay("");
+      setSelectedMonth("");
+      setSelectedYear("2568");
+    }
+  }, [value]);
+
+
   const handleMonthChange = (e) => {
     const newMonth = e.target.value;
     setSelectedMonth(newMonth);

@@ -50,7 +50,7 @@ import ExcelJS from "exceljs";
 dayjs.locale("th");
 
 const AccountDetail = (props) => {
-    const { department, section, position, employee, month } = props;
+    const { department, section, position, employee, month, close, accountingPeriod } = props;
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
@@ -64,9 +64,18 @@ const AccountDetail = (props) => {
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
-    const [selectedDateStart, setSelectDateStart] = useState(null);
-    const [selectedDateEnd, setSelectDateEnd] = useState(null);
-    const [closeAccount, setCloseAccount] = useState(false);
+    const [selectedDateStart, setSelectDateStart] = useState(accountingPeriod ? {
+        day: accountingPeriod.DDF,
+        month: accountingPeriod.MMF,
+        year: accountingPeriod.YYYYF,
+    } : null);
+    const [selectedDateEnd, setSelectDateEnd] = useState(accountingPeriod ? {
+        day: accountingPeriod.DDT,
+        month: accountingPeriod.MMT,
+        year: accountingPeriod.YYYYT,
+    } : null);
+    const [closeAccount, setCloseAccount] = useState(close);
+    const [edit, setEdit] = useState(true);
 
     const [income, setIncome] = useState([]);
     const [deduction, setDeduction] = useState([]);
@@ -83,6 +92,30 @@ const AccountDetail = (props) => {
     const [menu, setMenu] = useState('0-แก้ไขเวลา');
 
     console.log("Menu : ", menu);
+    console.log("closeAccount :", closeAccount);
+
+    useEffect(() => {
+        if (!accountingPeriod) {
+            setSelectDateStart(null);
+            setSelectDateEnd(null);
+            setCloseAccount(false);
+            return;
+        }
+
+        setSelectDateStart({
+            day: accountingPeriod?.DDF || "",
+            month: accountingPeriod?.MMF || "",
+            year: accountingPeriod?.YYYYF || "",
+        });
+
+        setSelectDateEnd({
+            day: accountingPeriod?.DDT || "",
+            month: accountingPeriod?.MMT || "",
+            year: accountingPeriod?.YYYYT || "",
+        });
+
+        setCloseAccount(close);
+    }, [accountingPeriod, close, month]); // 👈 เพิ่ม month ด้วย
 
     // ทุกครั้งที่ department, section หรือ position เปลี่ยน จะ reset employee
 
@@ -102,6 +135,7 @@ const AccountDetail = (props) => {
     const workingDays = daysInMonth - holidayCount;
 
     console.log('จำนวนวันทำงานจริง:', workingDays);
+    console.log("accountingPeriod : ", accountingPeriod);
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
 
@@ -584,61 +618,6 @@ const AccountDetail = (props) => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-    const handleSave = () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
-
-        const invalidMessages = [];
-
-        leave.forEach((row, rowIndex) => {
-            columns.forEach((col) => {
-                const value = row[col.key];
-
-                if (value === "") {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
-                    return;
-                }
-
-                if (col.type === "number" && isNaN(Number(value))) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
-                    return;
-                }
-
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
-            });
-        });
-
-        // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        const names = leave.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
-        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
-        if (duplicates.length > 0) {
-            invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
-        }
-
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
-        if (invalidMessages.length > 0) {
-            ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
-            return;
-        }
-
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, leave)
-            .then(() => {
-                ShowSuccess("บันทึกข้อมูลสำเร็จ");
-                console.log("บันทึกสำเร็จ");
-                setEditLeave(false);
-            })
-            .catch((error) => {
-                ShowError("เกิดข้อผิดพลาดในการบันทึก");
-                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
-            });
-    };
-
     const handleCancel = () => {
         const leaveRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
 
@@ -839,6 +818,80 @@ const AccountDetail = (props) => {
         doc.save("SampleEmployees.pdf");
     };
 
+    console.log("selectedDateStart : ", selectedDateStart);
+    console.log("selectedDateEnd : ", selectedDateEnd);
+
+    const handleSave = () => {
+        const accounttingperiodRef = ref(firebaseDB, `workgroup/company/${companyId}/accountingperiod/${dayjs(month).format("YYYY/M")}`);
+
+        const dateStart = selectedDateStart
+            ? dayjs(`${selectedDateStart.year}-${selectedDateStart.month}-${selectedDateStart.day}`, "YYYY-M-D")
+            : null;
+
+        const dateEnd = selectedDateEnd
+            ? dayjs(`${selectedDateEnd.year}-${selectedDateEnd.month}-${selectedDateEnd.day}`, "YYYY-M-D")
+            : null;
+
+        const newPeriod = {
+            DDF: dateStart && dateStart.isValid() ? dateStart.date() : null,
+            MMF: dateStart && dateStart.isValid() ? dateStart.month() + 1 : null,
+            YYYYF: dateStart && dateStart.isValid() ? dateStart.year() : null,
+
+            DDT: dateEnd && dateEnd.isValid() ? dateEnd.date() : null,
+            MMT: dateEnd && dateEnd.isValid() ? dateEnd.month() + 1 : null,
+            YYYYT: dateEnd && dateEnd.isValid() ? dateEnd.year() : null,
+
+            Closed: "ปิดงวดบัญชี"
+        };
+
+        // ✅ บันทึกเมื่อผ่านเงื่อนไข
+        set(accounttingperiodRef, newPeriod)
+            .then(() => {
+                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                console.log("บันทึกสำเร็จ");
+                setCloseAccount(true);
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+            });
+    };
+
+    const handleUpdate = () => {
+        const accounttingperiodRef = ref(firebaseDB, `workgroup/company/${companyId}/accountingperiod/${dayjs(month).format("YYYY/M")}`);
+
+        const dateStart = selectedDateStart
+            ? dayjs(`${selectedDateStart.year}-${selectedDateStart.month}-${selectedDateStart.day}`, "YYYY-M-D")
+            : null;
+
+        const dateEnd = selectedDateEnd
+            ? dayjs(`${selectedDateEnd.year}-${selectedDateEnd.month}-${selectedDateEnd.day}`, "YYYY-M-D")
+            : null;
+
+        const newPeriod = {
+            DDF: dateStart && dateStart.isValid() ? dateStart.date() : null,
+            MMF: dateStart && dateStart.isValid() ? dateStart.month() + 1 : null,
+            YYYYF: dateStart && dateStart.isValid() ? dateStart.year() : null,
+
+            DDT: dateEnd && dateEnd.isValid() ? dateEnd.date() : null,
+            MMT: dateEnd && dateEnd.isValid() ? dateEnd.month() + 1 : null,
+            YYYYT: dateEnd && dateEnd.isValid() ? dateEnd.year() : null,
+        };
+
+        // ✅ บันทึกเมื่อผ่านเงื่อนไข
+        set(accounttingperiodRef, newPeriod)
+            .then(() => {
+                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                console.log("บันทึกสำเร็จ");
+                setEdit(true);
+                setCloseAccount(true);
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+            });
+    };
+
     return (
         <React.Fragment>
             <Grid container spacing={2}>
@@ -853,6 +906,7 @@ const AccountDetail = (props) => {
                                 label="วันที่จ่าย"
                                 value={selectedDateStart}
                                 onChange={(val) => setSelectDateStart(val)}
+                                disabled={closeAccount ? edit : false}
                             />
                         </Grid>
                         <Grid item size={12}>
@@ -861,6 +915,7 @@ const AccountDetail = (props) => {
                                 label="วันที่จ่ายภาษี"
                                 value={selectedDateEnd}
                                 onChange={(val) => setSelectDateEnd(val)}
+                                disabled={closeAccount ? edit : false}
                             />
                         </Grid>
                     </Grid>
@@ -870,27 +925,34 @@ const AccountDetail = (props) => {
                         sx={{
                             display: "flex",
                             alignItems: "center",
-                            justifyContent: "space-between", // ✅ แยกซ้าย-ขวา
+                            justifyContent: "right", // ✅ แยกซ้าย-ขวา
                             marginTop: 7.5,
                         }}
                     >
-                        <Button variant="contained" color="success" size="small" sx={{ marginLeft: 5 }}>
+                        {/* <Button variant="contained" color="success" size="small" sx={{ marginLeft: 5 }}>
                             บันทึก
-                        </Button>
+                        </Button> */}
 
                         <Box display="flex" justifyContent="center" alignItems="center" >
                             {
                                 closeAccount ?
-                                    <React.Fragment>
-                                        <Button variant="contained" color="warning" size="small" sx={{ marginRight: 2 }} onClick={() => setCloseAccount(false)}>
-                                            แก้ไข
-                                        </Button>
-                                        <Button variant="contained" color="error" size="small" onClick={() => setCloseAccount(false)}>
-                                            ยกเลิก
-                                        </Button>
-                                    </React.Fragment>
+                                    (
+                                        edit ?
+                                            <Button variant="contained" color="warning" size="small" sx={{ marginRight: 2 }} onClick={() => setEdit(false)}>
+                                                แก้ไข
+                                            </Button>
+                                            :
+                                            <React.Fragment>
+                                                <Button variant="contained" color="info" size="small" sx={{ marginRight: 2 }} onClick={handleUpdate}>
+                                                    ปิกงวดบัญชี
+                                                </Button>
+                                                <Button variant="contained" color="error" size="small" onClick={() => setEdit(true)}>
+                                                    ยกเลิก
+                                                </Button>
+                                            </React.Fragment>
+                                    )
                                     :
-                                    <Button variant="contained" color="primary" size="small" onClick={() => setCloseAccount(true)}>
+                                    <Button variant="contained" color="primary" size="small" onClick={handleSave}>
                                         ปิดงวดบัญชี
                                     </Button>
                             }
