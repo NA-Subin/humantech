@@ -270,7 +270,7 @@ const AddTimeDetail = (props) => {
         <React.Fragment>
             <Grid item size={12}>
                 <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", width: "100%" }}>
-                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
+                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1050px" }}>
                         <TableHead
                             sx={{
                                 position: "sticky",
@@ -283,7 +283,7 @@ const AddTimeDetail = (props) => {
                                 <TablecellHeader sx={{ width: 60 }}>ลำดับ</TablecellHeader>
                                 <TablecellHeader sx={{ width: 150 }}>วันที่</TablecellHeader>
                                 <TablecellHeader sx={{ width: 120 }}>เวลา</TablecellHeader>
-                                <TablecellHeader sx={{ width: 200 }}>รายละเอียด</TablecellHeader>
+                                <TablecellHeader sx={{ width: 245 }}>รายละเอียด</TablecellHeader>
                                 <TablecellHeader sx={{ width: 230 }}>สถานะ</TablecellHeader>
                                 <TablecellHeader sx={{ width: 260 }}>หมายเหตุ</TablecellHeader>
                             </TableRow>

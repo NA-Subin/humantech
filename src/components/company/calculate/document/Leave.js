@@ -199,7 +199,7 @@ const LeaveDetail = (props) => {
         <React.Fragment>
             <Grid item size={12}>
                 <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", width: "100%" }}>
-                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
+                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1050px" }}>
                         <TableHead
                             sx={{
                                 position: "sticky",
@@ -211,8 +211,8 @@ const LeaveDetail = (props) => {
                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                 <TablecellHeader sx={{ width: 60 }}>ลำดับ</TablecellHeader>
                                 <TablecellHeader sx={{ width: 500 }}>วันที่และเวลา</TablecellHeader>
-                                <TablecellHeader sx={{ width: 140 }}>จำนวน</TablecellHeader>
-                                <TablecellHeader sx={{ width: 160 }}>ประเภท</TablecellHeader>
+                                <TablecellHeader sx={{ width: 130 }}>จำนวน</TablecellHeader>
+                                <TablecellHeader sx={{ width: 140 }}>ประเภท</TablecellHeader>
                                 <TablecellHeader sx={{ width: 230 }}>สถานะ</TablecellHeader>
                             </TableRow>
                         </TableHead>

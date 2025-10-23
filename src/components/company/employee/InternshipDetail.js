@@ -113,42 +113,19 @@ const InternshipDetail = (props) => {
         note: emp.internship?.note || '',
     }));
 
-
     const internshipColumns = [
-        { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: "10%" },
-        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
-        { label: "วันที่", key: "dateStart", type: "date" },
-        { label: "จนถึง", key: "dateEnd", type: "date" },
-        { label: "บริษัท", key: "company", type: "text" },
-        {
-            label: "จังหวัด",
-            key: "province",
-            type: "select",
-            options: thailand.map((p) => ({
-                label: p.name_th,
-                value: `${p.id}-${p.name_th}`,
-            })),
-        },
-
-        {
-            label: "อำเภอ",
-            key: "amphure",
-            type: "dependent-select",
-            dependsOn: "province",
-            options: thailand.flatMap((p) =>
-                (p.amphure || []).map((a) => ({
-                    label: a.name_th,
-                    value: `${a.id}-${a.name_th}`,
-                    parent: `${p.id}-${p.name_th}`,
-                }))
-            ),
-        },
+        { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: 300 },
+        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true, width: 200 },
+        { label: "วันที่เริ่มต้น", key: "dateStart", type: "date", width: 180 },
+        { label: "จนถึงวันที่", key: "dateEnd", type: "date", width: 180 },
+        { label: "ชื่อบริษัท", key: "company", type: "text", width: 250 },
 
         {
             label: "ตำบล",
             key: "tambon",
             type: "dependent-select",
             dependsOn: "amphure",
+            width: 150,
             options: thailand.flatMap((p) =>
                 (p.amphure || []).flatMap((a) =>
                     (a.tambon || []).map((t) => ({
@@ -161,18 +138,39 @@ const InternshipDetail = (props) => {
         },
 
         {
-            label: "รหัสไปรษณีย์",
-            key: "zipCode",
-            type: "text",
-            disabled: true
+            label: "อำเภอ",
+            key: "amphure",
+            type: "dependent-select",
+            dependsOn: "province",
+            width: 150,
+            options: thailand.flatMap((p) =>
+                (p.amphure || []).map((a) => ({
+                    label: a.name_th,
+                    value: `${a.id}-${a.name_th}`,
+                    parent: `${p.id}-${p.name_th}`,
+                }))
+            ),
         },
 
-        { label: "ตำแหน่งงาน", key: "positionIntern", type: "text" },
-        { label: "ประเภทงาน", key: "positionType", type: "text" },
-        { label: "ระดับ", key: "level", type: "text" },
-        { label: "เงินเดือน", key: "salary", type: "text" },
-        { label: "รายละเอียด", key: "note", type: "text" },
+        {
+            label: "จังหวัด",
+            key: "province",
+            type: "select",
+            width: 150,
+            options: thailand.map((p) => ({
+                label: p.name_th,
+                value: `${p.id}-${p.name_th}`,
+            })),
+        },
+
+        { label: "รหัสไปรณีย์", key: "zipCode", type: "text", disabled: true, width: 150 },
+        { label: "ตำแหน่งงาน", key: "positionIntern", type: "text", width: 150 },
+        { label: "ประเภทงาน", key: "positionType", type: "text", width: 150 },
+        { label: "ระดับ", key: "level", type: "text", width: 100 },
+        { label: "เงินเดือน", key: "salary", type: "text", width: 150 },
+        { label: "รายละเอียดเพิ่มเติม", key: "note", type: "text", width: 200 },
     ];
+
 
     const handleInternshipChange = (updatedList) => {
         const merged = employees.map((emp, idx) => {
@@ -300,7 +298,7 @@ const InternshipDetail = (props) => {
 
 
     return (
-        <Box sx={{ marginTop: 5, width: "1080px" }}>
+        <Box sx={{ marginTop: 5, width: "100%" }}>
             <Grid container spacing={2} sx={{ marginBottom: 1 }}>
                 <Grid item size={12}>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูล{data}</Typography>

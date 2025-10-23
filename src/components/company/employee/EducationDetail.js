@@ -104,8 +104,8 @@ const EducationDetail = (props) => {
     });
 
     const educationColumns = [
-        { label: "ชื่อ", key: "employname", type: "text", disabled: true },
-        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
+        { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: 200 },
+        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true, width: 150 },
         {
             label: "สถานภาพการศึกษา",
             key: "education",
@@ -114,6 +114,7 @@ const EducationDetail = (props) => {
                 { value: "จบการศึกษา", label: "จบการศึกษา" },
                 { value: "กำลังศึกษา", label: "กำลังศึกษา" }
             ],
+            width: 100,
         },
         {
             label: "ระดับการศึกษา",
@@ -128,14 +129,15 @@ const EducationDetail = (props) => {
                 { value: "ปริญญาโท", label: "ปริญญาโท" },
                 { value: "ปริญญาเอก", label: "ปริญญาเอก" },
             ],
+            width: 100,
         },
-        { label: "สถานศึกษา", key: "institution", type: "text" },
-        { label: "หมวดการศึกษา", key: "educationCategory", type: "text" },
-        { label: "คณะ", key: "faculty", type: "text" },
-        { label: "สาขา", key: "branch", type: "text" },
-        { label: "ชื่อปริญญา", key: "degree", type: "text" },
-        { label: "ปีที่สำเร็จการศึกษา", key: "graduateYear", type: "text" },
-        { label: "เกรดเฉลี่ย", key: "gpa", type: "text" },
+        { label: "สถานศึกษา", key: "institution", type: "text", width: 100 },
+        { label: "หมวดการศึกษา", key: "educationCategory", type: "text", width: 100 },
+        { label: "คณะ", key: "faculty", type: "text", width: 130 },
+        { label: "สาขา", key: "branch", type: "text", width: 130 },
+        { label: "ชื่อปริญญา", key: "degree", type: "text", width: 130 },
+        { label: "ปีที่สำเร็จการศึกษา", key: "graduateYear", type: "text", width: 100 },
+        { label: "เกรดเฉลี่ย", key: "gpa", type: "text", width: 100 },
     ];
 
     const handleEducationChange = (updatedList) => {
@@ -271,7 +273,7 @@ const EducationDetail = (props) => {
 
 
     return (
-        <Box sx={{ marginTop: 5, width: "1080px" }}>
+        <Box sx={{ marginTop: 5, width: "100%" }}>
             <Grid container spacing={2} sx={{ marginBottom: 1 }}>
                 <Grid item size={12}>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูล{data}</Typography>

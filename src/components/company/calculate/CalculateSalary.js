@@ -69,6 +69,19 @@ const CalculateSalary = () => {
     const [employee, setEmployee] = useState("all-ทั้งหมด");
     const [menu, setMenu] = useState('0-แก้ไขเวลา');
     const [open, setOpen] = useState("");
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth); // อัพเดตค่าขนาดหน้าจอ
+        };
+
+        window.addEventListener('resize', handleResize); // เพิ่ม event listener
+
+        // ลบ event listener เมื่อ component ถูกทำลาย
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
 
     const [selectedDate, setSelectedDate] = useState(dayjs()); // ✅ เป็น dayjs object
 
@@ -257,7 +270,7 @@ const CalculateSalary = () => {
     }, [firebaseDB, companyId]);
 
     return (
-        <Container maxWidth="xl" sx={{ p: 5 }}>
+        <Container maxWidth="xl" sx={{ p: 5, width: windowWidth - 290 }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2, marginBottom: -2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>

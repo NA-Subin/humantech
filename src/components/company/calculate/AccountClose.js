@@ -2,7 +2,7 @@ import React, { useState, useEffect, use } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import '../../../App.css'
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update } from "firebase/database";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -879,7 +879,7 @@ const AccountDetail = (props) => {
         };
 
         // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(accounttingperiodRef, newPeriod)
+        update(accounttingperiodRef, newPeriod)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
@@ -898,7 +898,7 @@ const AccountDetail = (props) => {
                 <Grid item size={12}>
                     <Divider sx={{ marginTop: 1 }} />
                 </Grid>
-                <Grid item size={6}>
+                <Grid item size={9}>
                     <Grid container spacing={1}>
                         <Grid item size={12}>
                             {/* <Typography variant="subtitle2" fontWeight="bold" >กรอกข้อมูลวันที่จ่าย</Typography> */}
@@ -920,7 +920,7 @@ const AccountDetail = (props) => {
                         </Grid>
                     </Grid>
                 </Grid>
-                <Grid item size={6}>
+                <Grid item size={3}>
                     <Box
                         sx={{
                             display: "flex",
@@ -961,31 +961,50 @@ const AccountDetail = (props) => {
                 </Grid>
                 <Grid item size={12}>
                     <TableContainer component={Paper} textAlign="center">
-                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
+                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1060px" }}>
                             <TableHead>
                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                    <TablecellHeader sx={{ width: 450 }}>
-                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>
-                                            รายงาน
-                                        </Typography>
-                                    </TablecellHeader>
                                     <TablecellHeader>
-                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>
-                                            จำนวนพนักงาน
-                                        </Typography>
+                                        รายงาน
                                     </TablecellHeader>
-                                    <TablecellHeader sx={{ width: 300 }} />
+                                    <TablecellHeader sx={{ width: 150 }}>
+                                        จำนวนพนักงาน
+                                    </TablecellHeader>
+                                    <TablecellHeader sx={{ width: 250 }} />
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 <TableRow sx={{ backgroundColor: "#e0f2f1" }}>
-                                    <TableCell colSpan={3}>
+                                    <TableCell colSpan={3} >
                                         <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>เงินเดือน</Typography>
                                     </TableCell>
                                 </TableRow>
                                 <TableRow>
-                                    <TableCell>
-                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>รายงานผลการสรุปเงินเดือนสุทธิงวดปกติ</Typography>
+                                    <TableCell
+                                        sx={{
+                                            display: { md: "", lg: "flex" },
+                                            justifyContent: { md: "left", lg: "space-between" }, // เล็ก: เริ่มต้น, ปกติ: space-between
+                                            alignItems: "center",
+                                            flexDirection: { md: "column", lg: "row" }, // เล็ก: ซ้อนบรรทัด, ปกติ: แถวเดียว
+                                        }}
+                                    >
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>
+                                            รายงานผลการสรุปเงินเดือนสุทธิงวดปกติ
+                                        </Typography>
+                                        {!closeAccount && (
+                                            <Typography
+                                                variant="subtitle2"
+                                                sx={{
+                                                    whiteSpace: "nowrap",
+                                                    marginLeft: 2,
+                                                    color: theme.palette.error.dark,
+                                                    fontSize: "12px",
+                                                }}
+                                                gutterBottom
+                                            >
+                                                *กรุณาปิดงวดบัญชีเพื่อทำการดาวน์โหลดเอกสาร*
+                                            </Typography>
+                                        )}
                                     </TableCell>
                                     <TableCell sx={{ textAlign: "center" }}>
                                         <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>{filteredEmployees.length}</Typography>
@@ -1027,9 +1046,33 @@ const AccountDetail = (props) => {
                                     </TableCell>
                                 </TableRow>
                                 <TableRow>
-                                    <TableCell colSpan={2}>
-                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>รายงานสรุปเงินที่ต้องจ่าย</Typography>
+                                    <TableCell
+                                        sx={{
+                                            display: { md: "", lg: "flex" },
+                                            justifyContent: { md: "left", lg: "space-between" }, // เล็ก: เริ่มต้น, ปกติ: space-between
+                                            alignItems: "center",
+                                            flexDirection: { md: "column", lg: "row" }, // เล็ก: ซ้อนบรรทัด, ปกติ: แถวเดียว
+                                        }}
+                                    >
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>
+                                            รายงานสรุปเงินที่ต้องจ่าย
+                                        </Typography>
+                                        {!closeAccount && (
+                                            <Typography
+                                                variant="subtitle2"
+                                                sx={{
+                                                    whiteSpace: "nowrap",
+                                                    marginLeft: 2,
+                                                    color: theme.palette.error.dark,
+                                                    fontSize: "12px",
+                                                }}
+                                                gutterBottom
+                                            >
+                                                *กรุณาปิดงวดบัญชีเพื่อทำการดาวน์โหลดเอกสาร*
+                                            </Typography>
+                                        )}
                                     </TableCell>
+                                    <TableCell sx={{ textAlign: "center" }} />
                                     <TableCell>
                                         <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
                                             <Button
@@ -1066,9 +1109,33 @@ const AccountDetail = (props) => {
                                     </TableCell>
                                 </TableRow>
                                 <TableRow>
-                                    <TableCell colSpan={2}>
-                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>สลิปเงินเดือน</Typography>
+                                    <TableCell
+                                        sx={{
+                                            display: { md: "", lg: "flex" },
+                                            justifyContent: { md: "left", lg: "space-between" }, // เล็ก: เริ่มต้น, ปกติ: space-between
+                                            alignItems: "center",
+                                            flexDirection: { md: "column", lg: "row" }, // เล็ก: ซ้อนบรรทัด, ปกติ: แถวเดียว
+                                        }}
+                                    >
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>
+                                            สลิปเงินเดือน
+                                        </Typography>
+                                        {!closeAccount && (
+                                            <Typography
+                                                variant="subtitle2"
+                                                sx={{
+                                                    whiteSpace: "nowrap",
+                                                    marginLeft: 2,
+                                                    color: theme.palette.error.dark,
+                                                    fontSize: "12px",
+                                                }}
+                                                gutterBottom
+                                            >
+                                                *กรุณาปิดงวดบัญชีเพื่อทำการดาวน์โหลดเอกสาร*
+                                            </Typography>
+                                        )}
                                     </TableCell>
+                                    <TableCell sx={{ textAlign: "center" }} />
                                     <TableCell>
                                         <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
                                             <Button
@@ -1086,7 +1153,7 @@ const AccountDetail = (props) => {
                                             >
                                                 PDF
                                             </Button>
-                                            <Button
+                                            {/* <Button
                                                 variant={closeAccount ? "outlined" : "contained"}
                                                 size="small"
                                                 color="success"
@@ -1100,7 +1167,7 @@ const AccountDetail = (props) => {
                                                 disabled={!closeAccount}
                                             >
                                                 Excel
-                                            </Button>
+                                            </Button> */}
                                         </Box>
                                     </TableCell>
                                 </TableRow>
@@ -1110,9 +1177,33 @@ const AccountDetail = (props) => {
                                     </TableCell>
                                 </TableRow>
                                 <TableRow>
-                                    <TableCell colSpan={2}>
-                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>รายงานประกันสังคม</Typography>
+                                    <TableCell
+                                        sx={{
+                                            display: { md: "", lg: "flex" },
+                                            justifyContent: { md: "left", lg: "space-between" }, // เล็ก: เริ่มต้น, ปกติ: space-between
+                                            alignItems: "center",
+                                            flexDirection: { md: "column", lg: "row" }, // เล็ก: ซ้อนบรรทัด, ปกติ: แถวเดียว
+                                        }}
+                                    >
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>
+                                            รายงานประกันสังคม
+                                        </Typography>
+                                        {!closeAccount && (
+                                            <Typography
+                                                variant="subtitle2"
+                                                sx={{
+                                                    whiteSpace: "nowrap",
+                                                    marginLeft: 2,
+                                                    color: theme.palette.error.dark,
+                                                    fontSize: "12px",
+                                                }}
+                                                gutterBottom
+                                            >
+                                                *กรุณาปิดงวดบัญชีเพื่อทำการดาวน์โหลดเอกสาร*
+                                            </Typography>
+                                        )}
                                     </TableCell>
+                                    <TableCell sx={{ textAlign: "center" }} />
                                     <TableCell>
                                         <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
                                             <Button
@@ -1151,9 +1242,33 @@ const AccountDetail = (props) => {
                                     </TableCell>
                                 </TableRow>
                                 <TableRow>
-                                    <TableCell colSpan={2}>
-                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>รายงานภาษี ภงด.1</Typography>
+                                    <TableCell
+                                        sx={{
+                                            display: { md: "", lg: "flex" },
+                                            justifyContent: { md: "left", lg: "space-between" }, // เล็ก: เริ่มต้น, ปกติ: space-between
+                                            alignItems: "center",
+                                            flexDirection: { md: "column", lg: "row" }, // เล็ก: ซ้อนบรรทัด, ปกติ: แถวเดียว
+                                        }}
+                                    >
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>
+                                            รายงานภาษี ภงด.1
+                                        </Typography>
+                                        {!closeAccount && (
+                                            <Typography
+                                                variant="subtitle2"
+                                                sx={{
+                                                    whiteSpace: "nowrap",
+                                                    marginLeft: 2,
+                                                    color: theme.palette.error.dark,
+                                                    fontSize: "12px",
+                                                }}
+                                                gutterBottom
+                                            >
+                                                *กรุณาปิดงวดบัญชีเพื่อทำการดาวน์โหลดเอกสาร*
+                                            </Typography>
+                                        )}
                                     </TableCell>
+                                    <TableCell sx={{ textAlign: "center" }} />
                                     <TableCell>
                                         <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
                                             <Button
@@ -1190,9 +1305,33 @@ const AccountDetail = (props) => {
                                     </TableCell>
                                 </TableRow>
                                 <TableRow>
-                                    <TableCell colSpan={2}>
-                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>รายงานภาษี ภงด.3</Typography>
+                                    <TableCell
+                                        sx={{
+                                            display: { md: "", lg: "flex" },
+                                            justifyContent: { md: "left", lg: "space-between" }, // เล็ก: เริ่มต้น, ปกติ: space-between
+                                            alignItems: "center",
+                                            flexDirection: { md: "column", lg: "row" }, // เล็ก: ซ้อนบรรทัด, ปกติ: แถวเดียว
+                                        }}
+                                    >
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap", marginLeft: 2 }} gutterBottom>
+                                            รายงานภาษี ภงด.3
+                                        </Typography>
+                                        {!closeAccount && (
+                                            <Typography
+                                                variant="subtitle2"
+                                                sx={{
+                                                    whiteSpace: "nowrap",
+                                                    marginLeft: 2,
+                                                    color: theme.palette.error.dark,
+                                                    fontSize: "12px",
+                                                }}
+                                                gutterBottom
+                                            >
+                                                *กรุณาปิดงวดบัญชีเพื่อทำการดาวน์โหลดเอกสาร*
+                                            </Typography>
+                                        )}
                                     </TableCell>
+                                    <TableCell sx={{ textAlign: "center" }} />
                                     <TableCell>
                                         <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
                                             <Button

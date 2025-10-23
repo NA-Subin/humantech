@@ -113,14 +113,13 @@ const LanguageDetail = (props) => {
         }
     });
 
-
     const languageColumns = [
-        { label: "ชื่อ", key: "employname", type: "text", disabled: true },
-        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
-        { label: "ภาษา", key: "language", type: "text" },
-        { label: "พูด", key: "speak", type: "text" },
-        { label: "อ่าน", key: "read", type: "text" },
-        { label: "เขียน", key: "write", type: "text" },
+        { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: 200, sticky: true },
+        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true, width: 150 },
+        { label: "ภาษา", key: "language", type: "text", width: 150 },
+        { label: "พูด", key: "speak", type: "text", width: 120 },
+        { label: "อ่าน", key: "read", type: "text", width: 120 },
+        { label: "เขียน", key: "write", type: "text", width: 120 },
     ];
 
     const handleLanguageChange = (updatedList) => {
@@ -251,7 +250,7 @@ const LanguageDetail = (props) => {
 
 
     return (
-        <Box sx={{ marginTop: 5, width: "1080px" }}>
+        <Box sx={{ marginTop: 5, width: "100%" }}>
             <Grid container spacing={2} sx={{ marginBottom: 1 }}>
                 <Grid item size={12}>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูล{data}</Typography>
@@ -265,7 +264,7 @@ const LanguageDetail = (props) => {
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                 <TableExcel
                                     styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1000px" }}
+                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}
                                     types="list"
                                     columns={languageColumns}
                                     initialData={languageRows}
@@ -276,7 +275,7 @@ const LanguageDetail = (props) => {
                             <React.Fragment>
                                 <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลภาษารายคนให้กดชื่อในตารางได้เลย</Typography>
                                 <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
-                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1000px" }}>
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                                         <TableHead>
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 50 }}>ลำดับ</TablecellHeader>

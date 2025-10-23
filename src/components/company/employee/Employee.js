@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use, useRef } from "react";
-import { getDatabase, ref, push, onValue, set, get } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, get, update } from "firebase/database";
 import '../../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -207,14 +207,15 @@ const Employee = () => {
     console.log("position Detail : ", positionDetail);
 
     const columns = [
-        { label: "รหัสพนักงาน", key: "employeecode", type: "text" },
-        { label: "ชื่อเล่น", key: "nickname", type: "text" },
-        { label: "ชื่อ", key: "employname", type: "text" },
+        { label: "รหัสพนักงาน", key: "employeecode", type: "text", width: 100 },
+        { label: "ชื่อเล่น", key: "nickname", type: "text", width: 100 }, // (เพิ่มเล็กน้อยเพื่อความสมดุล)
+        { label: "ชื่อ", key: "employname", type: "text", width: 250 },
         {
             label: "ฝ่ายงาน",
             key: "department",
             type: "select",
             options: departmentDetail,
+            width: 200,
         },
         {
             label: "ส่วนงาน",
@@ -224,8 +225,9 @@ const Employee = () => {
             options: sectionDetail.map((item) => ({
                 label: item.label,
                 value: item.value,
-                parent: item.keyposition, // 👈 ใช้เฉพาะ ID ฝ่ายงาน
+                parent: item.keyposition,
             })),
+            width: 200,
         },
         {
             label: "ตำแหน่ง",
@@ -235,16 +237,18 @@ const Employee = () => {
             options: positionDetail.map((item) => ({
                 label: item.label,
                 value: item.value,
-                parent: item.keyposition, // 👈 ใช้เฉพาะ ID ฝ่ายงาน
+                parent: item.keyposition,
             })),
+            width: 200,
         },
         {
             label: "ประเภทการจ้าง",
             key: "employmenttype",
             type: "select",
             options: employeetype,
+            width: 120,
         },
-        { label: "เงินเดือน", key: "salary", type: "number" },
+        { label: "เงินเดือน", key: "salary", type: "number", width: 100 },
     ];
 
     useEffect(() => {
@@ -741,10 +745,15 @@ const Employee = () => {
     const handleUpdateTime = (tm) => {
         // ถ้า attendant ว่าง → ไม่ต้องเช็ค
         if (!opendetail.attendant || Object.keys(opendetail.attendant).length === 0) {
+            const startDate = dayjs(`${tm.YYYYstart}-${tm.MMstart}-${tm.DDstart}`, "YYYY-M-D");
+            const endDate = tm.DDend && tm.MMend && tm.YYYYend
+                ? dayjs(`${tm.YYYYend}-${tm.MMend}-${tm.DDend}`, "YYYY-M-D")
+                : null;
+
             setWorkshiftID(tm.ID);
             setWorkshiftName(tm.workshift);
-            setWorkshiftDateStart(tm.datestart);
-            setWorkshiftDateEnd(tm.dateend);
+            setWorkshiftDateStart(startDate);
+            setWorkshiftDateEnd(endDate);
             return;
         }
 
@@ -756,18 +765,19 @@ const Employee = () => {
             });
         });
 
-
         // ตรวจสอบ overlap และ workshift ตรงกัน
         const hasConflict = allAttendants.some(entry => {
             if (entry.workshift !== tm.workshift) return false;
 
-            const entryStart = dayjs(entry.datestart, "DD/MM/YYYY");
-            const entryEnd = entry.dateend !== "now"
-                ? dayjs(entry.dateend, "DD/MM/YYYY")
+            const entryStart = dayjs(`${entry.YYYYstart}-${entry.MMstart}-${entry.DDstart}`, "YYYY-M-D");
+            const entryEnd = entry.DDend && entry.MMend && entry.YYYYend
+                ? dayjs(`${entry.YYYYend}-${entry.MMend}-${entry.DDend}`, "YYYY-M-D")
                 : dayjs(); // ถ้ายัง "now" ให้ถือว่าสิ้นสุดวันนี้
 
-            const tmStart = dayjs(tm.datestart, "DD/MM/YYYY");
-            const tmEnd = dayjs(tm.dateend, "DD/MM/YYYY");
+            const tmStart = dayjs(`${tm.YYYYstart}-${tm.MMstart}-${tm.DDstart}`, "YYYY-M-D");
+            const tmEnd = tm.DDend && tm.MMend && tm.YYYYend
+                ? dayjs(`${tm.YYYYend}-${tm.MMend}-${tm.DDend}`, "YYYY-M-D")
+                : dayjs();
 
             // เช็คว่าช่วง tm ทับกับ entry เดิมหรือไม่
             return tmStart.isBetween(entryStart, entryEnd, "day", "[]") ||
@@ -785,10 +795,15 @@ const Employee = () => {
         }
 
         // ถ้าไม่มี conflict → เซ็ตค่า
+        const startDate = dayjs(`${tm.YYYYstart}-${tm.MMstart}-${tm.DDstart}`, "YYYY-M-D");
+        const endDate = tm.DDend && tm.MMend && tm.YYYYend
+            ? dayjs(`${tm.YYYYend}-${tm.MMend}-${tm.DDend}`, "YYYY-M-D")
+            : null;
+
         setWorkshiftID(tm.ID);
         setWorkshiftName(tm.workshift);
-        setWorkshiftDateStart(tm.datestart);
-        setWorkshiftDateEnd(tm.dateend);
+        setWorkshiftDateStart(startDate);
+        setWorkshiftDateEnd(endDate);
     };
 
 
@@ -974,6 +989,34 @@ const Employee = () => {
             });
     };
 
+    const handleUpdateDate = (row) => {
+        const workshifthistoriesref = ref(firebaseDB, `workgroup/company/${companyId}/employee/${opendetail.ID}/workshifthistory/${row.ID}`);
+
+        const updateworkshift = {
+            DDstart: workshiftDateStart ? dayjs(workshiftDateStart, "DD/MM/YYYY").format("DD") : "",
+            MMstart: workshiftDateStart ? dayjs(workshiftDateStart, "DD/MM/YYYY").format("MM") : "",
+            YYYYstart: workshiftDateStart ? dayjs(workshiftDateStart, "DD/MM/YYYY").format("YYYY") : "",
+            datestart: workshiftDateStart ? dayjs(workshiftDateStart, "DD/MM/YYYY").format("DD/MM/YYYY") : "",
+
+            DDend: workshiftDateEnd ? dayjs(workshiftDateEnd, "DD/MM/YYYY").format("DD") : "now",
+            MMend: workshiftDateEnd ? dayjs(workshiftDateEnd, "DD/MM/YYYY").format("MM") : "now",
+            YYYYend: workshiftDateEnd ? dayjs(workshiftDateEnd, "DD/MM/YYYY").format("YYYY") : "now",
+            dateend: workshiftDateEnd ? dayjs(workshiftDateEnd, "DD/MM/YYYY").format("DD/MM/YYYY") : "now",
+        };
+
+        update(workshifthistoriesref, updateworkshift)
+            .then(() => {
+                setOpenDetail({});
+                setEditWorkshift(false);
+                setWorkshift([]);
+                setWorkshiftDate(dayjs(new Date()).format("DD/MM/YYYY"));
+                setWorkshiftID(null);
+            })
+            .catch((error) => {
+                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+            });
+    };
+
     const handleCancel = () => {
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
@@ -987,8 +1030,8 @@ const Employee = () => {
 
 
     return (
-        <Container maxWidth="xl" sx={{ p: 5, }}>
-            <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
+        <Container maxWidth="xl" sx={{ p: 5, width: windowWidth - 290 }}>
+            <Box sx={{ flexGrow: 1, p: 2, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
                         <Typography variant="h5" fontWeight="bold" gutterBottom>พนักงาน (employee)</Typography>
@@ -1004,7 +1047,7 @@ const Employee = () => {
                         const isFull = count >= Number(row.max);
 
                         return (
-                            <Grid item size={3} key={row.ID}>
+                            <Grid item size={{ lg: 4, md: 6, sm: 12 }} key={row.ID}>
                                 <Paper
                                     sx={{
                                         width: "100%",
@@ -1047,7 +1090,7 @@ const Employee = () => {
                     })}
                 </Grid>
             </Box>
-            <Grid container spacing={2}>
+            <Grid container spacing={2} sx={{ marginTop: 4 }}>
                 <Grid item size={1} sx={{ position: "sticky", top: 100, alignSelf: "flex-start" }}>
                     <Typography variant="subtitle1" fontWeight="bold" sx={{ whiteSpace: "nowrap", marginLeft: -2.5 }} gutterBottom>เลือกเมนู</Typography>
                     <Divider />
@@ -1096,7 +1139,7 @@ const Employee = () => {
 
                 </Grid>
                 <Grid item size={11}>
-                    <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "80vh" }}>
+                    <Paper sx={{ p: 5, marginTop: -3, borderRadius: 4, height: "80vh" }}>
                         <Box sx={{ width: "100%" }}>
                             {/* <SelectEmployeeGroup
                                 department={department}
@@ -1128,7 +1171,7 @@ const Employee = () => {
                                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                                 <TableExcel
                                                     styles={{ height: "62vh" }} // ✅ ส่งเป็น object
-                                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}
+                                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}
                                                     columns={columns}
                                                     initialData={employees}
                                                     onDataChange={setEmployees}
@@ -1139,7 +1182,7 @@ const Employee = () => {
                                             <React.Fragment>
                                                 <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการเปลี่ยนกะการทำงานให้กดชื่อในตารางได้เลย</Typography>
                                                 <TableContainer component={Paper} textAlign="center" sx={{ height: "62vh" }}>
-                                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1200px" }}>
+                                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                                                         <TableHead
                                                             sx={{
                                                                 position: "sticky",
@@ -1149,12 +1192,12 @@ const Employee = () => {
                                                         >
                                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                                 <TablecellHeader sx={{ width: 40, borderRight: "2px solid white" }}>ลำดับ</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: 70, borderRight: "2px solid white" }}>รหัสพนักงาน</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 100, borderRight: "2px solid white" }}>รหัสพนักงาน</TablecellHeader>
                                                                 <TablecellHeader sx={{ width: 250, borderRight: "2px solid white", position: "sticky", left: 0, zIndex: 2, backgroundColor: theme.palette.primary.dark }}>ชื่อ</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: 140, borderRight: "2px solid white" }}>ฝ่ายงาน</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: 140, borderRight: "2px solid white" }}>ส่วนงาน</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: 140, borderRight: "2px solid white" }}>ตำแหน่ง</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: 100, borderRight: "2px solid white" }}>ประเภทการจ้าง</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 200, borderRight: "2px solid white" }}>ฝ่ายงาน</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 200, borderRight: "2px solid white" }}>ส่วนงาน</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 200, borderRight: "2px solid white" }}>ตำแหน่ง</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 120, borderRight: "2px solid white" }}>ประเภทการจ้าง</TablecellHeader>
                                                                 <TablecellHeader sx={{ width: 100 }}>เงินเดือน</TablecellHeader>
                                                             </TableRow>
                                                         </TableHead>
@@ -1369,7 +1412,7 @@ const Employee = () => {
                                                     opendetail.workshifthistory !== undefined &&
                                                     <Grid item size={12}>
                                                         <Typography variant="subtitle2" fontWeight="bold">ประวัติการเปลี่ยนกะการทำงาน</Typography>
-                                                        <TableContainer component={Paper} textAlign="center" sx={{ height: "30vh" }}>
+                                                        <TableContainer component={Paper} textAlign="center" sx={{ height: "30vh", width: "100%" }}>
                                                             <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                                                                 <TableHead
                                                                     sx={{
@@ -1395,25 +1438,24 @@ const Employee = () => {
                                                                             </TableRow>
                                                                             :
                                                                             opendetail.workshifthistory.map((row, index) => {
+                                                                                // สร้าง dayjs object จากค่า DD/MM/YYYY
+                                                                                const startDate = dayjs(`${row.DDstart}-${row.MMstart}-${row.YYYYstart}`, "DD/MM/YYYY");
+                                                                                const endDate = row.dateend !== "now"
+                                                                                    ? dayjs(`${row.DDend}-${row.MMend}-${row.YYYYend}`, "DD/MM/YYYY")
+                                                                                    : null;
+
                                                                                 const attendantS = opendetail.attendant?.[row.YYYYstart]?.[row.MMstart] || [];
                                                                                 const attendantE = opendetail.attendant?.[row.YYYYend]?.[row.MMend] || [];
 
-                                                                                console.log("DateStart : ", index, attendantS);
-                                                                                console.log("DateEnd : ", index, attendantE);
-
                                                                                 const checkS = attendantS.some((time) => {
                                                                                     const sameShift = time.shift === row.workshift;
-                                                                                    const inRange =
-                                                                                        dayjs(time.datein).isBetween(row.datestart, row.dateend, null, "[]")
-
+                                                                                    const inRange = dayjs(time.datein).isBetween(startDate, endDate || startDate, null, "[]");
                                                                                     return sameShift && inRange;
                                                                                 });
 
                                                                                 const checkE = attendantE.some((time) => {
                                                                                     const sameShift = time.shift === row.workshift;
-                                                                                    const inRange =
-                                                                                        dayjs(time.dateout).isBetween(row.datestart, row.dateend, null, "[]")
-
+                                                                                    const inRange = endDate ? dayjs(time.dateout).isBetween(startDate, endDate, null, "[]") : false;
                                                                                     return sameShift && inRange;
                                                                                 });
 
@@ -1465,79 +1507,85 @@ const Employee = () => {
                                                                                         <TableCell sx={{ textAlign: "center" }}>
                                                                                             {
                                                                                                 workshiftID !== row.ID ?
-                                                                                                    (formatThaiSlash(dayjs(row.datestart, "DD/MM/YYYY")))
+                                                                                                    (formatThaiSlash(dayjs(startDate, "DD/MM/YYYY")))
                                                                                                     :
-                                                                                                    <Paper sx={{ width: "100%", boxShadow: "none", borderRadius: 0 }}>
-                                                                                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                                                                                            <DatePicker
-                                                                                                                value={workshiftDateStart ? dayjs(workshiftDateStart, "DD/MM/YYYY") : null}
-                                                                                                                onChange={(newValue) => {
-                                                                                                                    const newDate = newValue ? newValue.format("DD/MM/YYYY") : "";
-                                                                                                                    setWorkshiftDateStart(newDate);
-                                                                                                                }}
-                                                                                                                format="DD/MM/YYYY"
-                                                                                                                enableAccessibleFieldDOMStructure={false}
-                                                                                                                slotProps={{
-                                                                                                                    textField: {
-                                                                                                                        size: "small",
-                                                                                                                        fullWidth: true,
-                                                                                                                        variant: "outlined",
-                                                                                                                        sx: {
-                                                                                                                            '& .MuiOutlinedInput-root': {
-                                                                                                                                height: 28,
-                                                                                                                                borderRadius: 1,
+                                                                                                    (
+                                                                                                        startDate &&
+                                                                                                        <Paper sx={{ width: "100%", boxShadow: "none", borderRadius: 0 }}>
+                                                                                                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                                                                                <DatePicker
+                                                                                                                    value={workshiftDateStart ? dayjs(workshiftDateStart, "DD/MM/YYYY") : null}
+                                                                                                                    onChange={(newValue) => {
+                                                                                                                        const newDate = newValue ? newValue.format("DD/MM/YYYY") : "";
+                                                                                                                        setWorkshiftDateStart(newDate);
+                                                                                                                    }}
+                                                                                                                    format="DD/MM/YYYY"
+                                                                                                                    enableAccessibleFieldDOMStructure={false}
+                                                                                                                    slotProps={{
+                                                                                                                        textField: {
+                                                                                                                            size: "small",
+                                                                                                                            fullWidth: true,
+                                                                                                                            variant: "outlined",
+                                                                                                                            sx: {
+                                                                                                                                '& .MuiOutlinedInput-root': {
+                                                                                                                                    height: 28,
+                                                                                                                                    borderRadius: 1,
+                                                                                                                                },
+                                                                                                                                '& .MuiInputBase-input': {
+                                                                                                                                    fontSize: '14px',
+                                                                                                                                    padding: '2px 6px',
+                                                                                                                                    textAlign: 'center',
+                                                                                                                                    fontFamily: theme.typography.fontFamily,
+                                                                                                                                },
                                                                                                                             },
-                                                                                                                            '& .MuiInputBase-input': {
-                                                                                                                                fontSize: '14px',
-                                                                                                                                padding: '2px 6px',
-                                                                                                                                textAlign: 'center',
-                                                                                                                                fontFamily: theme.typography.fontFamily,
-                                                                                                                            },
-                                                                                                                        },
-                                                                                                                    }
-                                                                                                                }}
-                                                                                                            />
-                                                                                                        </LocalizationProvider>
-                                                                                                    </Paper>
+                                                                                                                        }
+                                                                                                                    }}
+                                                                                                                />
+                                                                                                            </LocalizationProvider>
+                                                                                                        </Paper>
+                                                                                                    )
                                                                                             }
                                                                                         </TableCell>
                                                                                         <TableCell sx={{ textAlign: "center" }}>
                                                                                             {
                                                                                                 workshiftID !== row.ID ?
-                                                                                                    (row.dateend !== "now" ? formatThaiSlash(dayjs(row.dateend, "DD/MM/YYYY")) : "-")
+                                                                                                    (row.dateend !== "now" ? formatThaiSlash(dayjs(endDate, "DD/MM/YYYY")) : "-")
                                                                                                     :
-                                                                                                    <Paper sx={{ width: "100%", boxShadow: "none", borderRadius: 0 }}>
-                                                                                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                                                                                            <DatePicker
-                                                                                                                value={workshiftDateEnd ? dayjs(workshiftDateEnd, "DD/MM/YYYY") : null}
-                                                                                                                onChange={(newValue) => {
-                                                                                                                    const newDate = newValue ? newValue.format("DD/MM/YYYY") : "";
-                                                                                                                    setWorkshiftDateEnd(newDate);
-                                                                                                                }}
-                                                                                                                format="DD/MM/YYYY"
-                                                                                                                enableAccessibleFieldDOMStructure={false}
-                                                                                                                slotProps={{
-                                                                                                                    textField: {
-                                                                                                                        size: "small",
-                                                                                                                        fullWidth: true,
-                                                                                                                        variant: "outlined",
-                                                                                                                        sx: {
-                                                                                                                            '& .MuiOutlinedInput-root': {
-                                                                                                                                height: 28,
-                                                                                                                                borderRadius: 1,
+                                                                                                    (
+                                                                                                        endDate &&
+                                                                                                        <Paper sx={{ width: "100%", boxShadow: "none", borderRadius: 0 }}>
+                                                                                                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                                                                                <DatePicker
+                                                                                                                    value={workshiftDateEnd ? dayjs(workshiftDateEnd, "DD/MM/YYYY") : null}
+                                                                                                                    onChange={(newValue) => {
+                                                                                                                        const newDate = newValue ? newValue.format("DD/MM/YYYY") : "";
+                                                                                                                        setWorkshiftDateEnd(newDate);
+                                                                                                                    }}
+                                                                                                                    format="DD/MM/YYYY"
+                                                                                                                    enableAccessibleFieldDOMStructure={false}
+                                                                                                                    slotProps={{
+                                                                                                                        textField: {
+                                                                                                                            size: "small",
+                                                                                                                            fullWidth: true,
+                                                                                                                            variant: "outlined",
+                                                                                                                            sx: {
+                                                                                                                                '& .MuiOutlinedInput-root': {
+                                                                                                                                    height: 28,
+                                                                                                                                    borderRadius: 1,
+                                                                                                                                },
+                                                                                                                                '& .MuiInputBase-input': {
+                                                                                                                                    fontSize: '14px',
+                                                                                                                                    padding: '2px 6px',
+                                                                                                                                    textAlign: 'center',
+                                                                                                                                    fontFamily: theme.typography.fontFamily,
+                                                                                                                                },
                                                                                                                             },
-                                                                                                                            '& .MuiInputBase-input': {
-                                                                                                                                fontSize: '14px',
-                                                                                                                                padding: '2px 6px',
-                                                                                                                                textAlign: 'center',
-                                                                                                                                fontFamily: theme.typography.fontFamily,
-                                                                                                                            },
-                                                                                                                        },
-                                                                                                                    }
-                                                                                                                }}
-                                                                                                            />
-                                                                                                        </LocalizationProvider>
-                                                                                                    </Paper>
+                                                                                                                        }
+                                                                                                                    }}
+                                                                                                                />
+                                                                                                            </LocalizationProvider>
+                                                                                                        </Paper>
+                                                                                                    )
                                                                                             }
                                                                                         </TableCell>
                                                                                         <TableCell sx={{ textAlign: "center" }} >
@@ -1552,7 +1600,7 @@ const Employee = () => {
                                                                                                             <IconButton color="error" onClick={() => setWorkshiftID(null)} sx={{ marginRight: -1 }}>
                                                                                                                 <DisabledByDefaultIcon fontSize="small" />
                                                                                                             </IconButton>
-                                                                                                            <IconButton color="success" onClick={() => setWorkshiftID(null)} >
+                                                                                                            <IconButton color="success" onClick={() => handleUpdateDate(row)} >
                                                                                                                 <SaveIcon fontSize="small" />
                                                                                                             </IconButton>
                                                                                                         </Box>

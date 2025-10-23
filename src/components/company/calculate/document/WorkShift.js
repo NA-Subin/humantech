@@ -220,7 +220,7 @@ const WorkShiftDetail = (props) => {
         <React.Fragment>
             <Grid item size={12}>
                 <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", width: "100%" }}>
-                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
+                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1050px" }}>
                         <TableHead
                             sx={{
                                 position: "sticky",
@@ -232,7 +232,7 @@ const WorkShiftDetail = (props) => {
                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                 <TablecellHeader sx={{ width: 60 }}>ลำดับ</TablecellHeader>
                                 <TablecellHeader sx={{ width: 130 }}>วัน</TablecellHeader>
-                                <TablecellHeader sx={{ width: 180 }}>กะการทำงาน</TablecellHeader>
+                                <TablecellHeader sx={{ width: 150 }}>กะการทำงาน</TablecellHeader>
                                 <TablecellHeader sx={{ width: 280 }}>วันที่</TablecellHeader>
                                 <TablecellHeader sx={{ width: 180 }}>เวลา</TablecellHeader>
                                 <TablecellHeader sx={{ width: 250 }}>หมายเหตุ</TablecellHeader>

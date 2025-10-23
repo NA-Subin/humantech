@@ -141,22 +141,23 @@ const TrainingDetail = (props) => {
     });
 
     const trainingColumns = [
-        { label: "ชื่อ", key: "employname", type: "text", disabled: true },
-        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
-        { label: "วันที่", key: "dateStart", type: "date" },
-        { label: "จนถึง", key: "dateEnd", type: "date" },
-        { label: "สถาบัน", key: "institution", type: "text" },
-        { label: "หลักสูตร", key: "course", type: "text" },
+        { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: 200, sticky: true },
+        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true, width: 150 },
+        { label: "วันที่เริ่มต้น", key: "dateStart", type: "date", width: 80 },
+        { label: "จนถึงวันที่", key: "dateEnd", type: "date", width: 80 },
+        { label: "สถาบัน", key: "institution", type: "text", width: 150 },
+        { label: "หลักสูตร", key: "course", type: "text", width: 150 },
         {
             label: "ประเภทไฟล์",
             key: "fileType",
             type: "select",
+            width: 150,
             options: [
-                { value: "pdf", label: "pdf" },
-                { value: "image", label: "image" }
+                { value: "pdf", label: "เอกสาร (PDF)" },
+                { value: "image", label: "รูปภาพ (Image)" },
             ],
         },
-        { label: "ไฟล์", key: "file", type: "file" },
+        { label: "ไฟล์", key: "file", type: "file", width: 150 },
     ];
 
     const handleTraningChange = (updatedList) => {
@@ -305,7 +306,7 @@ const TrainingDetail = (props) => {
 
 
     return (
-        <Box sx={{ marginTop: 5, width: "1080px" }}>
+        <Box sx={{ marginTop: 5, width: "100%" }}>
             <Grid container spacing={2} sx={{ marginBottom: 1 }}>
                 <Grid item size={12}>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูล{data}</Typography>
@@ -377,12 +378,12 @@ const TrainingDetail = (props) => {
                                                                         <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>
                                                                             {row.employname}
                                                                         </Typography>
-                                                                        </TableCell>
+                                                                    </TableCell>
                                                                     <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "left" }}>
                                                                         <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>
                                                                             {row.position}
                                                                         </Typography>
-                                                                        </TableCell>
+                                                                    </TableCell>
                                                                 </>
                                                             )}
                                                             <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.dateStart}</TableCell>

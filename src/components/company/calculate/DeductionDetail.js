@@ -355,7 +355,7 @@ const DeductionDetail = (props) => {
                                 <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                     <TableExcel
                                         styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                        stylesTable={{ width: "1080px" }} // ✅ ส่งเป็น object
+                                        stylesTable={{ width: `${500 + (150 * deduction.length)}px` }} // ✅ ส่งเป็น object
                                         columns={DeductionColumns}
                                         initialData={deductionRows}
                                         onDataChange={handleDeductionChange}
@@ -363,7 +363,7 @@ const DeductionDetail = (props) => {
                                 </Paper>
                                 :
                                 <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", overflow: "auto" }}>
-                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: `${500 + (150 * deduction.length)}px` }}>
                                         <TableHead
                                             sx={{
                                                 position: "sticky",
@@ -373,9 +373,9 @@ const DeductionDetail = (props) => {
                                             }}
                                         >
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                                <TablecellHeader>ชื่อ</TablecellHeader>
-                                                <TablecellHeader>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 50 }}>ลำดับ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 250 }}>ชื่อ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 200 }}>ตำแหน่ง</TablecellHeader>
                                                 {
                                                     deduction.map((row, index) => (
                                                         row.status === 1 &&
@@ -394,8 +394,8 @@ const DeductionDetail = (props) => {
                                                     deductionRows.map((row, index) => (
                                                         <TableRow key={row.employid}>
                                                             <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center" }}>{row.employname}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center" }}>{row.position}</TableCell>
+                                                            <TableCell sx={{ textAlign: "left" }}><Box sx={{ ml: 2 }}>{row.employname}</Box></TableCell>
+                                                            <TableCell sx={{ textAlign: "left" }}><Box sx={{ ml: 2 }}>{row.position}</Box></TableCell>
                                                             {deduction
                                                                 .filter(inc => inc.status === 1)
                                                                 .map(inc => (

@@ -214,7 +214,7 @@ const DayOffDetail = (props) => {
         <React.Fragment>
             <Grid item size={12}>
                 <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", width: "100%" }}>
-                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
+                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1050px" }}>
                         <TableHead
                             sx={{
                                 position: "sticky",
@@ -227,7 +227,7 @@ const DayOffDetail = (props) => {
                                 <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
                                 <TablecellHeader sx={{ width: 280 }}>วันที่</TablecellHeader>
                                 <TablecellHeader sx={{ width: 180 }}>ชื่อวันหยุด</TablecellHeader>
-                                <TablecellHeader sx={{ width: 220 }}>สถานะ</TablecellHeader>
+                                <TablecellHeader sx={{ width: 200 }}>สถานะ</TablecellHeader>
                                 <TablecellHeader sx={{ width: 320 }}>หมายเหตุ</TablecellHeader>
                             </TableRow>
                         </TableHead>

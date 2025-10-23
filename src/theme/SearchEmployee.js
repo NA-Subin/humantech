@@ -14,6 +14,7 @@ function SelectField({
   showEmptyWhenNoMatch = false,
   maxHeight = 150,
   gridSize = 3,
+  disabled = false, // ✅ เพิ่ม prop disabled
 }) {
   const filtered = options.filter(filterFn);
 
@@ -28,6 +29,7 @@ function SelectField({
         size="small"
         value={value}
         onChange={onChange}
+        disabled={disabled} // ✅ เชื่อมกับ TextField
         SelectProps={{
           MenuProps: { PaperProps: { style: { maxHeight } } },
         }}
@@ -64,18 +66,18 @@ export default function SelectEmployeeGroup({
 }) {
   // Reset cascading selects
   useEffect(() => {
-    if (section !== "") setSection("");
-    if (position !== "") setPosition("");
-    if (employee !== "") setEmployee("");
+    if (section !== "all-ทั้งหมด") setSection("all-ทั้งหมด");
+    if (position !== "all-ทั้งหมด") setPosition("all-ทั้งหมด");
+    if (employee !== "all-ทั้งหมด") setEmployee("all-ทั้งหมด");
   }, [department]);
 
   useEffect(() => {
-    if (position !== "") setPosition("");
-    if (employee !== "") setEmployee("");
+    if (position !== "all-ทั้งหมด") setPosition("all-ทั้งหมด");
+    if (employee !== "all-ทั้งหมด") setEmployee("all-ทั้งหมด");
   }, [section]);
 
   useEffect(() => {
-    if (employee !== "") setEmployee("");
+    if (employee !== "all-ทั้งหมด") setEmployee("all-ทั้งหมด");
   }, [position]);
 
   const departmentsWithAll = useMemo(() => {
@@ -119,8 +121,7 @@ export default function SelectEmployeeGroup({
         getOptionLabel={(row) => row.deptname}
       />
 
-
-      {/* ส่วนงาน */}
+      {/* ส่วนงาน: ซ่อนถ้าเลือก "ทั้งหมด" ในฝ่ายงาน */}
       <SelectField
         label="เลือกส่วนงาน"
         value={section}
@@ -131,9 +132,10 @@ export default function SelectEmployeeGroup({
         getOptionLabel={(row) => row.sectionname}
         showEmptyWhenNoMatch={department !== ""}
         emptyOptionLabel="ไม่มีส่วนงาน"
+        disabled={department === "all-ทั้งหมด"} // ✅ disable ถ้าเลือกทั้งหมดในฝ่ายงาน
       />
 
-      {/* ตำแหน่ง */}
+      {/* ตำแหน่ง: ซ่อนถ้าเลือก "ทั้งหมด" ในฝ่ายงาน หรือเลือก "ทั้งหมด" ในส่วนงาน */}
       <SelectField
         label="เลือกตำแหน่ง"
         value={position}
@@ -146,9 +148,10 @@ export default function SelectEmployeeGroup({
         }
         getOptionValue={(row) => `${row.ID}-${row.positionname}`}
         getOptionLabel={(row) => row.positionname}
+        disabled={section === "all-ทั้งหมด"} // ✅ disable ถ้าเลือกทั้งหมดในฝ่ายงาน
       />
 
-      {/* พนักงาน */}
+      {/* พนักงาน: ซ่อนถ้าเลือก "ทั้งหมด" ในฝ่ายงาน หรือ "ทั้งหมด" ในส่วนงาน หรือ "ทั้งหมด" ในตำแหน่ง */}
       <SelectField
         label="เลือกพนักงาน"
         value={employee}
@@ -162,6 +165,7 @@ export default function SelectEmployeeGroup({
         }
         getOptionValue={(row) => `${row.employeeid}-${row.employname}`}
         getOptionLabel={(row) => row.employname}
+        disabled={position === "all-ทั้งหมด"} // ✅ disable ถ้าเลือกทั้งหมดในฝ่ายงาน
       />
     </Grid>
   );

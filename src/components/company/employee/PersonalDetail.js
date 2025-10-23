@@ -104,10 +104,9 @@ const PersonalDetail = (props) => {
     }));
 
     const personalColumns = [
-        { label: "ชื่อ", key: "employname", type: "text", disabled: true },
-        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true },
-        // { label: "เพศ", key: "sex", type: "text" },
-        // { label: "สถานภาพทางทหาร", key: "militaryStatus", type: "text" },
+        { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: 300 },
+        { label: "ตำแหน่ง", key: "position", type: "text", disabled: true, width: 200 },
+
         {
             label: "เพศ",
             key: "sex",
@@ -116,6 +115,7 @@ const PersonalDetail = (props) => {
                 { value: "ชาย", label: "ชาย" },
                 { value: "หญิง", label: "หญิง" }
             ],
+            width: 100,
         },
         {
             label: "สถานภาพทางทหาร",
@@ -126,31 +126,8 @@ const PersonalDetail = (props) => {
                 { value: "ได้รับการยกเว้น", label: "ได้รับการยกเว้น" },
                 { value: "ยังไม่ได้เกณฑ์ทหาร", label: "ยังไม่ได้เกณฑ์ทหาร" }
             ],
+            width: 150,
         },
-        {
-            label: "จังหวัด",
-            key: "province",
-            type: "select",
-            options: thailand.map((p) => ({
-                label: p.name_th,
-                value: `${p.id}-${p.name_th}`,
-            })),
-        },
-
-        {
-            label: "อำเภอ",
-            key: "amphure",
-            type: "dependent-select",
-            dependsOn: "province",
-            options: thailand.flatMap((p) =>
-                (p.amphure || []).map((a) => ({
-                    label: a.name_th,
-                    value: `${a.id}-${a.name_th}`,
-                    parent: `${p.id}-${p.name_th}`,
-                }))
-            ),
-        },
-
         {
             label: "ตำบล",
             key: "tambon",
@@ -165,19 +142,37 @@ const PersonalDetail = (props) => {
                     }))
                 )
             ),
+            width: 120,
         },
-
         {
-            label: "รหัสไปรษณีย์",
-            key: "zipCode",
-            type: "text",
-            disabled: true
+            label: "อำเภอ",
+            key: "amphure",
+            type: "dependent-select",
+            dependsOn: "province",
+            options: thailand.flatMap((p) =>
+                (p.amphure || []).map((a) => ({
+                    label: a.name_th,
+                    value: `${a.id}-${a.name_th}`,
+                    parent: `${p.id}-${p.name_th}`,
+                }))
+            ),
+            width: 120,
         },
-        { label: "สัญชาติ", key: "nationality", type: "text" },
-        { label: "ศาสนา", key: "religion", type: "text" },
-        { label: "ส่วนสูง", key: "height", type: "text" },
-        { label: "น้ำหนัก", key: "weight", type: "text" },
-        //{ label: "สถานภาพ", key: "statusEmployee", type: "text" },
+        {
+            label: "จังหวัด",
+            key: "province",
+            type: "select",
+            options: thailand.map((p) => ({
+                label: p.name_th,
+                value: `${p.id}-${p.name_th}`,
+            })),
+            width: 120,
+        },
+        { label: "รหัสไปรษณีย์", key: "zipCode", type: "text", disabled: true, width: 100 },
+        { label: "สัญชาติ", key: "nationality", type: "text", width: 100 },
+        { label: "ศาสนา", key: "religion", type: "text", width: 100 },
+        { label: "ส่วนสูง", key: "height", type: "text", width: 100 },
+        { label: "น้ำหนัก", key: "weight", type: "text", width: 100 },
         {
             label: "สถานภาพ",
             key: "statusEmployee",
@@ -188,11 +183,12 @@ const PersonalDetail = (props) => {
                 { value: "หย่า", label: "หย่า" },
                 { value: "หม้าย", label: "หม้าย" }
             ],
+            width: 100,
         },
-        { label: "เบอร์โทรศัพท์", key: "phone", type: "text" },
-        { label: "โทรศัพท์บ้าน", key: "homephone", type: "text" },
-        { label: "LINE ID", key: "lineID", type: "text" },
-        { label: "ประเทศ", key: "country", type: "text" },
+        { label: "เบอร์โทรศัพท์", key: "phone", type: "text", width: 120 },
+        { label: "โทรศัพท์บ้าน", key: "homephone", type: "text", width: 120 },
+        { label: "LINE ID", key: "lineID", type: "text", width: 150 },
+        { label: "ประเทศ", key: "country", type: "text", width: 150 },
     ];
 
     const addressColumns = [
@@ -416,7 +412,7 @@ const PersonalDetail = (props) => {
 
 
     return (
-        <Box sx={{ marginTop: 5, width: "1080px" }}>
+        <Box sx={{ marginTop: 5, width: "100%" }}>
             <Grid container spacing={2} sx={{ marginBottom: 1 }}>
                 <Grid item size={12}>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการ{data}</Typography>
