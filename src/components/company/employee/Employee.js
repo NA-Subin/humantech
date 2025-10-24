@@ -457,16 +457,24 @@ const Employee = () => {
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
         const unsubscribe = onValue(employeeRef, (snapshot) => {
-            const employeeData = snapshot.val();
+            const data = snapshot.val();
 
-            if (!employeeData) {
+            if (!data) {
                 setAllEmployees([]);
                 setEmployees([]);
-            } else {
-                const employeeArray = Object.values(employeeData);
-                setAllEmployees(employeeArray);
-                setEmployees(employeeArray); // default: แสดงทั้งหมด
+                return;
             }
+
+            const employees = Object.values(data).map((emp) => ({
+                ...emp,
+                nationalID: emp.personal?.nationalID ?? '',
+                prefix: emp.personal?.prefix ?? '',
+                name: emp.personal?.name ?? '',
+                lastname: emp.personal?.lastname ?? '',
+            }));
+
+            setAllEmployees(employees);
+            setEmployees(employees); // ค่า default คือแสดงทั้งหมด
         });
 
         return () => unsubscribe();

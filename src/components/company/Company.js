@@ -54,6 +54,7 @@ const Company = () => {
             }
         );
     };
+    
     const [show, setShow] = useState(1);
     const [showMenu, setshowMenu] = useState(1);
     const [page, setPage] = React.useState(0);
@@ -121,17 +122,15 @@ const Company = () => {
                     <Grid item size={12} textAlign="right">
                         <Box p={2}>
                             <Grid container spacing={5} marginBottom={2}>
-                                <Grid item size={1} />
-                                <Grid item size={2} >
+                                <Grid item size={{  xs: 12, sm: 6, md: 4, lg: 3 }} sx={{ p: 5 }} >
                                     <Typography variant="subtitle2" color="error" sx={{ textAlign: "center", marginBottom: -0.5, marginTop: 3 }} fontWeight="bold" gutterBottom>*เพิ่มบริษัทกดตรงนี้*</Typography>
                                     <Card sx={{ height: '25vh', borderRadius: 5 }} elevation={6}>
                                         <InsertCompany />
                                     </Card>
                                 </Grid>
-                                <Grid item size={1} />
                                 {
                                     companies.map((row) => (
-                                        <Grid item size={4}>
+                                        <Grid item size={{  xs: 12, sm: 6, md: 4, lg: 3 }} key={row.id}>
                                             <Box sx={{ position: "relative", display: "inline-block", width: "100%", textAlign: "left" }}>
                                                 {/* Icon เป็น background */}
                                                 <BusinessIcon

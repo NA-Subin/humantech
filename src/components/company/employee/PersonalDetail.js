@@ -48,6 +48,8 @@ const PersonalDetail = (props) => {
     const [editAddress, setEditAddress] = useState("");
     const [openDetail, setOpenDetail] = useState({});
 
+    console.log("Open Detail : ", openDetail);
+
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
     const [hoveredEmpID, setHoveredEmpID] = useState(null);
@@ -446,7 +448,7 @@ const PersonalDetail = (props) => {
                                         >
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                 <TablecellHeader sx={{ width: 50, borderRight: "2px solid white" }}>ลำดับ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 300, borderRight: "2px solid white", position: "sticky", left: 0, zIndex: 2, backgroundColor: theme.palette.primary.dark }}>ชื่อ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 300, borderRight: "2px solid white", position: "sticky", left: 0, zIndex: 3, backgroundColor: theme.palette.primary.dark }}>ชื่อ</TablecellHeader>
                                                 <TablecellHeader sx={{ width: 200, borderRight: "2px solid white" }}>ตำแหน่ง</TablecellHeader>
                                                 <TablecellHeader sx={{ width: 100, borderRight: "2px solid white" }}>เพศ</TablecellHeader>
                                                 <TablecellHeader sx={{ width: 150, borderRight: "2px solid white" }}>สถานภาพทางทหาร</TablecellHeader>
@@ -486,7 +488,7 @@ const PersonalDetail = (props) => {
                                                             <TableCell sx={{ textAlign: "center" }}>
                                                                 <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{index + 1}</Typography>
                                                             </TableCell>
-                                                            <TableCell sx={{ textAlign: "left", position: "sticky", left: 0, zIndex: 2, backgroundColor: "#f5f5f5" }}>
+                                                            <TableCell sx={{ textAlign: "left", position: "sticky", left: 0, zIndex: 1, backgroundColor: "#f5f5f5" }}>
                                                                 <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>
                                                                     {row.employname}
                                                                 </Typography>
@@ -621,6 +623,46 @@ const PersonalDetail = (props) => {
                             }}
                         >
                             <Grid container spacing={2} marginTop={2}>
+                                <Grid item size={3}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >คำนำหน้าชื่อ</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        placeholder="คำนำหน้าชื่อ"
+                                    />
+                                </Grid>
+                                <Grid item size={4.5}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >ชื่อ</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        placeholder="กรุณากรอกชื่อ"
+                                    />
+                                </Grid>
+                                <Grid item size={4.5}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >นามสกุล</Typography>
+                                    <TextField
+                                        fullWidth
+                                        placeholder="กรุณากรอกนามสกุล"
+                                        size="small"
+                                    />
+                                </Grid>
+                                <Grid item size={3}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >ชื่อเล่น</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        placeholder="ชื่อเล่น"
+                                    />
+                                </Grid>
+                                <Grid item size={9}>
+                                    <Typography variant="subtitle2" fontWeight="bold" >รหัสประจำตัวประชาชน</Typography>
+                                    <TextField
+                                        fullWidth
+                                        size="small"
+                                        placeholder="รหัสประจำตัวประชาชน"
+                                    />
+                                </Grid>
                                 <Grid item size={3}>
                                     <Typography variant="subtitle2" fontWeight="bold">ชื่อเล่น</Typography>
                                     <TextField

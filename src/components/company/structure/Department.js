@@ -63,6 +63,20 @@ const DepartmentDetail = () => {
         },
     ];
 
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth); // อัพเดตค่าขนาดหน้าจอ
+        };
+
+        window.addEventListener('resize', handleResize); // เพิ่ม event listener
+
+        // ลบ event listener เมื่อ component ถูกทำลาย
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
 
@@ -201,7 +215,7 @@ const DepartmentDetail = () => {
     };
 
     return (
-        <Container maxWidth="xl" sx={{ p: 5 }}>
+        <Container maxWidth="xl" sx={{ p: 5, width: windowWidth - 290 }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
@@ -209,7 +223,7 @@ const DepartmentDetail = () => {
                     </Grid>
                 </Grid>
             </Box>
-            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
+            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "75vh" }}>
                 <Box>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลฝ่ายงาน</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
@@ -241,14 +255,15 @@ const DepartmentDetail = () => {
                                         /> */}
                                         <TableExcel
                                             columns={columns}
+                                            styles={{ height: "55vh" }}
                                             initialData={department}
                                             onDataChange={setDepartment}
                                         />
                                     </Paper>
 
                                     :
-                                    <TableContainer component={Paper} textAlign="center">
-                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                                    <TableContainer component={Paper} textAlign="center" sx={{ height: "55vh" }}>
+                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "5px" } }}>
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>

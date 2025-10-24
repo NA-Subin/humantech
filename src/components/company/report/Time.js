@@ -59,6 +59,20 @@ const ReportTime = () => {
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth); // อัพเดตค่าขนาดหน้าจอ
+        };
+
+        window.addEventListener('resize', handleResize); // เพิ่ม event listener
+
+        // ลบ event listener เมื่อ component ถูกทำลาย
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     const [dateArray, setDateArray] = useState([]);
     const [department, setDepartment] = useState("all-ทั้งหมด");
     const [section, setSection] = useState("all-ทั้งหมด");
@@ -377,7 +391,7 @@ const ReportTime = () => {
     };
 
     return (
-        <Container maxWidth="xl" sx={{ p: 5 }}>
+        <Container maxWidth="xl" sx={{ p: 5, width: windowWidth - 290 }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
@@ -421,7 +435,7 @@ const ReportTime = () => {
                     </Grid>
                 </Grid>
             </Box>
-            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
+            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "75vh" }}>
                 <Box>
                     <SelectEmployeeGroup
                         department={department}
@@ -441,8 +455,8 @@ const ReportTime = () => {
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} /> */}
                     <Grid container spacing={2}>
                         <Grid item size={12}>
-                            <TableContainer component={Paper} textAlign="center">
-                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
+                            <TableContainer component={Paper} textAlign="center" sx={{ height: "55vh" }}>
+                                <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "5px" }, width: "100%" }}>
                                     <TableHead
                                         sx={{
                                             position: "sticky",

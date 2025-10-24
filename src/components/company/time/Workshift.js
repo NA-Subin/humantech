@@ -47,6 +47,20 @@ const WorkShiftDetail = () => {
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [workshift, setWorkshift] = useState([{ ID: 0, name: '' }]);
 
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth); // อัพเดตค่าขนาดหน้าจอ
+        };
+
+        window.addEventListener('resize', handleResize); // เพิ่ม event listener
+
+        // ลบ event listener เมื่อ component ถูกทำลาย
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     const daysMap = {
         monday: "จันทร์",
         tuesday: "อังคาร",
@@ -254,7 +268,7 @@ const WorkShiftDetail = () => {
     };
 
     return (
-        <Container maxWidth="xl" sx={{ p: 5 }}>
+        <Container maxWidth="xl" sx={{ p: 5, width: windowWidth - 290 }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
@@ -262,7 +276,7 @@ const WorkShiftDetail = () => {
                     </Grid>
                 </Grid>
             </Box>
-            <Paper sx={{ p: 5, width: "1250px", marginTop: -3, borderRadius: 4 }}>
+            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "75vh" }}>
                 <Box>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลกะการทำงาน</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
@@ -293,7 +307,7 @@ const WorkShiftDetail = () => {
                                             ]}
                                         /> */}
                                         <TableExcel
-                                            styles={{ height: "50vh" }} // ✅ ส่งเป็น object
+                                            styles={{ height: "55vh" }} // ✅ ส่งเป็น object
                                             stylesTable={{ width: "1300px" }} // ✅ ส่งเป็น object
                                             columns={columns}
                                             initialData={restored}
@@ -302,8 +316,8 @@ const WorkShiftDetail = () => {
                                     </Paper>
 
                                     :
-                                    <TableContainer component={Paper} textAlign="center">
-                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                                    <TableContainer component={Paper} textAlign="center" sx={{ width: "100%", height: "55vh" }}>
+                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "5px" }, width: "1300px" }}>
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader rowSpan={2} sx={{ width: 80 }}>ลำดับ</TablecellHeader>

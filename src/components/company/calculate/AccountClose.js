@@ -629,6 +629,7 @@ const AccountDetail = (props) => {
     };
 
     console.log("group rows : ", Object.entries(groupedRows));
+    console.log("Employees for Excel : ", employees);
 
     const exportSocialSecurityToExcel = async () => {
         const workbook = new ExcelJS.Workbook();

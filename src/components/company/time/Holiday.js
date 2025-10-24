@@ -64,6 +64,20 @@ const HolidayDetail = () => {
         { label: "ชื่อวันหยุด", key: "holiday", type: "text", width: "50%" }
     ];
 
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth); // อัพเดตค่าขนาดหน้าจอ
+        };
+
+        window.addEventListener('resize', handleResize); // เพิ่ม event listener
+
+        // ลบ event listener เมื่อ component ถูกทำลาย
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     console.log("holiday : ", holiday);
     console.log("holidays : ", holidays);
 
@@ -288,7 +302,7 @@ const HolidayDetail = () => {
     }
 
     return (
-        <Container maxWidth="xl" sx={{ p: 5 }}>
+        <Container maxWidth="xl" sx={{ p: 5, width: windowWidth - 290 }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={10}>
@@ -311,15 +325,9 @@ const HolidayDetail = () => {
                     {
                         holidays ?
                             <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
-                                <div
-                                    style={{
-                                        display: "grid",
-                                        gridTemplateColumns: "repeat(3, 1fr)", // ปรับเป็น 4 ได้ตามขนาดหน้าจอ
-                                        gap: "20px",
-                                    }}
-                                >
+                                <Grid container spacing={2}>
                                     {months.map((month, index) => (
-                                        <div key={index}>
+                                        <Grid key={index} item size={{ xs: 12, md: 6, lg: 4 }}>
                                             <h3 style={{ textAlign: "center", marginBottom: "8px" }}>
                                                 {formatThaiMonth(month)}
                                             </h3>
@@ -383,9 +391,9 @@ const HolidayDetail = () => {
                                                     }}
                                                 />
                                             </Box>
-                                        </div>
+                                        </Grid>
                                     ))}
-                                </div>
+                                </Grid>
                             </LocalizationProvider>
                             :
                             <TableExcel

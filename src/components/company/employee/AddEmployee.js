@@ -78,6 +78,10 @@ const AddEmployee = () => {
     const [open, setOpen] = React.useState(false);
     const [salary, setSalary] = React.useState("")
 
+    const prefixes = ["นาย", "นาง", "นางสาว", "ดร.", "ศ.", "คุณ"];
+
+    const [nationalID, setNationalID] = React.useState("");
+    const [prefix, setPrefix] = React.useState("");
     const [nickname, setNickname] = React.useState("");
     const [name, setName] = React.useState("");
     const [lastName, setLastName] = React.useState("");
@@ -157,7 +161,9 @@ const AddEmployee = () => {
 
 
     const personal = {
+        nationalID: nationalID,
         nickname: nickname,
+        prefix: prefix,
         name: name,
         lastname: lastName,
         sex: openSex ? "ชาย" : "หญิง",
@@ -828,6 +834,8 @@ const AddEmployee = () => {
             setStep(0);
 
             setSalary("");
+            setNationalID("");
+            setPrefix("");
             setNickname("");
             setName("");
             setLastName("");
@@ -1109,14 +1117,20 @@ const AddEmployee = () => {
                 <>
                     <Grid container spacing={2} marginTop={3} sx={{ width: "100%" }}>
                         <Grid item size={3}>
-                            <Typography variant="subtitle2" fontWeight="bold" >ชื่อเล่น</Typography>
+                            <Typography variant="subtitle2" fontWeight="bold" >คำนำหน้าชื่อ</Typography>
                             <TextField
+                                select
                                 fullWidth
                                 size="small"
-                                value={nickname}
-                                placeholder="ชื่อเล่น"
-                                onChange={(e) => setNickname(e.target.value)}
-                            />
+                                value={prefix}
+                                onChange={(e) => setPrefix(e.target.value)}
+                            >
+                                {prefixes.map((option) => (
+                                    <MenuItem key={option} value={option}>
+                                        {option}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
                         </Grid>
                         <Grid item size={4.5}>
                             <Typography variant="subtitle2" fontWeight="bold" >ชื่อ</Typography>
@@ -1136,6 +1150,26 @@ const AddEmployee = () => {
                                 placeholder="กรุณากรอกชื่อ"
                                 onChange={(e) => setLastName(e.target.value)}
                                 size="small"
+                            />
+                        </Grid>
+                        <Grid item size={3}>
+                            <Typography variant="subtitle2" fontWeight="bold" >ชื่อเล่น</Typography>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={nickname}
+                                placeholder="ชื่อเล่น"
+                                onChange={(e) => setNickname(e.target.value)}
+                            />
+                        </Grid>
+                        <Grid item size={9}>
+                            <Typography variant="subtitle2" fontWeight="bold" >รหัสประจำตัวประชาชน</Typography>
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={nationalID}
+                                placeholder="รหัสประจำตัวประชาชน"
+                                onChange={(e) => setNationalID(e.target.value)}
                             />
                         </Grid>
                         <Grid item size={12}>

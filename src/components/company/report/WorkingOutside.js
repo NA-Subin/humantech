@@ -52,6 +52,20 @@ const ReportWorkingOutside = () => {
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
+    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth); // อัพเดตค่าขนาดหน้าจอ
+        };
+
+        window.addEventListener('resize', handleResize); // เพิ่ม event listener
+
+        // ลบ event listener เมื่อ component ถูกทำลาย
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+
     const [department, setDepartment] = useState("all-ทั้งหมด");
     const [section, setSection] = useState("all-ทั้งหมด");
     const [position, setPosition] = useState("all-ทั้งหมด");
@@ -248,7 +262,7 @@ const ReportWorkingOutside = () => {
     };
 
     return (
-        <Container maxWidth="xl" sx={{ p: 5 }}>
+        <Container maxWidth="xl" sx={{ p: 5, width: windowWidth - 290 }}>
             <Box sx={{ flexGrow: 1, p: 5, marginTop: 2 }}>
                 <Grid container spacing={2}>
                     <Grid item size={12}>
@@ -256,7 +270,7 @@ const ReportWorkingOutside = () => {
                     </Grid>
                 </Grid>
             </Box>
-            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4 }}>
+            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "75vh" }}>
                 <Box>
                     <SelectEmployeeGroup
                         department={department}
@@ -287,8 +301,8 @@ const ReportWorkingOutside = () => {
                                     </Paper>
 
                                     :
-                                    <TableContainer component={Paper} textAlign="center">
-                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                                    <TableContainer component={Paper} textAlign="center" sx={{ height: "55vh" }}>
+                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "5px" }, width: "100%" }}>
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
@@ -298,7 +312,7 @@ const ReportWorkingOutside = () => {
                                                 </TableRow>
                                             </TableHead>
                                             <TableBody>
-                                                 
+
                                             </TableBody>
                                         </Table>
                                     </TableContainer>
