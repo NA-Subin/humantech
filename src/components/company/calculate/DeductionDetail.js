@@ -349,13 +349,14 @@ const DeductionDetail = (props) => {
         <React.Fragment>
             <Box sx={{ marginTop: -3, width: "100%" }}>
                 <Grid container spacing={2}>
-                    <Grid item size={editDeduction ? 12 : 11}>
+                    <Grid item size={12}>
                         {
                             editDeduction ?
                                 <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                     <TableExcel
                                         styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                        stylesTable={{ width: `${500 + (150 * deduction.length)}px` }} // ✅ ส่งเป็น object
+                                        // stylesTable={{ width: `${500 + (150 * deduction.length)}px` }} // ✅ ส่งเป็น object
+                                        stylesTable={{ width: "100%" }} // ✅ ส่งเป็น object
                                         columns={DeductionColumns}
                                         initialData={deductionRows}
                                         onDataChange={handleDeductionChange}
@@ -363,7 +364,8 @@ const DeductionDetail = (props) => {
                                 </Paper>
                                 :
                                 <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", overflow: "auto" }}>
-                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: `${500 + (150 * deduction.length)}px` }}>
+                                    {/* <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: `${500 + (150 * deduction.length)}px` }}> */}
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                                         <TableHead
                                             sx={{
                                                 position: "sticky",
@@ -410,7 +412,32 @@ const DeductionDetail = (props) => {
                                 </TableContainer>
                         }
                     </Grid>
-                    {
+                    <Grid item size={12}>
+                        {
+                            editDeduction ?
+                                <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                                    <Button variant="contained" fullWidth color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                                    <Button variant="contained" fullWidth color="success" onClick={handleSave} >บันทึก</Button>
+                                </Box>
+                                :
+                                <Button
+                                    variant="contained"
+                                    color="warning"
+                                    fullWidth
+                                    sx={{
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                    }}
+                                    onClick={() => setEditDeduction(true)}
+                                    endIcon={<ManageAccountsIcon fontSize="large" />}
+                                >
+                                    แก้ไขข้อมูลรายจ่าย
+                                </Button>
+                        }
+                    </Grid>
+                    {/* {
                         !editDeduction &&
                         <Grid item size={1} textAlign="right">
                             <Box display="flex" justifyContent="center" alignItems="center">
@@ -433,15 +460,15 @@ const DeductionDetail = (props) => {
                                 </Button>
                             </Box>
                         </Grid>
-                    }
+                    } */}
                 </Grid>
-                {
+                {/* {
                     editDeduction &&
                     <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                         <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                         <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                     </Box>
-                }
+                } */}
             </Box>
         </React.Fragment>
     )

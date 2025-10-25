@@ -383,21 +383,23 @@ const IncomeDetail = (props) => {
         <React.Fragment>
             <Box sx={{ marginTop: -3, width: "100%" }}>
                 <Grid container spacing={2}>
-                    <Grid item size={editIncome ? 12 : 11}>
+                    <Grid item size={12}>
                         {
                             editIncome ?
                                 <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                     <TableExcel
-                                        styles={{ height: "50vh" }} // ✅ ส่งเป็น object
-                                        stylesTable={{ width: `${500 + (150 * income.length)}px` }} // ✅ ส่งเป็น object
+                                        styles={{ height: "60vh" }} // ✅ ส่งเป็น object
+                                        // stylesTable={{ width: `${500 + (150 * income.length)}px` }} // ✅ ส่งเป็น object
+                                        stylesTable={{ width: "100%" }} // ✅ ส่งเป็น object
                                         columns={IncomesColumns}
                                         initialData={IncomesRows}
                                         onDataChange={handleIncomeChange}
                                     />
                                 </Paper>
                                 :
-                                <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", overflow: "auto" }}>
-                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: `${500 + (150 * income.length)}px` }}>
+                                <TableContainer component={Paper} textAlign="center" sx={{ height: "60vh", overflow: "auto" }}>
+                                    {/* <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: `${500 + (150 * income.length)}px` }}> */}
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                                         <TableHead
                                             sx={{
                                                 position: "sticky",
@@ -413,7 +415,7 @@ const IncomeDetail = (props) => {
                                                 {
                                                     income.map((row, index) => (
                                                         row.status === 1 &&
-                                                        <TablecellHeader>{row.name}</TablecellHeader>
+                                                        <TablecellHeader sx={{ width: 150 }}>{row.name}</TablecellHeader>
                                                     ))
                                                 }
                                             </TableRow>
@@ -444,7 +446,32 @@ const IncomeDetail = (props) => {
                                 </TableContainer>
                         }
                     </Grid>
-                    {
+                    <Grid item size={12}>
+                        {
+                            editIncome ?
+                                <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                                    <Button variant="contained" fullWidth color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                                    <Button variant="contained" fullWidth color="success" onClick={handleSave} >บันทึก</Button>
+                                </Box>
+                                :
+                                <Button
+                                    variant="contained"
+                                    color="warning"
+                                    fullWidth
+                                    sx={{
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                    }}
+                                    onClick={() => setEditIncome(true)}
+                                    endIcon={<ManageAccountsIcon fontSize="large" />}
+                                >
+                                    แก้ไขข้อมูลรายได้
+                                </Button>
+                        }
+                    </Grid>
+                    {/* {
                         !editIncome &&
                         <Grid item size={1} textAlign="right">
                             <Box display="flex" justifyContent="center" alignItems="center">
@@ -467,15 +494,15 @@ const IncomeDetail = (props) => {
                                 </Button>
                             </Box>
                         </Grid>
-                    }
+                    } */}
                 </Grid>
-                {
+                {/* {
                     editIncome &&
                     <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                         <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                         <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                     </Box>
-                }
+                } */}
             </Box>
         </React.Fragment>
     )

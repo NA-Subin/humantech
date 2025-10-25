@@ -76,8 +76,14 @@ const PersonalDetail = (props) => {
     }, [database]);
 
     const personal = employees.map(emp => ({
+        ID: emp.ID,
         employeecode: emp.employeecode,
-        employname: `${emp.employname} (${emp.nickname})`,
+        prefix: emp.personal?.prefix || '',
+        name: emp.personal?.name || '',
+        lastname: emp.personal?.lastname || '',
+        nickname: emp.personal?.nickname || '',
+        employname: `${emp.personal?.name || ''} ${emp.personal?.lastname || ''} (${emp.personal?.nickname || ''})`,
+        nationalID: emp.personal?.nationalID || '',
         position: emp.position.split("-")[1],
         sex: emp.personal?.sex || '',
         militaryStatus: emp.personal?.militaryStatus || '',
@@ -106,8 +112,9 @@ const PersonalDetail = (props) => {
     }));
 
     const personalColumns = [
-        { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: 300 },
+        { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: 250 },
         { label: "ตำแหน่ง", key: "position", type: "text", disabled: true, width: 200 },
+        { label: "รหัสประจำตัวประชาชน", key: "nationalID", type: "text", width: 180 },
 
         {
             label: "เพศ",
@@ -265,6 +272,7 @@ const PersonalDetail = (props) => {
                 ...emp,
                 personal: {
                     ...emp.personal,
+                    nationalID: updatedList[idx].nationalID,
                     sex: updatedList[idx].sex,
                     militaryStatus: updatedList[idx].militaryStatus,
                     address: {
@@ -422,12 +430,12 @@ const PersonalDetail = (props) => {
             </Grid>
             <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
             <Grid container spacing={2}>
-                <Grid item size={edit ? 12 : 11}>
+                <Grid item size={12}>
                     {
                         edit ?
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                 <TableExcel
-                                    styles={{ height: "50vh" }} // ✅ ส่งเป็น object
+                                    styles={{ height: "60vh" }} // ✅ ส่งเป็น object
                                     stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2500px" }}
                                     columns={personalColumns}
                                     initialData={personal}
@@ -437,7 +445,7 @@ const PersonalDetail = (props) => {
                             :
                             <React.Fragment>
                                 <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลทั่วไปรายคนให้กดชื่อในตารางได้เลย</Typography>
-                                <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
+                                <TableContainer component={Paper} textAlign="center" sx={{ height: "60vh" }}>
                                     <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2500px" }}>
                                         <TableHead
                                             sx={{
@@ -448,8 +456,9 @@ const PersonalDetail = (props) => {
                                         >
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                 <TablecellHeader sx={{ width: 50, borderRight: "2px solid white" }}>ลำดับ</TablecellHeader>
-                                                <TablecellHeader sx={{ width: 300, borderRight: "2px solid white", position: "sticky", left: 0, zIndex: 3, backgroundColor: theme.palette.primary.dark }}>ชื่อ</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 250, borderRight: "2px solid white", position: "sticky", left: 0, zIndex: 3, backgroundColor: theme.palette.primary.dark }}>ชื่อ</TablecellHeader>
                                                 <TablecellHeader sx={{ width: 200, borderRight: "2px solid white" }}>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader sx={{ width: 180, borderRight: "2px solid white" }}>รหัสประจำตัวประชาชน</TablecellHeader>
                                                 <TablecellHeader sx={{ width: 100, borderRight: "2px solid white" }}>เพศ</TablecellHeader>
                                                 <TablecellHeader sx={{ width: 150, borderRight: "2px solid white" }}>สถานภาพทางทหาร</TablecellHeader>
                                                 <TablecellHeader sx={{ width: 120, borderRight: "2px solid white" }}>ตำบล</TablecellHeader>
@@ -495,6 +504,9 @@ const PersonalDetail = (props) => {
                                                             </TableCell>
                                                             <TableCell sx={{ textAlign: "left" }}>
                                                                 <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.position}</Typography>
+                                                            </TableCell>
+                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.nationalID}</Typography>
                                                             </TableCell>
                                                             <TableCell sx={{ textAlign: "center" }}>
                                                                 <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.sex}</Typography>
@@ -549,7 +561,32 @@ const PersonalDetail = (props) => {
                             </React.Fragment>
                     }
                 </Grid>
-                {
+                <Grid item size={12}>
+                    {
+                        edit ?
+                            <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                                <Button variant="contained" fullWidth color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                                <Button variant="contained" fullWidth color="success" onClick={handleSave} >บันทึก</Button>
+                            </Box>
+                            :
+                            <Button
+                                variant="contained"
+                                color="warning"
+                                fullWidth
+                                sx={{
+                                    flexDirection: "row",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                }}
+                                onClick={() => setEdit(true)}
+                                endIcon={<ManageAccountsIcon fontSize="large" />}
+                            >
+                                แก้ไขข้อมูลทั่วไป
+                            </Button>
+                    }
+                </Grid>
+                {/* {
                     !edit &&
                     <Grid item size={1} textAlign="right">
                         <Box display="flex" justifyContent="center" alignItems="center">
@@ -572,18 +609,18 @@ const PersonalDetail = (props) => {
                             </Button>
                         </Box>
                     </Grid>
-                }
+                } */}
             </Grid>
-            {
+            {/* {
                 edit &&
                 <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                     <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                     <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                 </Box>
-            }
+            } */}
 
             {
-                openDetail?.employname && (
+                openDetail && Object.keys(openDetail).length > 0 && (
                     <Dialog
                         open
                         onClose={() => setOpenDetail({})}
@@ -629,6 +666,8 @@ const PersonalDetail = (props) => {
                                         fullWidth
                                         size="small"
                                         placeholder="คำนำหน้าชื่อ"
+                                        value={openDetail?.prefix}
+                                        disabled
                                     />
                                 </Grid>
                                 <Grid item size={4.5}>
@@ -637,6 +676,8 @@ const PersonalDetail = (props) => {
                                         fullWidth
                                         size="small"
                                         placeholder="กรุณากรอกชื่อ"
+                                        value={openDetail?.name}
+                                        disabled
                                     />
                                 </Grid>
                                 <Grid item size={4.5}>
@@ -645,6 +686,8 @@ const PersonalDetail = (props) => {
                                         fullWidth
                                         placeholder="กรุณากรอกนามสกุล"
                                         size="small"
+                                        value={openDetail?.lastname}
+                                        disabled
                                     />
                                 </Grid>
                                 <Grid item size={3}>
@@ -653,6 +696,8 @@ const PersonalDetail = (props) => {
                                         fullWidth
                                         size="small"
                                         placeholder="ชื่อเล่น"
+                                        value={openDetail?.nickname}
+                                        disabled
                                     />
                                 </Grid>
                                 <Grid item size={9}>
@@ -661,9 +706,11 @@ const PersonalDetail = (props) => {
                                         fullWidth
                                         size="small"
                                         placeholder="รหัสประจำตัวประชาชน"
+                                        value={openDetail?.nationalID}
+                                        disabled
                                     />
                                 </Grid>
-                                <Grid item size={3}>
+                                {/* <Grid item size={3}>
                                     <Typography variant="subtitle2" fontWeight="bold">ชื่อเล่น</Typography>
                                     <TextField
                                         fullWidth
@@ -687,8 +734,8 @@ const PersonalDetail = (props) => {
                                         }
                                         disabled
                                     />
-                                </Grid>
-                                <Grid item size={4.5}>
+                                </Grid> */}
+                                <Grid item size={12}>
                                     <Typography variant="subtitle2" fontWeight="bold">ตำแหน่ง</Typography>
                                     <TextField
                                         fullWidth

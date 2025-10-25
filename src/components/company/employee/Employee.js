@@ -208,8 +208,24 @@ const Employee = () => {
 
     const columns = [
         { label: "รหัสพนักงาน", key: "employeecode", type: "text", width: 100 },
+        {
+            label: "คำนำหน้าชื่อ",
+            key: "prefix",
+            type: "select",
+            options: [
+                { value: "นาย", label: "นาย" },
+                { value: "นาง", label: "นาง" },
+                { value: "นางสาว", label: "นางสาว" },
+                { value: "ดร.", label: "ดร." },
+                { value: "ศ.", label: "ศ." },
+                { value: "คุณ", label: "คุณ" },
+            ],
+            width: 100,
+        },
+        { label: "ชื่อ", key: "name", type: "text", width: 100 },
+        { label: "นามสกุล", key: "lastname", type: "text", width: 100 },
         { label: "ชื่อเล่น", key: "nickname", type: "text", width: 100 }, // (เพิ่มเล็กน้อยเพื่อความสมดุล)
-        { label: "ชื่อ", key: "employname", type: "text", width: 250 },
+        // { label: "รหัสประจำตัวประชาชน", key: "nationalID", type: "text", width: 150 },
         {
             label: "ฝ่ายงาน",
             key: "department",
@@ -465,16 +481,16 @@ const Employee = () => {
                 return;
             }
 
-            const employees = Object.values(data).map((emp) => ({
+            const employ = Object.values(data).map((emp) => ({
                 ...emp,
-                nationalID: emp.personal?.nationalID ?? '',
+                // nationalID: emp.personal?.nationalID ?? '',
                 prefix: emp.personal?.prefix ?? '',
                 name: emp.personal?.name ?? '',
                 lastname: emp.personal?.lastname ?? '',
             }));
 
-            setAllEmployees(employees);
-            setEmployees(employees); // ค่า default คือแสดงทั้งหมด
+            setAllEmployees(employ);
+            setEmployees(employ); // ค่า default คือแสดงทั้งหมด
         });
 
         return () => unsubscribe();
@@ -516,7 +532,7 @@ const Employee = () => {
         });
     }, [firebaseDB, companyId]);
 
-    console.log("employees : ", employees);
+    console.log("2.employees : ", employees);
 
     useEffect(() => {
         const filtered = allEmployees.filter((emp) => {
@@ -553,43 +569,42 @@ const Employee = () => {
         setEmployees(enrichedEmployees);
     };
 
-    console.log("employees : ", employees);
-
     const handleSave = async () => {
-        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
         const groupsRef = ref(firebaseDB, "workgroup");
         const companyRef = ref(firebaseDB, `workgroup/company/${companyId}`);
 
         const invalidMessages = [];
 
-        employees.forEach((row, rowIndex) => {
-            columns.forEach((col) => {
-                const value = row[col.key];
+        // employees.forEach((row, rowIndex) => {
+        //     columns.forEach((col) => {
+        //         const value = row[col.key];
 
-                if (value === "") {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
-                    return;
-                }
+        //         if (value === "") {
+        //             invalidMessages.push(`แถวที่ ${rowIndex + 1}: กรุณากรอก "${col.label}"`);
+        //             return;
+        //         }
 
-                if (col.type === "number" && isNaN(Number(value))) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
-                    return;
-                }
+        //         if (col.type === "number" && isNaN(Number(value))) {
+        //             invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
+        //             return;
+        //         }
 
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
-            });
-        });
+        //         if (
+        //             col.type === "select" &&
+        //             !col.options?.some(opt => opt.value === value)
+        //         ) {
+        //             invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
+        //             return;
+        //         }
+        //     });
+        // });
 
-        const names = employees.map(row => row.name?.trim()).filter(Boolean);
-        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
+        const codes = employees.map(row => row.employeecode?.trim()).filter(Boolean);
+        const duplicates = codes.filter((code, index) => codes.indexOf(code) !== index);
+
         if (duplicates.length > 0) {
-            invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
+            invalidMessages.push(`มีรหัสพนักงาน: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
         }
 
         if (invalidMessages.length > 0) {
@@ -621,22 +636,22 @@ const Employee = () => {
             return;
         }
 
+        console.log("1.employees : ", employees);
+
         // ✅ เติม workshifthistory และสร้าง empbackendid หากยังไม่มี
         const enrichedEmployees = await Promise.all(
             employees.map(async (emp) => {
                 let updatedEmp = { ...emp };
 
                 // ✅ เพิ่ม empbackendid ถ้ายังไม่มี
-                if (!emp.empbackendid || emp.empbackendid === "") {
+                if (!updatedEmp.empbackendid || updatedEmp.empbackendid === "") {
                     try {
                         const response = await fetch(
                             `https://upload.happysoftth.com/humantech/${backendGroupID}/${backendCompanyID}/employee`,
                             {
                                 method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json",
-                                },
-                                body: JSON.stringify({ employee: updatedEmp.employname }),
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ employee: `${updatedEmp.name} ${updatedEmp.lastname}` }),
                             }
                         );
 
@@ -651,29 +666,67 @@ const Employee = () => {
                     } catch (err) {
                         console.error("Error creating employee in backend:", err);
                         ShowError("เกิดข้อผิดพลาดขณะสร้างพนักงานใน backend");
-                        return emp; // คืนค่าตัวเดิมหาก error
+                        return emp;
                     }
                 }
 
                 // ✅ จัดการ workshifthistory
-                const shiftID = Number(emp.workshift?.split("-")[0]);
-                const shiftData = workshifts.find(row => row.ID === shiftID);
-                const currentHistory = Array.isArray(emp.workshifthistory) ? [...emp.workshifthistory] : [];
+                const shiftID = Number(updatedEmp.workshift?.split("-")[0]);
+                const shiftData = workshifts.find((row) => row.ID === shiftID);
+                const currentHistory = Array.isArray(updatedEmp.workshifthistory) ? [...updatedEmp.workshifthistory] : [];
 
                 const lastIndex = currentHistory.length - 1;
                 const lastHistory = currentHistory[lastIndex] || null;
 
                 const isSameWorkshift = (historyEntry, shift) => {
                     if (!historyEntry || !shift) return false;
-                    return (
-                        historyEntry.start === shift.start &&
-                        historyEntry.stop === shift.stop
-                    );
+                    return historyEntry.start === shift.start && historyEntry.stop === shift.stop;
                 };
 
+                // ✅ Allowlist ของ field ที่อนุญาตให้เก็บใน Firebase
+                const allowedKeys = [
+                    "ID", "attendant", "department", "educationList", "empbackendid",
+                    "empleaveapprove", "employeecode", "employmenttype", "internship",
+                    "languageList", "nickname", "personal", "position", "salary",
+                    "section", "specialAbilities", "trainingList", "workshift", "workshifthistory"
+                ];
+
+                // Helper: เลือกเฉพาะ key ที่อนุญาตและเติมค่าเริ่มต้น
+                const fillAllowlist = (obj) => {
+                    const defaults = {
+                        ID: "", attendant: "", department: "", educationList: [], empbackendid: "",
+                        empleaveapprove: "", employeecode: "", employmenttype: "", internship: "",
+                        languageList: [], nickname: "", personal: {}, position: "", salary: "",
+                        section: "", specialAbilities: "", trainingList: [], workshift: "", workshifthistory: []
+                    };
+
+                    const filtered = {};
+                    allowedKeys.forEach(key => {
+                        filtered[key] = obj[key] !== undefined && obj[key] !== null ? obj[key] : defaults[key];
+                    });
+                    return filtered;
+                };
+
+                let result;
+
                 if (isSameWorkshift(lastHistory, shiftData)) {
-                    return { ...updatedEmp, workshifthistory: currentHistory };
+                    // shift ไม่เปลี่ยน แต่ยังอัปเดตข้อมูลพื้นฐาน
+                    result = {
+                        ...fillAllowlist(updatedEmp),
+                        employname: `${updatedEmp.name || ""} ${updatedEmp.lastname || ""}`.trim(),
+                        personal: {
+                            ...updatedEmp.personal,
+                            // nationalID: updatedEmp.nationalID ?? "",
+                            prefix: updatedEmp.prefix ?? "",
+                            name: updatedEmp.name ?? "",
+                            lastname: updatedEmp.lastname ?? "",
+                            nickname: updatedEmp.nickname ?? "",
+                        },
+                        workshifthistory: currentHistory,
+                        password: "1234567",
+                    };
                 } else {
+                    // shift ใหม่ → เพิ่ม history entry
                     let newStartDate = dayjs();
                     if (lastHistory && lastHistory.DDend !== "now") {
                         const dateString = `${lastHistory.DDend}/${lastHistory.MMend}/${lastHistory.YYYYend}`;
@@ -705,17 +758,29 @@ const Employee = () => {
                         dateend: "now",
                     };
 
-                    return {
-                        ...updatedEmp,
+                    result = {
+                        ...fillAllowlist(updatedEmp),
+                        employname: `${updatedEmp.name || ""} ${updatedEmp.lastname || ""}`.trim(),
+                        personal: {
+                            ...updatedEmp.personal,
+                            // nationalID: updatedEmp.nationalID ?? "",
+                            prefix: updatedEmp.prefix ?? "",
+                            name: updatedEmp.name ?? "",
+                            lastname: updatedEmp.lastname ?? "",
+                        },
                         workshifthistory: [...currentHistory, newHistoryEntry],
-                        password: "1234567"
+                        password: "1234567",
                     };
                 }
+
+                return result;
             })
         );
 
+        console.log("enrichedEmployees : ", enrichedEmployees);
+
         // ✅ บันทึก
-        set(companiesRef, enrichedEmployees)
+        set(employeeRef, enrichedEmployees)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 setEditEmployee(false);
@@ -1147,7 +1212,7 @@ const Employee = () => {
 
                 </Grid>
                 <Grid item size={11}>
-                    <Paper sx={{ p: 5, marginTop: -3, borderRadius: 4, height: "80vh" }}>
+                    <Paper sx={{ p: 5, marginTop: -3, borderRadius: 4, height: "85vh" }}>
                         <Box sx={{ width: "100%" }}>
                             {/* <SelectEmployeeGroup
                                 department={department}
@@ -1173,7 +1238,8 @@ const Employee = () => {
                             </Grid>
                             <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                             <Grid container spacing={2}>
-                                <Grid item size={editEmployee ? 12 : 11}>
+                                {/* <Grid item size={editEmployee ? 12 : 11}> */}
+                                <Grid item size={12}>
                                     {
                                         editEmployee ?
                                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
@@ -1231,7 +1297,7 @@ const Employee = () => {
                                                                             <TableCell sx={{ textAlign: "left" }}>
                                                                                 <Typography variant="subtitle2" sx={{ marginLeft: 1, lineHeight: 1, whiteSpace: "nowrap", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{row.employeecode}</Typography>
                                                                             </TableCell>
-                                                                            <TableCell sx={{ textAlign: "left", position: "sticky", left: 0, zIndex: 2, backgroundColor: "#f5f5f5" }}>
+                                                                            <TableCell sx={{ textAlign: "left", position: "sticky", left: 0, zIndex: 1, backgroundColor: "#f5f5f5" }}>
                                                                                 <Typography variant="subtitle2" sx={{ marginLeft: 2, lineHeight: 1, whiteSpace: "nowrap", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{`${row.employname} ${row.nickname === undefined ? "" : `(${row.nickname})`}`}</Typography>
                                                                             </TableCell>
                                                                             <TableCell sx={{ textAlign: "left" }}>
@@ -1257,7 +1323,7 @@ const Employee = () => {
                                             </React.Fragment>
                                     }
                                 </Grid>
-                                {
+                                {/* {
                                     !editEmployee &&
                                     <Grid item size={1} textAlign="right">
                                         <Box display="flex" justifyContent="center" alignItems="center">
@@ -1280,15 +1346,33 @@ const Employee = () => {
                                             </Button>
                                         </Box>
                                     </Grid>
-                                }
+                                } */}
+                                <Grid item size={12}>
+                                    {
+                                        editEmployee ?
+                                            <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                                                <Button variant="contained" fullWidth color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                                                <Button variant="contained" fullWidth color="success" onClick={handleSave} >บันทึก</Button>
+                                            </Box>
+                                            :
+                                            <Button
+                                                variant="contained"
+                                                color="warning"
+                                                fullWidth
+                                                sx={{
+                                                    flexDirection: "row",
+                                                    justifyContent: "center",
+                                                    alignItems: "center",
+                                                    textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                                }}
+                                                onClick={() => setEditEmployee(true)}
+                                                endIcon={<ManageAccountsIcon fontSize="large" />}
+                                            >
+                                                แก้ไขข้อมูลพนักงาน
+                                            </Button>
+                                    }
+                                </Grid>
                             </Grid>
-                            {
-                                editEmployee &&
-                                <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
-                                    <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
-                                    <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
-                                </Box>
-                            }
                             {
                                 employees.map((row, index) => (
                                     <Dialog

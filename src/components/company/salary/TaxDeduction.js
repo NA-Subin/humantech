@@ -210,13 +210,13 @@ const TaxDeductionDetail = () => {
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลค่าลดหย่อนภาษี</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
-                        <Grid item size={editTaxDeduction ? 12 : 11}>
+                        <Grid item size={12}>
                             {
                                 editTaxDeduction ?
                                     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                         <TableExcel
                                             columns={columns}
-                                            styles={{ height: "55vh" }}
+                                            styles={{ height: "55vh", width: "100%" }}
                                             initialData={taxDeduction}
                                             onDataChange={setTaxDeduction}
                                         />
@@ -224,7 +224,7 @@ const TaxDeductionDetail = () => {
 
                                     :
                                     <TableContainer component={Paper} textAlign="center" sx={{ height: "55vh" }}>
-                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "5px" } }}>
+                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "5px" }, width: "100%" }}>
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
@@ -253,7 +253,32 @@ const TaxDeductionDetail = () => {
                                     </TableContainer>
                             }
                         </Grid>
-                        {
+                        <Grid item size={12}>
+                            {
+                                editTaxDeduction ?
+                                    <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                                        <Button variant="contained" fullWidth color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                                        <Button variant="contained" fullWidth color="success" onClick={handleSave} >บันทึก</Button>
+                                    </Box>
+                                    :
+                                    <Button
+                                        variant="contained"
+                                        color="warning"
+                                        fullWidth
+                                        sx={{
+                                            flexDirection: "row",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                        }}
+                                        onClick={() => setEditTaxDeduction(true)}
+                                        endIcon={<ManageAccountsIcon fontSize="large" />}
+                                    >
+                                        แก้ไขข้อมูลรายหักเพิ่มเติม
+                                    </Button>
+                            }
+                        </Grid>
+                        {/* {
                             !editTaxDeduction &&
                             <Grid item size={1} textAlign="right">
                                 <Box display="flex" justifyContent="center" alignItems="center">
@@ -276,15 +301,15 @@ const TaxDeductionDetail = () => {
                                     </Button>
                                 </Box>
                             </Grid>
-                        }
+                        } */}
                     </Grid>
-                    {
+                    {/* {
                         editTaxDeduction &&
                         <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                             <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                             <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                         </Box>
-                    }
+                    } */}
                 </Box>
             </Paper>
         </Container >

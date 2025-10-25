@@ -185,18 +185,18 @@ const DeductionsDetail = () => {
                     </Grid>
                 </Grid>
             </Box>
-            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "75vh" }}>
+            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "77vh" }}>
                 <Box>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลรายหักเพิ่มเติม</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
-                        <Grid item size={editDeductions ? 12 : 11}>
+                        <Grid item size={12}>
                             {
                                 editDeductions ?
                                     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                         <TableExcel
                                             columns={columns}
-                                            styles={{ height: "55vh" }}
+                                            styles={{ height: "55vh", width: "100%" }}
                                             initialData={deductions}
                                             onDataChange={setDeductions}
                                         />
@@ -204,7 +204,7 @@ const DeductionsDetail = () => {
 
                                     :
                                     <TableContainer component={Paper} textAlign="center" sx={{ height: "55vh" }}>
-                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "5px" } }}>
+                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "5px" }, width: "100%" }}>
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
@@ -238,7 +238,32 @@ const DeductionsDetail = () => {
                                     </TableContainer>
                             }
                         </Grid>
-                        {
+                        <Grid item size={12}>
+                            {
+                                editDeductions ?
+                                    <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                                        <Button variant="contained" fullWidth color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                                        <Button variant="contained" fullWidth color="success" onClick={handleSave} >บันทึก</Button>
+                                    </Box>
+                                    :
+                                    <Button
+                                        variant="contained"
+                                        color="warning"
+                                        fullWidth
+                                        sx={{
+                                            flexDirection: "row",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                        }}
+                                        onClick={() => setEditDeductions(true)}
+                                        endIcon={<ManageAccountsIcon fontSize="large" />}
+                                    >
+                                        แก้ไขข้อมูลรายหักเพิ่มเติม
+                                    </Button>
+                            }
+                        </Grid>
+                        {/* {
                             !editDeductions &&
                             <Grid item size={1} textAlign="right">
                                 <Box display="flex" justifyContent="center" alignItems="center">
@@ -261,15 +286,15 @@ const DeductionsDetail = () => {
                                     </Button>
                                 </Box>
                             </Grid>
-                        }
+                        } */}
                     </Grid>
-                    {
+                    {/* {
                         editDeductions &&
                         <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                             <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                             <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                         </Box>
-                    }
+                    } */}
                 </Box>
             </Paper>
         </Container >

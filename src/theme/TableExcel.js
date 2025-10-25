@@ -20,12 +20,14 @@ import {
 } from "@mui/material";
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
 import AddBoxIcon from '@mui/icons-material/AddBox';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import theme from "../theme/theme";
-import { TablecellHeader } from "../theme/style";
+import { IconButtonError, IconButtonSuccess, TablecellHeader } from "../theme/style";
 import dayjs from "dayjs";
 import { DatePicker, LocalizationProvider, TimePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -468,7 +470,7 @@ export default function TableExcel({
 
     return (
         <>
-            <Stack direction="row" spacing={2}>
+            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: theme.palette.primary.light }}>
                 <TableContainer component={Paper} ref={tableRef} sx={styles}>
                     <Table size="small" sx={stylesTable} >
                         <TableHead
@@ -947,7 +949,6 @@ export default function TableExcel({
                         </TableBody>
                     </Table>
                 </TableContainer>
-
                 <Menu open={Boolean(anchorEl)} anchorEl={anchorEl} onClose={handleCloseContextMenu}>
                     <MenuItem
                         onClick={() => {
@@ -985,16 +986,33 @@ export default function TableExcel({
                 {
                     !hidden &&
                     (
-                        <Box>
-                            <Tooltip title="เพิ่มแถว" placement="right">
-                                <IconButton variant="contained" color="info" onClick={addRow}>
-                                    <AddCircleOutlineIcon />
+                        <Box sx={{ mr: -4, ml: 0.5 }}>
+                            <Tooltip title="เพิ่มแถว" placement="top">
+                                <IconButton
+                                    variant="contained"
+                                    color="info"
+                                    sx={{
+                                        ":hover": { backgroundColor: "white" },
+                                        backgroundColor: "white",
+                                        marginBottom: 1
+                                    }}
+                                    onClick={addRow}
+                                >
+                                    <AddCircleIcon />
                                 </IconButton>
                             </Tooltip>
 
-                            <Tooltip title="ลบแถวที่เลือก" placement="right">
-                                <IconButton variant="contained" color="error" onClick={deleteRow}>
-                                    <RemoveCircleOutlineIcon />
+                            <Tooltip title="ลบแถวที่เลือก" placement="bottom">
+                                <IconButton
+                                    variant="contained"
+                                    color="error"
+                                    sx={{
+                                        ":hover": { backgroundColor: "white" },
+                                        backgroundColor: "white"
+                                    }}
+                                    onClick={deleteRow}
+                                >
+                                    <RemoveCircleIcon />
                                 </IconButton>
                             </Tooltip>
                             {/* <Button onClick={addRow} variant="contained">
@@ -1006,8 +1024,7 @@ export default function TableExcel({
                         </Box>
                     )
                 }
-
-            </Stack>
+            </Box>
         </>
     );
 }

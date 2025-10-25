@@ -187,12 +187,12 @@ const OTDetail = () => {
                     </Grid>
                 </Grid>
             </Box>
-            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "75vh" }}>
+            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "77vh" }}>
                 <Box>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลงานโอที</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
-                        <Grid item size={editOT ? 12 : 11}>
+                        <Grid item size={12}>
                             {
                                 editOT ?
                                     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
@@ -265,7 +265,32 @@ const OTDetail = () => {
                                     </TableContainer>
                             }
                         </Grid>
-                        {
+                        <Grid item size={12}>
+                            {
+                                editOT ?
+                                    <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                                        <Button variant="contained" fullWidth color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                                        <Button variant="contained" fullWidth color="success" onClick={handleSave} >บันทึก</Button>
+                                    </Box>
+                                    :
+                                    <Button
+                                        variant="contained"
+                                        color="warning"
+                                        fullWidth
+                                        sx={{
+                                            flexDirection: "row",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                        }}
+                                        onClick={() => setEditOT(true)}
+                                        endIcon={<ManageAccountsIcon fontSize="large" />}
+                                    >
+                                        แก้ไขข้อมูลโอที
+                                    </Button>
+                            }
+                        </Grid>
+                        {/* {
                             !editOT &&
                             <Grid item size={1} textAlign="right">
                                 <Box display="flex" justifyContent="center" alignItems="center">
@@ -285,7 +310,7 @@ const OTDetail = () => {
                                     >
                                         <ManageAccountsIcon sx={{ fontSize: 28, mb: 0.5, marginBottom: -0.5 }} />
                                         แก้ไข
-                                    </Button>
+                                    </Button> */}
                                     {/* {
                                     editOT ?
                                         <Box textAlign="right">
@@ -315,17 +340,17 @@ const OTDetail = () => {
                                             แก้ไข
                                         </Button>
                                 } */}
-                                </Box>
-                            </Grid>
-                        }
+                            {/* </Box>
+                        </Grid>
+                    } */}
                     </Grid>
-                    {
+                    {/* {
                         editOT &&
                         <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                             <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                             <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                         </Box>
-                    }
+                    } */}
                 </Box>
             </Paper>
         </Container>

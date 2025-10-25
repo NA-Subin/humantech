@@ -190,18 +190,18 @@ const TaxDetail = () => {
                     </Grid>
                 </Grid>
             </Box>
-            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "75vh" }}>
+            <Paper sx={{ p: 5, width: "100%", marginTop: -3, borderRadius: 4, height: "77vh" }}>
                 <Box>
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการข้อมูลภาษี</Typography>
                     <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
                     <Grid container spacing={2}>
-                        <Grid item size={editTax ? 12 : 11}>
+                        <Grid item size={12}>
                             {
                                 editTax ?
                                     <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                         <TableExcel
                                             columns={columns}
-                                            styles={{ height: "55vh" }}
+                                            styles={{ height: "55vh", width: "100%" }}
                                             initialData={tax}
                                             onDataChange={setTax}
                                         />
@@ -209,7 +209,7 @@ const TaxDetail = () => {
 
                                     :
                                     <TableContainer component={Paper} textAlign="center" sx={{ height: "55vh" }}>
-                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "5px" } }}>
+                                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "5px" }, width: "100%" }}>
                                             <TableHead>
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
@@ -269,7 +269,32 @@ const TaxDetail = () => {
                                     </TableContainer>
                             }
                         </Grid>
-                        {
+                        <Grid item size={12}>
+                            {
+                                editTax ?
+                                    <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                                        <Button variant="contained" fullWidth color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                                        <Button variant="contained" fullWidth color="success" onClick={handleSave} >บันทึก</Button>
+                                    </Box>
+                                    :
+                                    <Button
+                                        variant="contained"
+                                        color="warning"
+                                        fullWidth
+                                        sx={{
+                                            flexDirection: "row",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                            textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                        }}
+                                        onClick={() => setEditTax(true)}
+                                        endIcon={<ManageAccountsIcon fontSize="large" />}
+                                    >
+                                        แก้ไขข้อมูลภาษี
+                                    </Button>
+                            }
+                        </Grid>
+                        {/* {
                             !editTax &&
                             <Grid item size={1} textAlign="right">
                                 <Box display="flex" justifyContent="center" alignItems="center">
@@ -292,15 +317,15 @@ const TaxDetail = () => {
                                     </Button>
                                 </Box>
                             </Grid>
-                        }
+                        } */}
                     </Grid>
-                    {
+                    {/* {
                         editTax &&
                         <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                             <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                             <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                         </Box>
-                    }
+                    } */}
                 </Box>
             </Paper>
         </Container >

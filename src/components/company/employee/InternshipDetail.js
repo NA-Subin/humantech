@@ -306,12 +306,12 @@ const InternshipDetail = (props) => {
             </Grid>
             <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />
             <Grid container spacing={2}>
-                <Grid item size={edit ? 12 : 11}>
+                <Grid item size={12}>
                     {
                         edit ?
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                 <TableExcel
-                                    styles={{ height: "50vh" }} // ✅ ส่งเป็น object
+                                    styles={{ height: "60vh" }} // ✅ ส่งเป็น object
                                     stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}
                                     columns={internshipColumns}
                                     initialData={internship}
@@ -321,7 +321,7 @@ const InternshipDetail = (props) => {
                             :
                             <React.Fragment>
                                 <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลการทำงาน/ฝึกงานรายคนให้กดชื่อในตารางได้เลย</Typography>
-                                <TableContainer component={Paper} textAlign="center" sx={{ height: "50vh" }}>
+                                <TableContainer component={Paper} textAlign="center" sx={{ height: "60vh" }}>
                                     <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
                                         <TableHead>
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
@@ -383,7 +383,32 @@ const InternshipDetail = (props) => {
                             </React.Fragment>
                     }
                 </Grid>
-                {
+                <Grid item size={12}>
+                    {
+                        edit ?
+                            <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
+                                <Button variant="contained" fullWidth color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
+                                <Button variant="contained" fullWidth color="success" onClick={handleSave} >บันทึก</Button>
+                            </Box>
+                            :
+                            <Button
+                                variant="contained"
+                                color="warning"
+                                fullWidth
+                                sx={{
+                                    flexDirection: "row",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    textTransform: "none", // ป้องกันตัวอักษรเป็นตัวใหญ่ทั้งหมด
+                                }}
+                                onClick={() => setEdit(true)}
+                                endIcon={<ManageAccountsIcon fontSize="large" />}
+                            >
+                                แก้ไขข้อมูลการทำงาน/ฝึกงาน
+                            </Button>
+                    }
+                </Grid>
+                {/* {
                     !edit &&
                     <Grid item size={1} textAlign="right">
                         <Box display="flex" justifyContent="center" alignItems="center">
@@ -406,15 +431,15 @@ const InternshipDetail = (props) => {
                             </Button>
                         </Box>
                     </Grid>
-                }
+                } */}
             </Grid>
-            {
+            {/* {
                 edit &&
                 <Box display="flex" justifyContent="center" alignItems="center" marginTop={1}>
                     <Button variant="contained" size="small" color="error" onClick={handleCancel} sx={{ marginRight: 1 }}>ยกเลิก</Button>
                     <Button variant="contained" size="small" color="success" onClick={handleSave} >บันทึก</Button>
                 </Box>
-            }
+            } */}
 
             {
                 openDetail?.employname && (
