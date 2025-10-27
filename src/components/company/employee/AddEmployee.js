@@ -80,7 +80,7 @@ const AddEmployee = () => {
 
     const prefixes = ["นาย", "นาง", "นางสาว", "ดร.", "ศ.", "คุณ"];
 
-    const [nationalID, setNationalID] = React.useState("");
+    const [citizencode, setCitizencode] = React.useState("");
     const [prefix, setPrefix] = React.useState("");
     const [nickname, setNickname] = React.useState("");
     const [name, setName] = React.useState("");
@@ -161,7 +161,7 @@ const AddEmployee = () => {
 
 
     const personal = {
-        nationalID: nationalID,
+        citizencode: citizencode,
         nickname: nickname,
         prefix: prefix,
         name: name,
@@ -834,7 +834,7 @@ const AddEmployee = () => {
             setStep(0);
 
             setSalary("");
-            setNationalID("");
+            setCitizencode("");
             setPrefix("");
             setNickname("");
             setName("");
@@ -1167,9 +1167,9 @@ const AddEmployee = () => {
                             <TextField
                                 fullWidth
                                 size="small"
-                                value={nationalID}
+                                value={citizencode}
                                 placeholder="รหัสประจำตัวประชาชน"
-                                onChange={(e) => setNationalID(e.target.value)}
+                                onChange={(e) => setCitizencode(e.target.value)}
                             />
                         </Grid>
                         <Grid item size={12}>

@@ -55,6 +55,24 @@ const PersonalDetail = (props) => {
     const [hoveredEmpID, setHoveredEmpID] = useState(null);
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
+    // ฟังก์ชันแปลงจาก birthDate Object → รูปแบบ DD/MM/YYYY (ค.ศ.)
+    function formatToGregorian(birthDate) {
+        const day = String(birthDate.day).padStart(2, "0");
+        const month = String(birthDate.month).padStart(2, "0");
+        const year = parseInt(birthDate.year, 10) - 543; // แปลง พ.ศ. → ค.ศ.
+        return `${day}/${month}/${year}`;
+    }
+
+    // ฟังก์ชันแปลงกลับจาก DD/MM/YYYY → birthDate Object (พ.ศ.)
+    function parseFromGregorian(dateString) {
+        const [day, month, year] = dateString.split("/").map(Number);
+        return {
+            day,
+            month,
+            year: (year + 543).toString(), // แปลง ค.ศ. → พ.ศ.
+        };
+    }
+
     const [thailand, setThailand] = useState([]);
     useEffect(() => {
         if (!database) return;
@@ -82,8 +100,9 @@ const PersonalDetail = (props) => {
         name: emp.personal?.name || '',
         lastname: emp.personal?.lastname || '',
         nickname: emp.personal?.nickname || '',
+        birthDate: emp.personal?.birthDate ? formatToGregorian(emp.personal?.birthDate) : '',
         employname: `${emp.personal?.name || ''} ${emp.personal?.lastname || ''} (${emp.personal?.nickname || ''})`,
-        nationalID: emp.personal?.nationalID || '',
+        citizencode: emp.personal?.citizencode || '',
         position: emp.position.split("-")[1],
         sex: emp.personal?.sex || '',
         militaryStatus: emp.personal?.militaryStatus || '',
@@ -114,7 +133,7 @@ const PersonalDetail = (props) => {
     const personalColumns = [
         { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: 250 },
         { label: "ตำแหน่ง", key: "position", type: "text", disabled: true, width: 200 },
-        { label: "รหัสประจำตัวประชาชน", key: "nationalID", type: "text", width: 180 },
+        { label: "รหัสประจำตัวประชาชน", key: "citizencode", type: "text", width: 180 },
 
         {
             label: "เพศ",
@@ -126,6 +145,7 @@ const PersonalDetail = (props) => {
             ],
             width: 100,
         },
+        { label: "วันเกิด", key: "birthDate", type: "date", width: 180 },
         {
             label: "สถานภาพทางทหาร",
             key: "militaryStatus",
@@ -270,11 +290,13 @@ const PersonalDetail = (props) => {
 
             return {
                 ...emp,
+                citizencode: updatedList[idx].citizencode,
+                birthdate: updatedList[idx].birthDate,
                 personal: {
                     ...emp.personal,
-                    nationalID: updatedList[idx].nationalID,
+                    citizencode: updatedList[idx].citizencode,
                     sex: updatedList[idx].sex,
-                    militaryStatus: updatedList[idx].militaryStatus,
+                    birthDate: updatedList[idx].birthDate ? parseFromGregorian(updatedList[idx].birthDate) : null,
                     address: {
                         province: provinceKey || '',
                         amphure: amphureKey || '',
@@ -506,7 +528,7 @@ const PersonalDetail = (props) => {
                                                                 <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.position}</Typography>
                                                             </TableCell>
                                                             <TableCell sx={{ textAlign: "center" }}>
-                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.nationalID}</Typography>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.citizencode}</Typography>
                                                             </TableCell>
                                                             <TableCell sx={{ textAlign: "center" }}>
                                                                 <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpID === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>{row.sex}</Typography>
@@ -706,7 +728,7 @@ const PersonalDetail = (props) => {
                                         fullWidth
                                         size="small"
                                         placeholder="รหัสประจำตัวประชาชน"
-                                        value={openDetail?.nationalID}
+                                        value={openDetail?.citizencode}
                                         disabled
                                     />
                                 </Grid>

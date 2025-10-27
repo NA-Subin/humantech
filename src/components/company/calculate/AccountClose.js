@@ -658,12 +658,12 @@ const AccountDetail = (props) => {
         });
 
         // เพิ่มข้อมูลพนักงาน
-        employees.forEach(emp => {
+        filteredEmployees.forEach(emp => {
             const row = worksheet.addRow({
-                citizenId: emp.citizenId,
-                prefix: emp.prefix || "นาย",
-                firstName: emp.firstName || "",
-                lastName: emp.lastName || "",
+                nataionalID: emp?.personal.nataionalID,
+                prefix: emp?.personal.prefix || "",
+                firstName: emp?.personal.name || "",
+                lastName: emp?.personal.lastname || "",
                 salary: Number(emp.salary || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 }),
                 socialSecurity: Number(emp.socialSecurity || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 }),
             });
@@ -803,11 +803,11 @@ const AccountDetail = (props) => {
             head: [
                 ["เลขประจำตัวประชาชน", "คำนำหน้า", "ชื่อผู้ประกันตน", "นามสกุลผู้ประกันตน", "ค่าจ้าง", "จำนวนเงินสมทบ"]
             ],
-            body: employees.map(emp => [
-                emp.citizenId,
-                emp.prefix || "นาย",
-                emp.firstName || "",
-                emp.lastName || "",
+            body: filteredEmployees.map(emp => [
+                emp?.persolnal.nataionalID || "",
+                emp?.persolnal.prefix || "",
+                emp?.persolnal.nameame || "",
+                emp?.persolnal.lastname || "",
                 Number(emp.salary || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 }),
                 Number(emp.socialSecurity || 0).toLocaleString("th-TH", { minimumFractionDigits: 2 }),
             ]),

@@ -38,6 +38,7 @@ import DashboardAttendant from "./components/attendant/DashboardAttendant";
 import { database } from "./server/firebase";
 import { onValue, ref } from "firebase/database";
 import { ProjectFirebaseProvider } from "./server/ProjectFirebaseContext";
+import ReportLoan from "./components/company/report/Loan";
 
 const ProtectedRouteWrapper = ({ children }) => {
   const location = useLocation();
@@ -158,6 +159,8 @@ function CompanyRoutes({ page }: { page?: string }) {
       return <ReportOT />;
     case "report-time":
       return <ReportTime />;
+    case "report-loan":
+      return <ReportLoan />;
     case "working-outside":
       return <ReportWorkingOutside />;
     case "work-certificate":

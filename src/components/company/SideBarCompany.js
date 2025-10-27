@@ -1911,6 +1911,7 @@ export default function SideBarCompany() {
                                 'ขอโอที',
                                 'ขอเพิ่มเวลา',
                                 // 'ขอทำงานนอกสถานที่'
+                                "ขอกู้เงิน"
                             ].map((text, index) => {
                                 const isSelected = selectedMenu === text;
                                 const button = (
@@ -1920,15 +1921,15 @@ export default function SideBarCompany() {
                                         // to={
                                         //     index === 0
                                         //         ? `/${domain}/${companyName}/employee`
-                                        //         : `/${domain}/${companyName}/employee`
+                                        //         : `/${domain}/${companyName}/employee
                                         // }
                                         to={
                                             index === 0 ? `/?domain=${domain}&company=${companyName}&report=leave`
                                                 : index === 1 ? `/?domain=${domain}&company=${companyName}&report=ot`
                                                     : index === 2 ? `/?domain=${domain}&company=${companyName}&report=time`
-                                                        : index === 3 ? `/?domain=${domain}&company=${companyName}&report=working-outside`
+                                                        // : index === 3 ? `/?domain=${domain}&company=${companyName}&report=working-outside`
                                                             // : index === 4 ? `/?domain=${domain}&company=${companyName}&report=work-certificate`
-                                                            : `/?domain=${domain}&company=${companyName}&report=salary-certificate`
+                                                            : `/?domain=${domain}&company=${companyName}&report=report-loan`
                                         }
                                         sx={{
                                             minHeight: 32,
