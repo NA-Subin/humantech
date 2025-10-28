@@ -297,17 +297,17 @@ const ReportLoan = () => {
 
     console.log("dateArray:", dateArray);
 
-    const handleApprove = (newID) => {
+    const handleApprove = (empID, loanID, newID) => {
         ShowConfirm(
-            "อนุมัติเอกสาร",
-            "คุณต้องการอนุมัติเอกสารนี้หรือไม่?",
+            "อนุมัติการชำระเงินกู้",
+            "คุณต้องการอนุมัติเอกสารการชำระเงินกู้นี้หรือไม่?",
             () => {
                 const leaveRef = ref(
                     firebaseDB,
-                    `workgroup/company/${companyId}/documentot/${year}/${m + 1}/${newID}`
+                    `workgroup/company/${companyId}/employee/${empID}/loan/${loanID}/billing/${newID}`
                 );
                 update(leaveRef, {
-                    status: "อนุมัติ",
+                    status: "paid",
                     approveBy: "HR",
                     approveDate: dayjs().format("DD/MM/YYYY"),
                     approveTime: dayjs().format("HH:mm:ss")
@@ -319,14 +319,14 @@ const ReportLoan = () => {
         );
     };
 
-    const handleCancel = (newID) => {
+    const handleCancel = (empID, loanID, newID) => {
         ShowConfirm(
-            "ไม่อนุมัติเอกสาร",
-            "คุณต้องการปฏิเสธเอกสารนี้หรือไม่?",
+            "ไม่อนุมัติการชำระเงินกู้",
+            "คุณต้องการปฏิเสธเอกสารการชำระเงินกู้นี้หรือไม่?",
             () => {
                 const leaveRef = ref(
                     firebaseDB,
-                    `workgroup/company/${companyId}/documentot/${year}/${m + 1}/${newID}`
+                    `workgroup/company/${companyId}/employee/${empID}/loan/${loanID}/billing/${newID}`
                 );
                 update(leaveRef, {
                     status: "ไม่อนุมัติ",
@@ -459,17 +459,17 @@ const ReportLoan = () => {
                                                         }
                                                         {
                                                             emp.loan === undefined ? "" :
-                                                                emp.loan.map((date, index) => (
+                                                                emp.loan.map((l, index) => (
                                                                     <React.Fragment>
                                                                         <TableRow key={index}>
                                                                             <TableCell sx={{ textAlign: "left", backgroundColor: theme.palette.primary.light }} colSpan={7}>
                                                                                 <Box sx={{ marginLeft: 2, marginRight: 2 }}>
-                                                                                    <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ขอกู้เงิน ณ {calculateDueDate(date.recievedate)}</Typography>
+                                                                                    <Typography variant="subtitle2" fontWeight="bold" gutterBottom>ขอกู้เงิน ณ {calculateDueDate(l.recievedate)}</Typography>
                                                                                 </Box>
                                                                             </TableCell>
                                                                         </TableRow>
-                                                                        {date.billing === undefined ? "" :
-                                                                            date.billing.map((bill, index) => (
+                                                                        {l.billing === undefined ? "" :
+                                                                            l.billing.map((bill, index) => (
                                                                                 <TableRow key={index}>
                                                                                     <TableCell sx={{ textAlign: "center" }}>งวดที่ {index + 1}</TableCell>
                                                                                     <TableCell sx={{ textAlign: "left" }}>
@@ -486,11 +486,11 @@ const ReportLoan = () => {
                                                                                     </TableCell>
                                                                                     <TableCell sx={{ textAlign: "center" }}>
                                                                                         {new Intl.NumberFormat("en-US").format(
-                                                                                            calculateRemaining(date.billing, index)
+                                                                                            calculateRemaining(l.billing, index)
                                                                                         )}
                                                                                     </TableCell>
                                                                                     <TableCell sx={{ textAlign: "left" }}>
-                                                                                        <Box sx={{ marginLeft: 2, marginRight: 2, marginTop: date.status === "pending" && 1.5 }}>
+                                                                                        <Box sx={{ marginLeft: 2, marginRight: 2, marginTop: l.status === "pending" && 1.5 }}>
                                                                                             <Box display="flex" justifyContent="left" alignItems="center">
                                                                                                 <Typography variant="subtitle2" gutterBottom>สถานะ : </Typography>
                                                                                                 <Typography
@@ -511,13 +511,13 @@ const ReportLoan = () => {
                                                                                                 bill.status === "pending" ?
                                                                                                     <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center ", marginTop: -4.5 }}>
                                                                                                         <Tooltip title="ไม่อนุมัติ" placement="top">
-                                                                                                            <IconButton size="small" onClick={() => handleCancel(bill.ID)} >
+                                                                                                            <IconButton size="small" onClick={() => handleCancel(emp.ID, l.ID, bill.ID)} >
                                                                                                                 <InsertDriveFileIcon sx={{ color: theme.palette.error.main, fontSize: "28px" }} />
                                                                                                                 <CloseIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
                                                                                                             </IconButton>
                                                                                                         </Tooltip>
                                                                                                         <Tooltip title="อนุมัติ" placement="top">
-                                                                                                            <IconButton size="small" onClick={() => handleApprove(bill.ID)} >
+                                                                                                            <IconButton size="small" onClick={() => handleApprove(emp.ID, l.ID, bill.ID)} >
                                                                                                                 <InsertDriveFileIcon sx={{ color: theme.palette.primary.main, fontSize: "28px" }} />
                                                                                                                 <DoneIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
                                                                                                             </IconButton>
