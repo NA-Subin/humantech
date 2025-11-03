@@ -1,6 +1,6 @@
 import React, { useState, useEffect, use } from "react";
 import '../../../App.css'
-import { getDatabase, ref, push, onValue, set, update } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update, get } from "firebase/database";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -302,17 +302,39 @@ const ReportLoan = () => {
         ShowConfirm(
             "อนุมัติการชำระเงินกู้",
             "คุณต้องการอนุมัติเอกสารการชำระเงินกู้นี้หรือไม่?",
-            () => {
-                const leaveRef = ref(
+            async () => {
+                const billingRef = ref(
                     firebaseDB,
                     `workgroup/company/${companyId}/employee/${empID}/loan/${loanID}/billing/${newID}`
                 );
-                update(leaveRef, {
+                update(billingRef, {
                     status: "paid",
                     approveBy: "HR",
                     approveDate: dayjs().format("DD/MM/YYYY"),
                     approveTime: dayjs().format("HH:mm:ss")
                 });
+
+                const loanRef = ref(
+                    firebaseDB,
+                    `workgroup/company/${companyId}/employee/${empID}/loan/${loanID}/billing`
+                );
+
+                // ✅ ดึงข้อมูล billing ทั้งหมดมาดูว่า paid ครบไหม
+                const snapshot = await get(loanRef);
+                if (snapshot.exists()) {
+                    const allBilling = Object.values(snapshot.val());
+                    const allPaid = allBilling.every(bill => bill.status === "paid");
+
+                    if (allPaid) {
+                        const loanStatusRef = ref(
+                            firebaseDB,
+                            `workgroup/company/${companyId}/employee/${empID}/loan/${loanID}`
+                        );
+
+                        // ✅ ถ้า paid ครบทุกงวดแล้วให้เปลี่ยน loan เป็น success
+                        await update(loanStatusRef, { status: "success" });
+                    }
+                }
             },
             () => {
                 console.log("ยกเลิกการอนุมัติ");
@@ -480,16 +502,28 @@ const ReportLoan = () => {
                                                                                         <Box sx={{ ml: 2 }}>{calculateDueDate(bill.mustpaydate)}</Box>
                                                                                     </TableCell>
                                                                                     <TableCell sx={{ textAlign: "center" }}>
-                                                                                        {new Intl.NumberFormat("en-US").format(bill.amount)}
+                                                                                        {new Intl.NumberFormat("en-US", {
+                                                                                            minimumFractionDigits: 2,
+                                                                                            maximumFractionDigits: 2
+                                                                                        }).format(bill.amount)}
                                                                                     </TableCell>
                                                                                     <TableCell sx={{ textAlign: "center" }}>
-                                                                                        {new Intl.NumberFormat("en-US").format(bill.interest)}
+                                                                                        {new Intl.NumberFormat("en-US", {
+                                                                                            minimumFractionDigits: 2,
+                                                                                            maximumFractionDigits: 2
+                                                                                        }).format(bill.interest)}
                                                                                     </TableCell>
                                                                                     <TableCell sx={{ textAlign: "center" }}>
-                                                                                        {new Intl.NumberFormat("en-US").format(bill.amount + bill.interest)}
+                                                                                        {new Intl.NumberFormat("en-US", {
+                                                                                            minimumFractionDigits: 2,
+                                                                                            maximumFractionDigits: 2
+                                                                                        }).format(bill.amount + bill.interest)}
                                                                                     </TableCell>
                                                                                     <TableCell sx={{ textAlign: "center" }}>
-                                                                                        {new Intl.NumberFormat("en-US").format(
+                                                                                        {new Intl.NumberFormat("en-US", {
+                                                                                            minimumFractionDigits: 2,
+                                                                                            maximumFractionDigits: 2
+                                                                                        }).format(
                                                                                             calculateRemaining(l.billing, index)
                                                                                         )}
                                                                                     </TableCell>
