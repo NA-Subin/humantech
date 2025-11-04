@@ -893,6 +893,51 @@ const AccountDetail = (props) => {
             });
     };
 
+    const generatePDF = () => {
+        const invoiceData = {
+            Employee: filteredEmployees,
+            Address: selectedCompany?.companyaddress,
+            Companyname: selectedCompany?.companyname,
+            Companyserial: selectedCompany?.companyserial,
+            Company: selectedCompany
+        };
+
+        sessionStorage.setItem("invoiceData", JSON.stringify(invoiceData));
+
+        // เปิดแท็บใหม่
+        const printWindow = window.open(
+            "/?domain=happygroup&company=1:TEST-T001&employee=print",
+            "_blank"
+        );
+
+        if (!printWindow) {
+            alert("กรุณาปิด pop-up blocker แล้วลองใหม่");
+        }
+
+        // บันทึกข้อมูลลง sessionStorage
+        // sessionStorage.setItem("invoiceData", JSON.stringify(invoiceData));
+
+        // // เปิดหน้าต่างใหม่ไปที่ /print-invoice
+        // const screenWidth = window.screen.width;
+        // const screenHeight = window.screen.height;
+        // const windowWidth = 820;
+        // const windowHeight = 559;
+
+        // const left = (screenWidth - windowWidth) / 2;
+        // const top = (screenHeight - windowHeight) / 2;
+
+        // const printWindow = window.open(
+        //     "/?domain=happygroup&company=1:TEST-T001&employee=print",
+        //     "_blank",
+        //     `width=${windowWidth},height=${windowHeight},left=${left},top=${top}`
+        // );
+
+
+        // if (!printWindow) {
+        //     alert("กรุณาปิด pop-up blocker แล้วลองใหม่");
+        // }
+    };
+
     return (
         <React.Fragment>
             <Grid container spacing={2}>
@@ -1073,7 +1118,9 @@ const AccountDetail = (props) => {
                                             </Typography>
                                         )}
                                     </TableCell>
-                                    <TableCell sx={{ textAlign: "center" }} />
+                                    <TableCell sx={{ textAlign: "center" }} >
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>{filteredEmployees.length}</Typography>
+                                    </TableCell>
                                     <TableCell>
                                         <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
                                             <Button
@@ -1136,7 +1183,9 @@ const AccountDetail = (props) => {
                                             </Typography>
                                         )}
                                     </TableCell>
-                                    <TableCell sx={{ textAlign: "center" }} />
+                                    <TableCell sx={{ textAlign: "center" }} >
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>{filteredEmployees.length}</Typography>
+                                    </TableCell>
                                     <TableCell>
                                         <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
                                             <Button
@@ -1151,6 +1200,7 @@ const AccountDetail = (props) => {
                                                     <DownloadIcon />
                                                 }
                                                 disabled={!closeAccount}
+                                                onClick={generatePDF}
                                             >
                                                 PDF
                                             </Button>

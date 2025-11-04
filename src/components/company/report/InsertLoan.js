@@ -136,7 +136,17 @@ export default function InsertLoan() {
 
                     const snapshotemploy = await get(employeeRef);
                     if (snapshotemploy.exists()) {
-                        setEmployee(snapshotemploy.val());
+                        const total = snapshotemploy.val();
+                        setEmployee(total);
+                        const totalPendingAmount = total?.loan
+                            ?.filter(row => row.status === "active") // เอาเฉพาะ loan ที่ active
+                            ?.reduce((sum, row) => {
+                                const pendingSum = row.billing
+                                    ?.filter(bill => bill.status === "pending") // เอาเฉพาะ pending
+                                    ?.reduce((billSum, bill) => billSum + (bill.amount || 0), 0); // รวม amount
+                                return sum + (pendingSum || 0);
+                            }, 0);
+                        setOverdue(totalPendingAmount);
                     } else {
                         setEmployee(null);
                     }
@@ -344,7 +354,7 @@ export default function InsertLoan() {
                                                                     sx={{
                                                                         textAlign: "center"
                                                                     }}>
-                                                                    {formatThaiSlash(dayjs(bill.mustpaydate).format("DD/MM/YYYY"))}
+                                                                    {formatThaiSlash(dayjs(bill.mustpaydate, "DD/MM/YYYY"))}
                                                                 </TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>
                                                                     {new Intl.NumberFormat("en-US", {
@@ -361,7 +371,7 @@ export default function InsertLoan() {
                                                                 <TableCell
                                                                     sx={{
                                                                         textAlign: "center",
-                                                                        color: bill.status === "paid" ? theme.palette.success.dark : theme.palette.warning.dark,
+                                                                        color: bill.status === "paid" ? theme.palette.success.dark : theme.palette.error.dark,
                                                                         fontWeight: "bold"
                                                                     }}
                                                                 >

@@ -39,6 +39,7 @@ import { database } from "./server/firebase";
 import { onValue, ref } from "firebase/database";
 import { ProjectFirebaseProvider } from "./server/ProjectFirebaseContext";
 import ReportLoan from "./components/company/report/Loan";
+import PrintDocument from "./components/company/calculate/PrintDocument";
 
 const ProtectedRouteWrapper = ({ children }) => {
   const location = useLocation();
@@ -169,6 +170,8 @@ function CompanyRoutes({ page }: { page?: string }) {
       return <ReportSalaryCertificate />;
     case "attendant":
       return <DashboardAttendant />;
+    case "print":
+      return <PrintDocument />;
     default:
       return <CompanyDeshboard />;
   }

@@ -449,7 +449,7 @@ const ReportLoan = () => {
                                             <TablecellHeader sx={{ width: 100 }}>ดอกเบี้ย</TablecellHeader>
                                             <TablecellHeader sx={{ width: 100 }}>ยอดชำระ</TablecellHeader>
                                             <TablecellHeader sx={{ width: 100 }}>ยอดคงเหลือ</TablecellHeader>
-                                            <TablecellHeader sx={{ width: 250 }}>สถานะ</TablecellHeader>
+                                            <TablecellHeader sx={{ width: 300 }}>สถานะ</TablecellHeader>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -529,33 +529,33 @@ const ReportLoan = () => {
                                                                                     </TableCell>
                                                                                     <TableCell sx={{ textAlign: "left" }}>
                                                                                         <Box sx={{ marginLeft: 2, marginRight: 2, marginTop: l.status === "pending" && 1.5 }}>
-                                                                                            <Box display="flex" justifyContent="left" alignItems="center">
+                                                                                            <Box display="flex" justifyContent="left" alignItems="center" sx={{ mt: bill.status === "paid" ? 0 : 0.5 }}>
                                                                                                 <Typography variant="subtitle2" gutterBottom>สถานะ : </Typography>
                                                                                                 <Typography
                                                                                                     variant="subtitle2"
                                                                                                     sx={{
                                                                                                         fontWeight: "bold",
                                                                                                         marginLeft: 1,
-                                                                                                        color: bill.status === "pending" ? theme.palette.warning.main
+                                                                                                        color: bill.status === "pending" ? theme.palette.error.main
                                                                                                             : bill.status === "paid" ? theme.palette.success.main
-                                                                                                                : theme.palette.error.main
+                                                                                                                : theme.palette.warning.main
                                                                                                     }}
                                                                                                     gutterBottom
                                                                                                 >
-                                                                                                    {bill.status === "paid" ? "ชำระแล้ว" : "ค้างชำระ"}
+                                                                                                    {bill.status === "paid" ? "ชำระเรียบร้อยแล้ว" : bill.status === "pending" ? "ยังไม่ได้ชำระ" : "ยอดค้างชำระถูกโอนไปงวดถัดไป"}
                                                                                                 </Typography>
                                                                                             </Box>
                                                                                             {
                                                                                                 bill.status === "pending" ?
                                                                                                     <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center ", marginTop: -4.5 }}>
                                                                                                         <Tooltip title="ไม่อนุมัติ" placement="top">
-                                                                                                            <IconButton size="small" onClick={() => handleCancel(emp.ID, l.ID, bill.ID)} >
+                                                                                                            <IconButton size="small" onClick={() => handleCancel(emp.ID, l.ID, bill.ID)} sx={{ mb: -0.5 }} >
                                                                                                                 <InsertDriveFileIcon sx={{ color: theme.palette.error.main, fontSize: "28px" }} />
                                                                                                                 <CloseIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
                                                                                                             </IconButton>
                                                                                                         </Tooltip>
                                                                                                         <Tooltip title="อนุมัติ" placement="top">
-                                                                                                            <IconButton size="small" onClick={() => handleApprove(emp.ID, l.ID, bill.ID)} >
+                                                                                                            <IconButton size="small" onClick={() => handleApprove(emp.ID, l.ID, bill.ID)} sx={{ mb: -0.5 }} >
                                                                                                                 <InsertDriveFileIcon sx={{ color: theme.palette.primary.main, fontSize: "28px" }} />
                                                                                                                 <DoneIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
                                                                                                             </IconButton>
