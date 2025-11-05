@@ -48,7 +48,7 @@ const SalaryDetail = (props) => {
     const [editLeave, setEditLeave] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [leave, setLeave] = useState([{ ID: 0, name: '' }]);
+    const [leaves, setLeaves] = useState([{ ID: 0, name: '' }]);
     const columns = [
         { label: "ประเภทการลา", key: "name", type: "text" },
         { label: "จำนวนวัน", key: "max", type: "text" }
@@ -78,6 +78,8 @@ const SalaryDetail = (props) => {
     const [documentleave, setDocumentLeave] = useState([]);
     const [documentot, setDocumentOT] = useState([]);
     const [holiday, setHoliday] = useState([]);
+    const [employeeTypes, setEmployeeTypes] = useState([]);
+    const [selectedType, setSelectedType] = useState("");
 
     console.log("Leave : ", documentleave);
     console.log("OT : ", documentot);
@@ -273,9 +275,9 @@ const SalaryDetail = (props) => {
             attendantCount: attendantCount,
             holidayCount: holidayResult.holidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
             holiday: holidayResult.holidayDates, // ✅ เพิ่มจำนวนวันหยุด
-            leaveCount: leave.length,
+            // leaveCount: leave.length,
             otHours: otHours,
-            missingWork: (employeetype !== 0 ? workingDays : 0) - (attendantCount + holidayResult.holidayDates.length + leave.length),
+            missingWork: 0,
             totalIncome: 0,
             totalDeduction: 0,
             total: 0
@@ -297,6 +299,25 @@ const SalaryDetail = (props) => {
             row.totalDeduction += deductionValue;
         });
 
+        // รวมวันลาแต่ละ leaveid
+        leave.forEach((ded) => {
+            // ถ้ามีค่าเดิมอยู่แล้วให้บวกเพิ่ม ไม่งั้นเริ่มที่ 0
+            const current = row[`leave${ded.leaveid}`] || 0;
+            const deductionValue = current + 1; // บวกเพิ่ม 1 วัน
+
+            row[`leave${ded.leaveid}`] = deductionValue;
+        });
+
+        // ✅ รวมค่า leave ทั้งหมดใน row
+        const totalLeaveDays = Object.keys(row)
+            .filter(key => key.startsWith("leave")) // เอาเฉพาะ key ที่เป็น leave
+            .reduce((sum, key) => sum + (row[key] || 0), 0);
+
+        // คำนวณ missingWork
+        row.missingWork =
+            (employeetype !== 0 ? workingDays : 0) -
+            (attendantCount + holidayResult.holidayDates.length + Number(totalLeaveDays));
+
         row.total = (Number(emp.salary) + row.totalIncome) - row.totalDeduction;
 
         return row;
@@ -309,6 +330,10 @@ const SalaryDetail = (props) => {
 
     const visibleDeduction = deductionActive.filter(ded =>
         Rows.some(row => (row[`deduction${ded.ID}`] ?? 0) !== 0)
+    );
+
+    const visibleLeave = documentleave.filter(ded =>
+        Rows.some(row => (row[`leave${ded.leaveid}`] ?? 0) !== 0)
     );
 
     // 5️⃣ Group ข้อมูลตาม ฝ่ายงาน / ส่วนงาน / ตำแหน่ง
@@ -539,21 +564,40 @@ const SalaryDetail = (props) => {
 
             // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
             if (!leaveData) {
-                setLeave([{ ID: 0, name: '' }]);
+                setLeaves([{ ID: 0, name: '' }]);
             } else {
-                setLeave(leaveData);
+                setLeaves(leaveData);
             }
         });
 
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const employeeTypeRef = ref(firebaseDB, `workgroup/company/${companyId}/employeetype`);
+
+        const unsubscribe = onValue(employeeTypeRef, (snapshot) => {
+            const employeeTypeData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            setEmployeeTypes(employeeTypeData);
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    console.log("employee Type : ", employeeTypes);
+    console.log("employee : ", employee);
+    console.log("visibleLeave : ", visibleLeave);
+
     const handleSave = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
 
         const invalidMessages = [];
 
-        leave.forEach((row, rowIndex) => {
+        leaves.forEach((row, rowIndex) => {
             columns.forEach((col) => {
                 const value = row[col.key];
 
@@ -578,7 +622,7 @@ const SalaryDetail = (props) => {
         });
 
         // ✅ ตรวจสอบว่า level.name ซ้ำหรือไม่
-        const names = leave.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        const names = leaves.map(row => row.deptname?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
         const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
         if (duplicates.length > 0) {
             invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
@@ -591,7 +635,7 @@ const SalaryDetail = (props) => {
         }
 
         // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, leave)
+        set(companiesRef, leaves)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
@@ -608,15 +652,61 @@ const SalaryDetail = (props) => {
 
         onValue(leaveRef, (snapshot) => {
             const leaveData = snapshot.val() || [{ ID: 0, name: '' }];
-            setLeave(leaveData);
+            setLeaves(leaveData);
             setEditLeave(false);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
+
+    console.log("Object.entries(groupedRows) : ", Object.entries(groupedRows));
 
     return (
         <React.Fragment>
             <Box sx={{ marginTop: 2, width: "100%" }}>
                 <Grid container spacing={2}>
+                    <Grid item size={12}>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "left",
+                                gap: 1, // เพิ่มช่องว่างระหว่างช่อง
+                            }}
+                        >
+                            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>ประเภทการจ้างงาน : </Typography>
+                            {employeeTypes.map((type) => (
+                                (Rows.filter((t) => Number(t.employeetype.split("-")[0]) === type.ID).length > 0) &&
+                                <Paper
+                                    key={type.ID}
+                                    onClick={() => setSelectedType(type.ID)}
+                                    sx={{
+                                        textAlign: "center",
+                                        border: `1px solid ${theme.palette.primary.main}`,
+                                        boxShadow:
+                                            selectedType === type.ID
+                                                ? "0px 4px 10px rgba(134, 134, 134, 0.63)"
+                                                : "0px 1px 3px rgba(98, 98, 98, 0.1)",
+                                        borderRadius: "5px",
+                                        pt: 0.5,
+                                        pl: 1,
+                                        pr: 1,
+                                        mt: -0.5,
+                                        cursor: "pointer",
+                                        // transition: "0.2s",
+                                        backgroundColor: selectedType === type.ID ? theme.palette.primary.main : theme.palette.primary.light,
+                                        color: selectedType === type.ID ? "white" : "black",
+                                        "&:hover": {
+                                            borderColor: theme.palette.primary.main,
+                                            boxShadow: "0px 4px 10px rgba(134, 134, 134, 0.63)",
+                                        },
+                                    }}
+                                >
+                                    <Typography variant="subtitle2" gutterBottom>
+                                        {`${type.name} ${Rows.filter((t) => Number(t.employeetype.split("-")[0]) === type.ID).length} คน`}
+                                    </Typography>
+                                </Paper>
+                            ))}
+                        </Box>
+                    </Grid>
                     <Grid item size={12}>
                         <TableContainer component={Paper} sx={{ height: "70vh" }}>
                             <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
@@ -634,7 +724,10 @@ const SalaryDetail = (props) => {
                                         <TablecellHeader sx={{ width: 200 }}>ชื่อ</TablecellHeader>
                                         <TablecellHeader sx={{ width: 100 }}>มาทำงาน</TablecellHeader>
                                         <TablecellHeader sx={{ width: 100 }}>วันหยุดตามกะ</TablecellHeader>
-                                        <TablecellHeader sx={{ width: 100 }}>ลางาน</TablecellHeader>
+                                        {/* <TablecellHeader sx={{ width: 100 }}>ลางาน</TablecellHeader> */}
+                                        {visibleLeave.map(inc => (
+                                            <TablecellHeader key={inc.leaveid} sx={{ width: 150 }}>{inc.leave}</TablecellHeader>
+                                        ))}
                                         <TablecellHeader sx={{ width: 100 }}>ขาดงาน</TablecellHeader>
                                         <TablecellHeader sx={{ width: 100 }}>โอที</TablecellHeader>
                                         <TablecellHeader sx={{ width: 100 }}>วันทำงาน</TablecellHeader>
@@ -746,7 +839,14 @@ const SalaryDetail = (props) => {
                                                                             <TableCell sx={{ textAlign: "center", position: "sticky", left: 0, backgroundColor: "white" }}>{row.employname}</TableCell>
                                                                             <TableCell sx={{ textAlign: "center" }}>{row.attendantCount !== 0 ? `${row.attendantCount} วัน` : "-"}</TableCell>
                                                                             <TableCell sx={{ textAlign: "center" }}>{row.holidayCount !== 0 ? `${row.holidayCount} วัน` : "-"}</TableCell>
-                                                                            <TableCell sx={{ textAlign: "center" }}>{row.leaveCount !== 0 ? `${row.leaveCount} วัน` : "-"}</TableCell>
+                                                                            {visibleLeave.map(ded => (
+                                                                                <TableCell key={ded.leaveid} sx={{ textAlign: "center" }}>
+                                                                                    {row[`leave${ded.leaveid}`]
+                                                                                        ? `${new Intl.NumberFormat("en-US").format(row[`leave${ded.leaveid}`])} วัน`
+                                                                                        : "-"
+                                                                                    }
+                                                                                </TableCell>
+                                                                            ))}
                                                                             <TableCell sx={{ textAlign: "center" }}>{row.missingWork !== 0 ? `${row.missingWork} วัน` : "-"}</TableCell>
                                                                             <TableCell sx={{ textAlign: "center" }}>{row.otHours !== 0 ? `${row.otHours} ชม.` : "-"}</TableCell>
                                                                             <TableCell sx={{ textAlign: "center" }}>{row.workday !== 0 ? `${row.workday} วัน` : "-"}</TableCell>

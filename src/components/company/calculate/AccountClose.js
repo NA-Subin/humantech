@@ -316,9 +316,8 @@ const AccountDetail = (props) => {
             attendantCount: attendantCount,
             holidayCount: holidayResult.holidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
             holiday: holidayResult.holidayDates, // ✅ เพิ่มจำนวนวันหยุด
-            leaveCount: leave.length,
             otHours: otHours,
-            missingWork: (employeetype !== 0 ? workingDays : 0) - (attendantCount + holidayResult.holidayDates.length + leave.length),
+            missingWork: 0,
             totalIncome: 0,
             totalDeduction: 0,
             total: 0
@@ -340,6 +339,25 @@ const AccountDetail = (props) => {
             row.totalDeduction += deductionValue;
         });
 
+        // รวมวันลาแต่ละ leaveid
+        leave.forEach((ded) => {
+            // ถ้ามีค่าเดิมอยู่แล้วให้บวกเพิ่ม ไม่งั้นเริ่มที่ 0
+            const current = row[`leave${ded.leaveid}`] || 0;
+            const deductionValue = current + 1; // บวกเพิ่ม 1 วัน
+
+            row[`leave${ded.leaveid}`] = deductionValue;
+        });
+
+        // ✅ รวมค่า leave ทั้งหมดใน row
+        const totalLeaveDays = Object.keys(row)
+            .filter(key => key.startsWith("leave")) // เอาเฉพาะ key ที่เป็น leave
+            .reduce((sum, key) => sum + (row[key] || 0), 0);
+
+        // คำนวณ missingWork
+        row.missingWork =
+            (employeetype !== 0 ? workingDays : 0) -
+            (attendantCount + holidayResult.holidayDates.length + Number(totalLeaveDays));
+
         row.total = (Number(emp.salary) + row.totalIncome) - row.totalDeduction;
 
         return row;
@@ -352,6 +370,10 @@ const AccountDetail = (props) => {
 
     const visibleDeduction = deductionActive.filter(ded =>
         Rows.some(row => (row[`deduction${ded.ID}`] ?? 0) !== 0)
+    );
+
+    const visibleLeave = documentleave.filter(ded =>
+        Rows.some(row => (row[`leave${ded.leaveid}`] ?? 0) !== 0)
     );
 
     // 5️⃣ Group ข้อมูลตาม ฝ่ายงาน / ส่วนงาน / ตำแหน่ง
@@ -686,17 +708,24 @@ const AccountDetail = (props) => {
         const worksheet = workbook.addWorksheet("รายงานสรุป");
 
         // 🟩 สร้างหัวคอลัมน์
-        const baseHeaders = [
+        const baseHeaders1 = [
             { header: "รหัส", key: "employeecode", width: 15 },
             { header: "ชื่อ", key: "employname", width: 25 },
             { header: "มาทำงาน", key: "attendantCount", width: 15 },
             { header: "วันหยุดตามกะ", key: "holidayCount", width: 15 },
-            { header: "ลางาน", key: "leaveCount", width: 15 },
+        ]
+        const baseHeaders2 = [
             { header: "ขาดงาน", key: "missingWork", width: 15 },
             { header: "โอที", key: "otHours", width: 15 },
             { header: "วันทำงาน", key: "workday", width: 15 },
             { header: "เงินเดือน", key: "salary", width: 15 },
         ];
+
+        const leaveHeaders = visibleLeave.map(inc => ({
+            header: inc.leave,
+            key: `leave${inc.leaveid}`,
+            width: 18,
+        }));
 
         const incomeHeaders = visibleIncome.map(inc => ({
             header: inc.name,
@@ -711,7 +740,9 @@ const AccountDetail = (props) => {
         }));
 
         const finalHeaders = [
-            ...baseHeaders,
+            ...baseHeaders1,
+            ...leaveHeaders,
+            ...baseHeaders2,
             ...incomeHeaders,
             ...(visibleIncome.length !== 0 ? [{ header: "รวมรายรับ", key: "totalIncome", width: 18 }] : []),
             ...deductionHeaders,
@@ -763,7 +794,7 @@ const AccountDetail = (props) => {
                             employname: row.employname,
                             attendantCount: row.attendantCount ? `${row.attendantCount} วัน` : "-",
                             holidayCount: row.holidayCount ? `${row.holidayCount} วัน` : "-",
-                            leaveCount: row.leaveCount ? `${row.leaveCount} วัน` : "-",
+                            ...Object.fromEntries(visibleLeave.map(inc => [`leave${inc.leaveid}`, row[`leave${inc.leaveid}`] ? `${new Intl.NumberFormat("en-US").format(row[`leave${inc.leaveid}`])} วัน` : "-"])),
                             missingWork: row.missingWork ? `${row.missingWork} วัน` : "-",
                             otHours: row.otHours ? `${row.otHours} ชม.` : "-",
                             workday: row.workday ? `${row.workday} วัน` : "-",
