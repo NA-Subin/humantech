@@ -54,6 +54,9 @@ import customParseFormat from "dayjs/plugin/customParseFormat";
 import { formatThaiSlash } from "../../../theme/DateTH";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import ImageIcon from '@mui/icons-material/Image';
+import logo from "../../../img/LogoShort.png";
+import none from "../../../img/none.png";
 
 dayjs.extend(customParseFormat);
 
@@ -62,6 +65,7 @@ const Employee = () => {
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
+    const [check, setCheck] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState([]);
     const [checkEmployee, setCheckEmployee] = useState({});
@@ -723,7 +727,7 @@ const Employee = () => {
                             nickname: updatedEmp.nickname ?? "",
                         },
                         workshifthistory: currentHistory,
-                        password: "1234567",
+                        password: updatedEmp.password ?? "1234567",
                     };
                 } else {
                     // shift ใหม่ → เพิ่ม history entry
@@ -1415,13 +1419,120 @@ const Employee = () => {
                                         }}
                                     >
                                         <Grid container spacing={2} marginTop={2}>
+                                            <Grid item size={12} sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                                                <Box
+                                                    sx={{
+                                                        position: "relative",
+                                                        width: 250,
+                                                        height: 250,
+                                                        borderRadius: 50,
+                                                        backgroundColor: theme.palette.primary.light,
+                                                        border: `10px solid ${theme.palette.primary.light}`,
+                                                        overflow: "hidden",
+                                                        display: "flex",
+                                                        justifyContent: "center",
+                                                        alignItems: "center",
+                                                    }}
+                                                >
+                                                    {
+                                                        (opendetail?.faceverify !== undefined && opendetail?.faceverify !== "") ?
+                                                            <img
+                                                                src={opendetail?.faceverify}
+                                                                alt="preview"
+                                                                style={{ height: "100%", borderRadius: 8 }}
+                                                            />
+                                                            :
+                                                            <React.Fragment>
+                                                                {/* Logo (รูปหลัก) */}
+                                                                <Box
+                                                                    component="img"
+                                                                    src={logo}
+                                                                    sx={{
+                                                                        width: "80%",
+                                                                        height: "80%",
+                                                                        objectFit: "contain",
+                                                                        opacity: 0.2,
+                                                                    }}
+                                                                />
+                                                                <Box
+                                                                    sx={{
+                                                                        position: "absolute",
+                                                                        top: 0,
+                                                                        left: 0,
+                                                                        width: "100%",
+                                                                        height: "100%",
+                                                                        display: "flex",
+                                                                        justifyContent: "center",
+                                                                        alignItems: "center",
+                                                                        fontSize: 35,
+                                                                        fontWeight: "bold",
+                                                                        fontStyle: "italic",
+                                                                        color: theme.palette.primary.main,
+                                                                        opacity: 0.7,
+                                                                        userSelect: "ไม่มีรูปภาพ",
+                                                                        transform: "rotate(-30deg)", // เอียงได้ตามต้องการ
+                                                                    }}
+                                                                >
+                                                                    ไม่มีรูปภาพ
+                                                                </Box>
+                                                            </React.Fragment>
+                                                    }
+                                                </Box>
+                                                {
+                                                    check &&
+                                                    <Button
+                                                        variant="contained"
+                                                        component="label"
+                                                        size="small"
+                                                        sx={{
+                                                            height: "35px",
+                                                            backgroundColor: "#29b6f6",
+                                                            borderRadius: 2,
+                                                            display: "flex",
+                                                            justifyContent: "center",
+                                                            alignItems: "center",
+                                                            ml: 5
+                                                        }}
+                                                    >
+                                                        <Typography
+                                                            variant="h6"
+                                                            fontSize="16px"
+                                                            fontWeight="bold"
+                                                            color={"white"}
+                                                            sx={{ mt: 1 }}
+                                                            gutterBottom
+                                                        >
+                                                            เปลี่ยนรูปภาพ
+                                                        </Typography>
+                                                        <ImageIcon
+                                                            sx={{
+                                                                fontSize: 25,
+                                                                color: "white",
+                                                                marginLeft: 2,
+                                                            }}
+                                                        />
+                                                        <input
+                                                            type="file"
+                                                            hidden
+                                                            accept="image/*"
+                                                        // onChange={(e) => {
+                                                        //     const image = e.target.files?.[0];
+                                                        //     if (image) setEmployeeImage(image);
+                                                        // }}
+                                                        />
+                                                    </Button>
+                                                }
+                                            </Grid>
+                                            <Grid item size={12}>
+                                                <Divider />
+                                            </Grid>
                                             <Grid item size={3}>
                                                 <Typography variant="subtitle2" fontWeight="bold" >รหัสพนักงาน</Typography>
                                                 <TextField
                                                     fullWidth
                                                     size="small"
-                                                    value={opendetail.employeecode}
-                                                    disabled
+                                                    value={opendetail?.employeecode}
+                                                    disabled={check ? false : true}
                                                 //onChange={(e) => setNickname(e.target.value)}
                                                 />
                                             </Grid>
@@ -1430,8 +1541,8 @@ const Employee = () => {
                                                 <TextField
                                                     fullWidth
                                                     size="small"
-                                                    value={opendetail.nickname}
-                                                    disabled
+                                                    value={opendetail?.nickname}
+                                                    disabled={check ? false : true}
                                                 //onChange={(e) => setName(e.target.value)}
                                                 />
                                             </Grid>
@@ -1440,8 +1551,8 @@ const Employee = () => {
                                                 <TextField
                                                     fullWidth
                                                     size="small"
-                                                    value={opendetail.employname}
-                                                    disabled
+                                                    value={opendetail?.employname}
+                                                    disabled={check ? false : true}
                                                 //onChange={(e) => setLastName(e.target.value)}
                                                 />
                                             </Grid>
@@ -1455,7 +1566,7 @@ const Employee = () => {
                                                             ? opendetail.department.split("-")[1]
                                                             : ""
                                                     }
-                                                    disabled
+                                                    disabled={check ? false : true}
                                                 />
                                             </Grid>
 
@@ -1469,7 +1580,7 @@ const Employee = () => {
                                                             ? opendetail.section.split("-")[1]
                                                             : ""
                                                     }
-                                                    disabled
+                                                    disabled={check ? false : true}
                                                 />
                                             </Grid>
 
@@ -1483,23 +1594,26 @@ const Employee = () => {
                                                             ? opendetail.position.split("-")[1]
                                                             : ""
                                                     }
-                                                    disabled
+                                                    disabled={check ? false : true}
                                                 />
                                             </Grid>
 
-                                            <Grid item size={6}>
-                                                <Typography variant="subtitle2" fontWeight="bold">กะการทำงาน</Typography>
-                                                <TextField
-                                                    fullWidth
-                                                    size="small"
-                                                    value={
-                                                        opendetail?.workshift?.includes("-")
-                                                            ? opendetail.workshift.split("-")[1]
-                                                            : ""
-                                                    }
-                                                    disabled
-                                                />
-                                            </Grid>
+                                            {
+                                                !check &&
+                                                <Grid item size={6}>
+                                                    <Typography variant="subtitle2" fontWeight="bold">กะการทำงาน</Typography>
+                                                    <TextField
+                                                        fullWidth
+                                                        size="small"
+                                                        value={
+                                                            opendetail?.workshift?.includes("-")
+                                                                ? opendetail.workshift.split("-")[1]
+                                                                : ""
+                                                        }
+                                                        disabled
+                                                    />
+                                                </Grid>
+                                            }
 
                                             <Grid item size={6}>
                                                 <Typography variant="subtitle2" fontWeight="bold">ประเภทการจ้างงาน</Typography>
@@ -1511,7 +1625,7 @@ const Employee = () => {
                                                             ? opendetail.employmenttype.split("-")[1]
                                                             : ""
                                                     }
-                                                    disabled
+                                                    disabled={check ? false : true}
                                                 />
                                             </Grid>
 
@@ -1521,12 +1635,31 @@ const Employee = () => {
                                                     fullWidth
                                                     size="small"
                                                     value={opendetail?.salary}
-                                                    disabled
+                                                    disabled={check ? false : true}
                                                 />
                                             </Grid>
-
+                                            {/* <Grid item size={12}>
+                                                <Divider />
+                                            </Grid>
+                                            <Grid item size={12} textAlign="center">
+                                                {
+                                                    !check ?
+                                                        <Button variant="outlined" color="warning" size="small" onClick={() => setCheck(true)}>
+                                                            แก้ไขข้อมูล
+                                                        </Button>
+                                                        :
+                                                        <React.Fragment>
+                                                            <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                                                ยกเลิก
+                                                            </Button>
+                                                            <Button variant="contained" color="success" size="small" onClick={() => setCheck(false)}>
+                                                                บันทึก
+                                                            </Button>
+                                                        </React.Fragment>
+                                                }
+                                            </Grid> */}
                                             {
-                                                opendetail.workshifthistory !== undefined &&
+                                                !check && opendetail.workshifthistory !== undefined &&
                                                 <Grid item size={12}>
                                                     <Typography variant="subtitle2" fontWeight="bold">ประวัติการเปลี่ยนกะการทำงาน</Typography>
                                                     <TableContainer component={Paper} textAlign="center" sx={{ height: "30vh", width: "100%" }}>
@@ -1549,7 +1682,8 @@ const Employee = () => {
                                                             </TableHead>
                                                             <TableBody>
                                                                 {
-                                                                    opendetail.workshifthistory.length === 0 ?
+                                                                    !Array.isArray(opendetail.workshifthistory) ||
+                                                                        opendetail.workshifthistory.length === 0 ?
                                                                         <TableRow>
                                                                             <TablecellNoData colSpan={5}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                                         </TableRow>
@@ -1792,33 +1926,50 @@ const Employee = () => {
                                                     </Grid>
                                                 </React.Fragment>
                                             }
-                                            <Grid item size={12} textAlign="center" marginTop={2} >
-                                                {
-                                                    editWorkshift ?
-                                                        <Box display="flex" alignItems="center" justifyContent="center" >
-                                                            <Button variant="contained" color="error" onClick={() => setEditWorkshift(false)} sx={{ marginRight: 2 }}>
-                                                                ยกเลิก
-                                                            </Button>
-                                                            <Button variant="contained" color="success" onClick={handleSaveWorkshift}>
-                                                                บันทึก
-                                                            </Button>
-                                                        </Box>
-                                                        :
-                                                        <Button variant="contained" color="warning" onClick={() => setEditWorkshift(true)}>
-                                                            เปลี่ยนกะการทำงาน
-                                                        </Button>
-                                                }
-                                            </Grid>
+                                            {
+                                                !check &&
+                                                <React.Fragment>
+                                                    <Grid item size={12}>
+                                                        <Divider />
+                                                    </Grid>
+                                                    <Grid item size={12} textAlign="center">
+                                                        {
+                                                            editWorkshift ?
+                                                                <Box display="flex" alignItems="center" justifyContent="center" >
+                                                                    <Button variant="contained" color="error" size="small" onClick={() => setEditWorkshift(false)} sx={{ marginRight: 2 }}>
+                                                                        ยกเลิก
+                                                                    </Button>
+                                                                    <Button variant="contained" color="success" size="small" onClick={handleSaveWorkshift}>
+                                                                        บันทึก
+                                                                    </Button>
+                                                                </Box>
+                                                                :
+                                                                <Button variant="contained" color="warning" size="small" onClick={() => setEditWorkshift(true)}>
+                                                                    เปลี่ยนกะการทำงาน
+                                                                </Button>
+                                                        }
+                                                    </Grid>
+                                                </React.Fragment>
+                                            }
                                         </Grid>
                                     </DialogContent>
-                                    {/* <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
-                                            <Button variant="contained" color="error" onClick={() => setOpenDetail({})}>
-                                                ยกเลิก
-                                            </Button>
-                                            <Button variant="contained" color="success" onClick={() => setOpenDetail({})}>
-                                                บันทึก
-                                            </Button>
-                                        </DialogActions> */}
+                                    <DialogActions sx={{ borderTop: `1px solid ${theme.palette.primary.dark}`, display: "flex", alignItems: "center", justifyContent: "center", height: "55px" }}>
+                                        {
+                                            !check ?
+                                                <Button variant="contained" color="warning" size="small" onClick={() => setCheck(true)}>
+                                                    แก้ไขข้อมูล
+                                                </Button>
+                                                :
+                                                <React.Fragment>
+                                                    <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                                        ยกเลิก
+                                                    </Button>
+                                                    <Button variant="contained" color="success" size="small" onClick={() => setCheck(false)}>
+                                                        บันทึก
+                                                    </Button>
+                                                </React.Fragment>
+                                        }
+                                    </DialogActions>
                                 </Dialog>
                                 // ))
                             }

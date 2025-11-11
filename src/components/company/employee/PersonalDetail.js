@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use } from "react";
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update } from "firebase/database";
 import '../../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -34,8 +34,10 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { database } from "../../../server/firebase";
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle, MenuItem } from "@mui/material";
 import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
+import { name } from "dayjs/locale/th";
+import ThaiDateSelector from "../../../theme/ThaiDateSelector";
 
 const PersonalDetail = (props) => {
     const { menu, data } = props;
@@ -43,6 +45,7 @@ const PersonalDetail = (props) => {
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
+    const [check, setCheck] = useState(false);
 
     const [edit, setEdit] = useState("");
     const [editAddress, setEditAddress] = useState("");
@@ -57,21 +60,101 @@ const PersonalDetail = (props) => {
 
     // ฟังก์ชันแปลงจาก birthDate Object → รูปแบบ DD/MM/YYYY (ค.ศ.)
     function formatToGregorian(birthDate) {
+        if (!birthDate || !birthDate.day || !birthDate.month || !birthDate.year) {
+            return ""; // ถ้าไม่มีข้อมูล ให้คืนค่าว่าง
+        }
+
         const day = String(birthDate.day).padStart(2, "0");
         const month = String(birthDate.month).padStart(2, "0");
-        const year = parseInt(birthDate.year, 10) - 543; // แปลง พ.ศ. → ค.ศ.
+        const year = parseInt(birthDate.year, 10) - 543; // พ.ศ. → ค.ศ.
+
         return `${day}/${month}/${year}`;
     }
 
     // ฟังก์ชันแปลงกลับจาก DD/MM/YYYY → birthDate Object (พ.ศ.)
-    function parseFromGregorian(dateString) {
-        const [day, month, year] = dateString.split("/").map(Number);
+    function parseFromGregorian(dateStr) {
+        if (!dateStr) return null;
+
+        const [day, month, year] = dateStr.split("/");
+
+        if (!day || !month || !year) return null;
+
         return {
-            day,
-            month,
-            year: (year + 543).toString(), // แปลง ค.ศ. → พ.ศ.
+            day: Number(day),
+            month: Number(month),
+            year: (Number(year) + 543).toString() // ค.ศ. → พ.ศ.
         };
     }
+
+    const prefixes = ["นาย", "นาง", "นางสาว", "ดร.", "ศ.", "คุณ"];
+
+    const statuss = [
+        {
+            ID: 1,
+            value: "single",
+            label: "โสด"
+        },
+        {
+            ID: 2,
+            value: "married",
+            label: "สมรส"
+        },
+        {
+            ID: 3,
+            value: "divorced",
+            label: "หย่า"
+        },
+        {
+            ID: 4,
+            value: "widowed",
+            label: "หม้าย"
+        },
+        {
+            ID: 5,
+            value: "separated",
+            label: "แยกกันอยู่"
+        },
+        {
+            ID: 6,
+            value: "registered_partner",
+            label: "จดทะเบียนคู่ชีวิต"
+        },
+        {
+            ID: 7,
+            value: "unregistered_partner",
+            label: "อยู่ด้วยกันโดยไม่จดทะเบียน"
+        },
+        {
+            ID: 8,
+            value: "unknown",
+            label: "ไม่ระบุ"
+        }
+    ]
+
+    const educationStatus = [
+        { value: "กำลังศึกษา", label: "กำลังศึกษา" },
+        { value: "จบการศึกษา", label: "จบการศึกษา" },
+        { value: "ลาออก", label: "ลาออก" },
+    ];
+
+    const educationLevels = [
+        { value: "ประถมศึกษา", label: "ประถมศึกษา" },
+        { value: "มัธยมศึกษา", label: "มัธยมศึกษา" },
+        { value: "ปริญญาตรี", label: "ปริญญาตรี" },
+        { value: "ปริญญาโท", label: "ปริญญาโท" },
+        { value: "ปริญญาเอก", label: "ปริญญาเอก" }
+    ];
+
+    const bachelorCategories = [
+        { value: "วิทยาศาสตร์", label: "วิทยาศาสตร์" },
+        { value: "วิศวกรรมศาสตร์", label: "วิศวกรรมศาสตร์" },
+        { value: "บริหารธุรกิจ", label: "บริหารธุรกิจ" },
+        { value: "นิติศาสตร์", label: "นิติศาสตร์" },
+        { value: "ศึกษาศาสตร์", label: "ศึกษาศาสตร์" },
+        { value: "ศิลปศาสตร์", label: "ศิลปศาสตร์" },
+        { value: "สังคมศาสตร์", label: "สังคมศาสตร์" },
+        { value: "อื่นๆ", label: "อื่นๆ" },
+    ];
 
     const [thailand, setThailand] = useState([]);
     useEffect(() => {
@@ -100,7 +183,9 @@ const PersonalDetail = (props) => {
         name: emp.personal?.name || '',
         lastname: emp.personal?.lastname || '',
         nickname: emp.personal?.nickname || '',
-        birthDate: emp.personal?.birthDate ? formatToGregorian(emp.personal?.birthDate) : '',
+        address: emp.personal?.address || '',
+        birthDate: emp.personal?.birthDate || '',
+        birthDay: formatToGregorian(emp.personal?.birthDate) || '',
         employname: `${emp.personal?.name || ''} ${emp.personal?.lastname || ''} (${emp.personal?.nickname || ''})`,
         citizencode: emp.personal?.citizencode || '',
         position: emp.position.split("-")[1],
@@ -145,7 +230,7 @@ const PersonalDetail = (props) => {
             ],
             width: 100,
         },
-        { label: "วันเกิด", key: "birthDate", type: "date", width: 180 },
+        { label: "วันเกิด", key: "birthDay", type: "date", width: 180 },
         {
             label: "สถานภาพทางทหาร",
             key: "militaryStatus",
@@ -272,6 +357,12 @@ const PersonalDetail = (props) => {
         },
     ];
 
+    const handleDetailChange = (field, value) => {
+        setOpenDetail(prev => ({
+            ...prev,
+            [field]: value === true ? "ชาย" : value === false ? "หญิง" : value,
+        }));
+    };
 
     const handlePersonalChange = (updatedList) => {
         const merged = employees.map((emp, idx) => {
@@ -291,12 +382,12 @@ const PersonalDetail = (props) => {
             return {
                 ...emp,
                 citizencode: updatedList[idx].citizencode,
-                birthdate: updatedList[idx].birthDate,
+                birthdate: updatedList[idx].birthDay,
                 personal: {
                     ...emp.personal,
                     citizencode: updatedList[idx].citizencode,
                     sex: updatedList[idx].sex,
-                    birthDate: updatedList[idx].birthDate ? parseFromGregorian(updatedList[idx].birthDate) : null,
+                    birthDate: updatedList[idx].birthDay ? parseFromGregorian(updatedList[idx].birthDay) : null,
                     address: {
                         province: provinceKey || '',
                         amphure: amphureKey || '',
@@ -430,6 +521,55 @@ const PersonalDetail = (props) => {
                 console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
             });
     };
+
+    const handleUpdate = () => {
+        if (!openDetail?.ID) return ShowError("ไม่พบข้อมูลพนักงาน");
+
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${openDetail.ID}`);
+
+        const data = {
+            address: openDetail?.address || {
+                amphure: openDetail?.amphure || "",
+                province: openDetail?.province || "",
+                tambon: openDetail?.tambon || "",
+                zipCode: openDetail?.zipCode || ""
+            },
+            birthDate: openDetail?.birthDate || parseFromGregorian(openDetail?.birthDay) || "",
+            country: openDetail?.country || "",
+            height: openDetail?.height || "",
+            homePhone: openDetail?.homePhone || "",
+            lastname: openDetail?.lastname || "",
+            lineID: openDetail?.lineID || "",
+            militaryStatus: openDetail?.militaryStatus || "",
+            name: openDetail?.name || "",
+            nationality: openDetail?.nationality || "",
+            nickname: openDetail?.nickname || "",
+            phone: openDetail?.phone || "",
+            prefix: openDetail?.prefix || "",
+            religion: openDetail?.religion || "",
+            sex: openDetail?.sex || "",
+            statusEmployee: openDetail?.statusEmployee || "",
+            vehicle: openDetail?.vehicle || "",
+            weight: openDetail?.weight || ""
+        };
+
+        update(companiesRef, {
+            employeename: `${openDetail?.name || ""} ${openDetail?.lastname || ""}`,
+            nickname: openDetail?.nickname || "",
+            personal: data  // ✅ แก้พิมพ์ผิด
+        })
+            .then(() => {
+                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                setEdit(false);
+                setCheck(false);
+                setOpenDetail({});
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error(error);
+            });
+    };
+
 
     const handleCancel = () => {
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
@@ -685,12 +825,20 @@ const PersonalDetail = (props) => {
                                 <Grid item size={3}>
                                     <Typography variant="subtitle2" fontWeight="bold" >คำนำหน้าชื่อ</Typography>
                                     <TextField
+                                        select
                                         fullWidth
                                         size="small"
-                                        placeholder="คำนำหน้าชื่อ"
                                         value={openDetail?.prefix}
-                                        disabled
-                                    />
+                                        disabled={!check}
+                                        SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+                                        onChange={(e) => handleDetailChange("prefix", e.target.value)}
+                                    >
+                                        {prefixes.map((option) => (
+                                            <MenuItem key={option} value={option}>
+                                                {option}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
                                 </Grid>
                                 <Grid item size={4.5}>
                                     <Typography variant="subtitle2" fontWeight="bold" >ชื่อ</Typography>
@@ -699,7 +847,8 @@ const PersonalDetail = (props) => {
                                         size="small"
                                         placeholder="กรุณากรอกชื่อ"
                                         value={openDetail?.name}
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("name", e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item size={4.5}>
@@ -709,7 +858,8 @@ const PersonalDetail = (props) => {
                                         placeholder="กรุณากรอกนามสกุล"
                                         size="small"
                                         value={openDetail?.lastname}
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("lastname", e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item size={3}>
@@ -719,7 +869,8 @@ const PersonalDetail = (props) => {
                                         size="small"
                                         placeholder="ชื่อเล่น"
                                         value={openDetail?.nickname}
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("nickname", e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item size={9}>
@@ -729,7 +880,8 @@ const PersonalDetail = (props) => {
                                         size="small"
                                         placeholder="รหัสประจำตัวประชาชน"
                                         value={openDetail?.citizencode}
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("citizencode", e.target.value)}
                                     />
                                 </Grid>
                                 {/* <Grid item size={3}>
@@ -742,7 +894,7 @@ const PersonalDetail = (props) => {
                                                 ? openDetail.employname.split(" (")[1].replace(")", "")
                                                 : ""
                                         }
-                                        disabled
+                                        disabled={!check}
                                     />
                                 </Grid>
 
@@ -754,18 +906,24 @@ const PersonalDetail = (props) => {
                                         value={
                                             openDetail?.employname?.split(" (")[0] || ""
                                         }
-                                        disabled
+                                        disabled={!check}
                                     />
                                 </Grid> */}
-                                <Grid item size={12}>
-                                    <Typography variant="subtitle2" fontWeight="bold">ตำแหน่ง</Typography>
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        value={openDetail?.position}
-                                        disabled
-                                    />
-                                </Grid>
+                                {
+                                    !check &&
+                                    (
+                                        <Grid item size={12}>
+                                            <Typography variant="subtitle2" fontWeight="bold">ตำแหน่ง</Typography>
+                                            <TextField
+                                                fullWidth
+                                                size="small"
+                                                value={openDetail?.position}
+                                                disabled={!check}
+                                                onChange={(e) => handleDetailChange("position", e.target.value)}
+                                            />
+                                        </Grid>
+                                    )
+                                }
 
                                 <Grid item size={12}>
                                     <Typography variant="subtitle2" fontWeight="bold" >เพศ</Typography>
@@ -778,8 +936,10 @@ const PersonalDetail = (props) => {
                                                 borderRadius: 2,
                                                 display: "flex",
                                                 justifyContent: "center",
-                                                alignItems: "center"
+                                                alignItems: "center",
+                                                cursor: check ? "pointer" : "default"
                                             }}
+                                            onClick={() => handleDetailChange("sex", true)}
                                         //onClick={() => setOpenSex(true)}
                                         >
                                             <Typography variant="h4" fontWeight="bold" color={openDetail?.sex !== "หญิง" ? "white" : "textDisabled"} gutterBottom>ชาย</Typography>
@@ -794,8 +954,10 @@ const PersonalDetail = (props) => {
                                                 borderRadius: 2,
                                                 display: "flex",
                                                 justifyContent: "center",
-                                                alignItems: "center"
+                                                alignItems: "center",
+                                                cursor: check ? "pointer" : "default"
                                             }}
+                                            onClick={() => handleDetailChange("sex", false)}
                                         // onClick={() => setOpenSex(false)}
                                         >
                                             <Typography variant="h4" fontWeight="bold" color={openDetail?.sex !== "หญิง" ? "textDisabled" : "white"} gutterBottom>หญิง</Typography>
@@ -809,34 +971,29 @@ const PersonalDetail = (props) => {
                                 </Grid>
                                 <Grid item size={12}>
                                     <Typography variant="subtitle2" fontWeight="bold" >สถานภาพทางการทหาร</Typography>
-                                    {/* <TextField
+                                    <TextField
                                         select
                                         fullWidth
                                         size="small"
-                                        value={militaryStatus}
+                                        value={openDetail?.militaryStatus}
+                                        disabled={!check}
                                         SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
-                                        onChange={(e) => setMilitaryStatus(e.target.value)}
+                                        onChange={(e) => handleDetailChange("militaryStatus", e.target.value)}
                                     >
-                                        <MenuItem value="ผ่านการเกณฑ์แล้ว">ผ่านการเกณฑ์แล้ว</MenuItem>
+                                        <MenuItem value="ผ่านเกณฑ์แล้ว">ผ่านการเกณฑ์แล้ว</MenuItem>
                                         <MenuItem value="ได้รับการยกเว้น">ได้รับการยกเว้น</MenuItem>
                                         <MenuItem value="ยังไม่ได้เกณฑ์">ยังไม่ได้เกณฑ์</MenuItem>
-                                    </TextField> */}
-                                    <TextField
-                                        fullWidth
-                                        size="small"
-                                        value={openDetail?.militaryStatus}
-                                        disabled
-                                    // onChange={(e) => setHeight(e.target.value)}
-                                    />
+                                    </TextField>
                                 </Grid>
-                                {/* <Grid item size={12}>
+                                <Grid item size={12}>
                                     <Typography variant="subtitle2" fontWeight="bold" >กรอกข้อมูลวันเกิด</Typography>
                                     <ThaiDateSelector
                                         label="วันเกิด"
-                                        value={birthDate}
-                                        onChange={(val) => setBirthDate(val)}
+                                        value={openDetail?.birthDate}
+                                        onChange={(val) => handleDetailChange("birthDate", val)}
+                                        disabled={!check}
                                     />
-                                </Grid> */}
+                                </Grid>
                                 <Grid item size={6}>
                                     <Typography variant="subtitle2" fontWeight="bold" >สัญชาติ</Typography>
                                     <TextField
@@ -845,7 +1002,8 @@ const PersonalDetail = (props) => {
                                         value={openDetail?.nationality}
                                         // onChange={(e) => setNationality(e.target.value)}
                                         placeholder="กรุณากรอกสัญชาติ"
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("nationality", e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item size={6}>
@@ -856,7 +1014,8 @@ const PersonalDetail = (props) => {
                                         value={openDetail?.religion}
                                         // onChange={(e) => setReligion(e.target.value)}
                                         placeholder="กรุณากรอกศาสนา"
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("religion", e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item size={6}>
@@ -867,7 +1026,8 @@ const PersonalDetail = (props) => {
                                         value={openDetail?.weight}
                                         // onChange={(e) => setWeight(e.target.value)}
                                         placeholder="กรุณากรอกน้ำหนัก"
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("weight", e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item size={6}>
@@ -878,32 +1038,27 @@ const PersonalDetail = (props) => {
                                         value={openDetail?.height}
                                         // onChange={(e) => setHeight(e.target.value)}
                                         placeholder="กรุณากรอกส่วนสูง"
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("height", e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item size={12}>
                                     <Typography variant="subtitle2" fontWeight="bold" >สถานภาพ</Typography>
                                     <TextField
-                                        fullWidth
-                                        size="small"
-                                        value={openDetail?.statusEmployee}
-                                        disabled
-                                    // onChange={(e) => setHeight(e.target.value)}
-                                    />
-                                    {/* <TextField
                                         select
                                         fullWidth
                                         size="small"
-                                        value={statusEmployee}
+                                        value={openDetail?.statusEmployee}
+                                        disabled={!check}
                                         SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
-                                        onChange={(e) => setStatusEmployee(e.target.value)}
+                                        onChange={(e) => handleDetailChange("statusEmployee", e.target.value)}
                                     >
-                                        {
-                                            statuss.map((row, index) => (
-                                                <MenuItem key={index} value={`${row.label}`}>{row.label}</MenuItem>
-                                            ))
-                                        }
-                                    </TextField> */}
+                                        {statuss.map((option) => (
+                                            <MenuItem key={option.value} value={option.label}>
+                                                {option.label}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
                                 </Grid>
                                 <Grid item size={6}>
                                     <Typography variant="subtitle2" fontWeight="bold" >เบอร์โทรศัพท์</Typography>
@@ -913,7 +1068,8 @@ const PersonalDetail = (props) => {
                                         value={openDetail?.phone}
                                         // onChange={(e) => setPhone(e.target.value)}
                                         placeholder="กรุณากรอกเบอร์โทรศัพท์"
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("phone", e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item size={6}>
@@ -924,7 +1080,8 @@ const PersonalDetail = (props) => {
                                         value={openDetail?.homePhone}
                                         // onChange={(e) => setHomePhone(e.target.value)}
                                         placeholder="กรุณากรอกเบอร์โทรศัพท์บ้าน"
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("homephone", e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item size={12}>
@@ -935,7 +1092,8 @@ const PersonalDetail = (props) => {
                                         value={openDetail?.lineID}
                                         //onChange={(e) => setLineID(e.target.value)}
                                         placeholder="กรุณากรอก LINE ID"
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("lineID", e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item size={12}>
@@ -946,7 +1104,8 @@ const PersonalDetail = (props) => {
                                         value={openDetail?.country}
                                         //onChange={(e) => setCountry(e.target.value)}
                                         placeholder="กรุณากรอกประเทศ"
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("country", e.target.value)}
                                     />
                                 </Grid>
                                 <Grid item size={12}>
@@ -958,7 +1117,7 @@ const PersonalDetail = (props) => {
                                         multiline
                                         rows={3}
                                         fullWidth
-                                        disabled
+                                        disabled={!check}
                                     />
                                 </Grid>
                                 <Grid item size={12}>
@@ -967,20 +1126,50 @@ const PersonalDetail = (props) => {
                                         thailand={thailand}
                                         value={openDetail}
                                         placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(val) => handleDetailChange("address", val)}
                                     //onChange={(val) => setAddress(val)}
                                     />
                                 </Grid>
+                                <Grid item size={12}>
+                                    <Divider />
+                                </Grid>
+                                {/* <Grid item size={12} textAlign="center" sx={{ bottom: 0, backgroundColor: "white" }}>
+                                    {
+                                        !check ?
+                                            <Button variant="outlined" color="warning" size="small" onClick={() => setCheck(true)}>
+                                                แก้ไขข้อมูล
+                                            </Button>
+                                            :
+                                            <React.Fragment>
+                                                <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                                    ยกเลิก
+                                                </Button>
+                                                <Button variant="contained" color="success" size="small" onClick={handleUpdate}>
+                                                    บันทึก
+                                                </Button>
+                                            </React.Fragment>
+                                    }
+                                </Grid> */}
                             </Grid>
                         </DialogContent>
-                        {/* <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
-                            <Button variant="contained" color="error" onClick={() => setOpenDetail({})}>
-                                ยกเลิก
-                            </Button>
-                            <Button variant="contained" color="success" onClick={() => setOpenDetail({})}>
-                                บันทึก
-                            </Button>
-                        </DialogActions> */}
+                        <DialogActions sx={{ borderTop: `1px solid ${theme.palette.primary.dark}`, display: "flex", alignItems: "center", justifyContent: "center", height: "55px" }}>
+                            {
+                                !check ?
+                                    <Button variant="contained" color="warning" size="small" onClick={() => setCheck(true)}>
+                                        แก้ไขข้อมูล
+                                    </Button>
+                                    :
+                                    <React.Fragment>
+                                        <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                            ยกเลิก
+                                        </Button>
+                                        <Button variant="contained" color="success" size="small" onClick={handleUpdate}>
+                                            บันทึก
+                                        </Button>
+                                    </React.Fragment>
+                            }
+                        </DialogActions>
                     </Dialog>
                 )
             }

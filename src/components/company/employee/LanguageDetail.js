@@ -34,7 +34,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { database } from "../../../server/firebase";
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 
 const LanguageDetail = (props) => {
     const { menu, data } = props;
@@ -44,6 +44,7 @@ const LanguageDetail = (props) => {
     const companyId = companyName?.split(":")[0];
 
     const [edit, setEdit] = useState("");
+    const [check, setCheck] = useState(false);
 
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
@@ -435,7 +436,7 @@ const LanguageDetail = (props) => {
                                             ? openDetail.employname.split(" (")[1].replace(")", "")
                                             : ""
                                     }
-                                    disabled
+                                    disabled={check ? false : true}
                                 />
                             </Grid>
 
@@ -447,7 +448,7 @@ const LanguageDetail = (props) => {
                                     value={
                                         openDetail?.employname?.split(" (")[0] || ""
                                     }
-                                    disabled
+                                    disabled={check ? false : true}
                                 />
                             </Grid>
 
@@ -457,7 +458,7 @@ const LanguageDetail = (props) => {
                                     fullWidth
                                     size="small"
                                     value={openDetail?.position}
-                                    disabled
+                                    disabled={check ? false : true}
                                 />
                             </Grid>
 
@@ -481,6 +482,7 @@ const LanguageDetail = (props) => {
                                                     variant="outlined"
                                                     size="small"
                                                     color="error"
+                                                    disabled={check ? false : true}
                                                 //onClick={() => handleRemove(index)}
                                                 >
                                                     ลบ
@@ -493,7 +495,7 @@ const LanguageDetail = (props) => {
                                                 fullWidth
                                                 size="small"
                                                 value={row.language}
-                                                disabled
+                                                disabled={check ? false : true}
                                             // onChange={(e) =>
                                             //     handleLanguageChange(index, "language", e.target.value)
                                             // }
@@ -530,7 +532,7 @@ const LanguageDetail = (props) => {
                                                         fullWidth
                                                         size="small"
                                                         value={row.speak}
-                                                        disabled
+                                                        disabled={check ? false : true}
                                                     // onChange={(e) => handleLanguageChange(index, "speaking", e.target.value)}
                                                     // placeholder="กรุณากรอกความสามารถในการพูด"
                                                     />
@@ -543,7 +545,7 @@ const LanguageDetail = (props) => {
                                                         fullWidth
                                                         size="small"
                                                         value={row.read}
-                                                        disabled
+                                                        disabled={check ? false : true}
                                                     // onChange={(e) => handleLanguageChange(index, "reading", e.target.value)}
                                                     // placeholder="กรุณากรอกความสามารถในการอ่าน"
                                                     />
@@ -557,7 +559,7 @@ const LanguageDetail = (props) => {
                                                         fullWidth
                                                         size="small"
                                                         value={row.write}
-                                                        disabled
+                                                        disabled={check ? false : true}
                                                     // onChange={(e) => handleLanguageChange(index, "writing", e.target.value)}
                                                     // placeholder="กรุณากรอกความสามารถในการเขียน"
                                                     />
@@ -568,8 +570,42 @@ const LanguageDetail = (props) => {
                                         <Grid item size={12}><Divider sx={{ mt: 1 }} /></Grid>
                                     </React.Fragment>
                                 ))}
+                            {/* <Grid item size={12} textAlign="center">
+                                {
+                                    !check ?
+                                        <Button variant="outlined" color="warning" size="small" onClick={() => setCheck(true)}>
+                                            แก้ไขข้อมูล
+                                        </Button>
+                                        :
+                                        <React.Fragment>
+                                            <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                                ยกเลิก
+                                            </Button>
+                                            <Button variant="contained" color="success" size="small" onClick={() => setCheck(false)}>
+                                                บันทึก
+                                            </Button>
+                                        </React.Fragment>
+                                }
+                            </Grid> */}
                         </Grid>
                     </DialogContent>
+                    <DialogActions sx={{ borderTop: `1px solid ${theme.palette.primary.dark}`, display: "flex", alignItems: "center", justifyContent: "center", height: "55px" }}>
+                        {
+                            !check ?
+                                <Button variant="contained" color="warning" size="small" onClick={() => setCheck(true)}>
+                                    แก้ไขข้อมูล
+                                </Button>
+                                :
+                                <React.Fragment>
+                                    <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                        ยกเลิก
+                                    </Button>
+                                    <Button variant="contained" color="success" size="small">
+                                        บันทึก
+                                    </Button>
+                                </React.Fragment>
+                        }
+                    </DialogActions>
                 </Dialog>
             )}
         </Box>

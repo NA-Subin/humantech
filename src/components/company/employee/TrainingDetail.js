@@ -34,7 +34,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import dayjs from "dayjs";
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { database } from "../../../server/firebase";
 import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
 import ThaiDateSelector from "../../../theme/ThaiDateSelector";
@@ -45,6 +45,7 @@ const TrainingDetail = (props) => {
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
+    const [check, setCheck] = useState(false);
 
     const [edit, setEdit] = useState("");
     const [openDetail, setOpenDetail] = useState("");
@@ -526,7 +527,7 @@ const TrainingDetail = (props) => {
                                             ? openDetail.employname.split(" (")[1].replace(")", "")
                                             : ""
                                     }
-                                    disabled
+                                    disabled={check ? false : true}
                                 />
                             </Grid>
 
@@ -538,7 +539,7 @@ const TrainingDetail = (props) => {
                                     value={
                                         openDetail?.employname?.split(" (")[0] || ""
                                     }
-                                    disabled
+                                    disabled={check ? false : true}
                                 />
                             </Grid>
 
@@ -548,7 +549,7 @@ const TrainingDetail = (props) => {
                                     fullWidth
                                     size="small"
                                     value={openDetail?.position}
-                                    disabled
+                                    disabled={check ? false : true}
                                 />
                             </Grid>
 
@@ -572,6 +573,7 @@ const TrainingDetail = (props) => {
                                                     variant="outlined"
                                                     size="small"
                                                     color="error"
+                                                    disabled={check ? false : true}
                                                 //onClick={() => handleRemove(index)}
                                                 >
                                                     ลบ
@@ -583,7 +585,7 @@ const TrainingDetail = (props) => {
                                             <ThaiDateSelector
                                                 label="เริ่มตั้งแต่วันที่"
                                                 value={toDateObject(row.dateStart)}
-                                                disabled
+                                                disabled={check ? false : true}
                                             // onChange={(val) =>
                                             //     handleTrainingChange(index, "dateStart", val)
                                             // }
@@ -593,7 +595,7 @@ const TrainingDetail = (props) => {
                                             <ThaiDateSelector
                                                 label="จนถึง"
                                                 value={toDateObject(row.dateEnd)}
-                                                disabled
+                                                disabled={check ? false : true}
                                             // onChange={(val) =>
                                             //     handleTrainingChange(index, "dateEnd", val)
                                             // }
@@ -605,7 +607,7 @@ const TrainingDetail = (props) => {
                                                 fullWidth
                                                 size="small"
                                                 value={row.institution}
-                                                disabled
+                                                disabled={check ? false : true}
                                                 // onChange={(e) =>
                                                 //     handleTrainingChange(index, "institution", e.target.value)
                                                 // }
@@ -618,7 +620,7 @@ const TrainingDetail = (props) => {
                                                 fullWidth
                                                 size="small"
                                                 value={row.course}
-                                                disabled
+                                                disabled={check ? false : true}
                                                 // onChange={(e) =>
                                                 //     handleTrainingChange(index, "course", e.target.value)
                                                 // }
@@ -630,8 +632,42 @@ const TrainingDetail = (props) => {
                                         </Grid>
                                     </React.Fragment>
                                 ))}
+                            {/* <Grid item size={12} textAlign="center">
+                                {
+                                    !check ?
+                                        <Button variant="outlined" color="warning" size="small" onClick={() => setCheck(true)}>
+                                            แก้ไขข้อมูล
+                                        </Button>
+                                        :
+                                        <React.Fragment>
+                                            <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                                ยกเลิก
+                                            </Button>
+                                            <Button variant="contained" color="success" size="small" onClick={() => setCheck(false)}>
+                                                บันทึก
+                                            </Button>
+                                        </React.Fragment>
+                                }
+                            </Grid> */}
                         </Grid>
                     </DialogContent>
+                    <DialogActions sx={{ borderTop: `1px solid ${theme.palette.primary.dark}`, display: "flex", alignItems: "center", justifyContent: "center", height: "55px" }}>
+                        {
+                            !check ?
+                                <Button variant="contained" color="warning" size="small" onClick={() => setCheck(true)}>
+                                    แก้ไขข้อมูล
+                                </Button>
+                                :
+                                <React.Fragment>
+                                    <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                        ยกเลิก
+                                    </Button>
+                                    <Button variant="contained" color="success" size="small">
+                                        บันทึก
+                                    </Button>
+                                </React.Fragment>
+                        }
+                    </DialogActions>
                 </Dialog>
             )}
         </Box>

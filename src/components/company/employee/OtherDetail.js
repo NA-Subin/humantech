@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use } from "react";
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update } from "firebase/database";
 import '../../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -33,7 +33,7 @@ import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 
 const OtherDetail = (props) => {
     const { menu, data } = props;
@@ -41,6 +41,7 @@ const OtherDetail = (props) => {
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
+    const [check, setCheck] = useState(false);
 
     const [edit, setEdit] = useState("");
 
@@ -51,6 +52,7 @@ const OtherDetail = (props) => {
     //const [other, setother] = useState([]); // จะถูกกรองจาก allEmployees
 
     const other = employees.map(emp => ({
+        ID: emp.ID,
         employeecode: emp.employeecode,
         employname: `${emp.employname} (${emp.nickname})`,
         position: emp.position.split("-")[1],
@@ -169,6 +171,47 @@ const OtherDetail = (props) => {
             .catch((error) => {
                 ShowError("เกิดข้อผิดพลาดในการบันทึก");
                 console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+            });
+    };
+
+    console.log("openDetail : ", openDetail?.ID);
+
+    const handleDetailChange = (field, value) => {
+        setOpenDetail(prev => ({
+            ...prev,
+            [field]: value,
+        }));
+    };
+
+    const handleUpdate = () => {
+        if (openDetail?.ID === undefined || openDetail?.ID === null) {
+            return ShowError("ไม่พบข้อมูลพนักงาน");
+        }
+
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${openDetail.ID}`);
+
+        const data = {
+            specialAbilities1: openDetail?.specialAbilities1,
+            specialAbilities2: openDetail?.specialAbilities2,
+            specialAbilities3: openDetail?.specialAbilities3,
+            printingSpeedTH: openDetail?.printingSpeedTH,
+            printingSpeedENG: openDetail?.printingSpeedENG,
+            otherProjects: openDetail?.otherProjects,
+            referencePerson: openDetail?.referencePerson
+        };
+
+        update(companiesRef, {
+            specialAbilities: data  // ✅ แก้พิมพ์ผิด
+        })
+            .then(() => {
+                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                setEdit(false);
+                setCheck(false);
+                setOpenDetail({});
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error(error);
             });
     };
 
@@ -339,7 +382,7 @@ const OtherDetail = (props) => {
                         >
                             <Grid container spacing={2}>
                                 <Grid item size={10}>
-                                    <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลทั่วไป</Typography>
+                                    <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลอื่นๆ</Typography>
                                 </Grid>
                                 <Grid item size={2} sx={{ textAlign: "right" }}>
                                     <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpenDetail({})}>
@@ -393,6 +436,9 @@ const OtherDetail = (props) => {
                                     />
                                 </Grid>
                                 <Grid item size={12}>
+                                    <Divider sx={{ marginTop: 1 }} />
+                                </Grid>
+                                <Grid item size={12}>
                                     <Typography variant="subtitle2" fontWeight="bold" >ความสามารถพิเศษ</Typography>
                                     <Grid container spacing={1}>
                                         <Grid item size={1}>
@@ -403,7 +449,8 @@ const OtherDetail = (props) => {
                                                 fullWidth
                                                 size="small"
                                                 value={openDetail?.specialAbilities1}
-                                                disabled
+                                                disabled={!check}
+                                                onChange={(e) => handleDetailChange("specialAbilities1", e.target.value)}
                                             // onChange={(e) => setSpecialAbilities1(e.target.value)}
                                             // placeholder="กรุณากรอกความสามารถเฉพาะทาง"
                                             />
@@ -416,7 +463,8 @@ const OtherDetail = (props) => {
                                                 fullWidth
                                                 size="small"
                                                 value={openDetail?.specialAbilities2}
-                                                disabled
+                                                disabled={!check}
+                                                onChange={(e) => handleDetailChange("specialAbilities2", e.target.value)}
                                             // onChange={(e) => setSpecialAbilities2(e.target.value)}
                                             // placeholder="กรุณากรอกความสามารถเฉพาะทาง"
                                             />
@@ -429,7 +477,8 @@ const OtherDetail = (props) => {
                                                 fullWidth
                                                 size="small"
                                                 value={openDetail?.specialAbilities3}
-                                                disabled
+                                                disabled={!check}
+                                                onChange={(e) => handleDetailChange("specialAbilities3", e.target.value)}
                                             // onChange={(e) => setSpecialAbilities3(e.target.value)}
                                             // placeholder="กรุณากรอกความสามารถเฉพาะทาง"
                                             />
@@ -451,7 +500,8 @@ const OtherDetail = (props) => {
                                                         fullWidth
                                                         size="small"
                                                         value={openDetail?.printingSpeedTH}
-                                                        disabled
+                                                        disabled={!check}
+                                                        onChange={(e) => handleDetailChange("printingSpeedTH", e.target.value)}
                                                     // onChange={(e) => setPrintingSpeedTH(e.target.value)}
                                                     // placeholder="กรุณากรอกความเร็วในการพิมพ์ภาษาไทย"
                                                     />
@@ -462,7 +512,8 @@ const OtherDetail = (props) => {
                                                         fullWidth
                                                         size="small"
                                                         value={openDetail?.printingSpeedENG}
-                                                        disabled
+                                                        disabled={!check}
+                                                        onChange={(e) => handleDetailChange("printingSpeedENG", e.target.value)}
                                                     // onChange={(e) => setPrintingSpeedENG(e.target.value)}
                                                     // placeholder="กรุณากรอกความเร็วในการพิมพ์ภาษาอังกฤษ"
                                                     />
@@ -475,11 +526,12 @@ const OtherDetail = (props) => {
                                                 type="text"
                                                 size="small"
                                                 value={openDetail?.otherProjects}
+                                                onChange={(e) => handleDetailChange("otherProjects", e.target.value)}
                                                 // onChange={(e) => setOtherProject(e.target.value)}
                                                 multiline
                                                 rows={3}
                                                 fullWidth
-                                                disabled
+                                                disabled={!check}
                                             // placeholder="กรุณากรอกโครงการ ผลงาน และประสบการณ์อื่นๆ"
                                             />
                                         </Grid>
@@ -489,26 +541,56 @@ const OtherDetail = (props) => {
                                                 type="text"
                                                 size="small"
                                                 value={openDetail?.referencePerson}
+                                                onChange={(e) => handleDetailChange("referencePerson", e.target.value)}
                                                 // onChange={(e) => setReferencePerson(e.target.value)}
                                                 multiline
                                                 rows={3}
                                                 fullWidth
-                                                disabled
+                                                disabled={!check}
                                             // placeholder="กรุณากรอกชื่อบุคคลอ้างอิง"
                                             />
                                         </Grid>
                                     </Grid>
                                 </Grid>
+                                <Grid item size={12}>
+                                    <Divider sx={{ marginTop: 1 }} />
+                                </Grid>
+                                {/* <Grid item size={12} textAlign="center">
+                                    {
+                                        !check ?
+                                            <Button variant="outlined" color="warning" size="small" onClick={() => setCheck(true)}>
+                                                แก้ไขข้อมูล
+                                            </Button>
+                                            :
+                                            <React.Fragment>
+                                                <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                                    ยกเลิก
+                                                </Button>
+                                                <Button variant="contained" color="success" size="small" onClick={() => setCheck(false)}>
+                                                    บันทึก
+                                                </Button>
+                                            </React.Fragment>
+                                    }
+                                </Grid> */}
                             </Grid>
                         </DialogContent>
-                        {/* <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
-                            <Button variant="contained" color="error" onClick={() => setOpenDetail({})}>
-                                ยกเลิก
-                            </Button>
-                            <Button variant="contained" color="success" onClick={() => setOpenDetail({})}>
-                                บันทึก
-                            </Button>
-                        </DialogActions> */}
+                        <DialogActions sx={{ borderTop: `1px solid ${theme.palette.primary.dark}`, display: "flex", alignItems: "center", justifyContent: "center", height: "55px" }}>
+                            {
+                                !check ?
+                                    <Button variant="contained" color="warning" size="small" onClick={() => setCheck(true)}>
+                                        แก้ไขข้อมูล
+                                    </Button>
+                                    :
+                                    <React.Fragment>
+                                        <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                            ยกเลิก
+                                        </Button>
+                                        <Button variant="contained" color="success" size="small" onClick={handleUpdate}>
+                                            บันทึก
+                                        </Button>
+                                    </React.Fragment>
+                            }
+                        </DialogActions>
                     </Dialog>
                 )
             }

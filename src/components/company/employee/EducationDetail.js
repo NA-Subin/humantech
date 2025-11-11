@@ -33,7 +33,7 @@ import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 
 const EducationDetail = (props) => {
     const { menu, data } = props;
@@ -42,6 +42,7 @@ const EducationDetail = (props) => {
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
+    const [check, setCheck] = useState(false);
 
     const [edit, setEdit] = useState("");
 
@@ -52,6 +53,8 @@ const EducationDetail = (props) => {
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
     const educationRows = [];
+
+    console.log("openDetail : ", openDetail);
 
     // const language = employees.map(emp => ({
     //     employname: emp.employname,
@@ -472,7 +475,7 @@ const EducationDetail = (props) => {
                                             ? openDetail.employname.split(" (")[1].replace(")", "")
                                             : ""
                                     }
-                                    disabled
+                                    disabled={check ? false : true}
                                 />
                             </Grid>
 
@@ -484,7 +487,7 @@ const EducationDetail = (props) => {
                                     value={
                                         openDetail?.employname?.split(" (")[0] || ""
                                     }
-                                    disabled
+                                    disabled={check ? false : true}
                                 />
                             </Grid>
 
@@ -494,7 +497,7 @@ const EducationDetail = (props) => {
                                     fullWidth
                                     size="small"
                                     value={openDetail?.position}
-                                    disabled
+                                    disabled={check ? false : true}
                                 />
                             </Grid>
 
@@ -518,6 +521,7 @@ const EducationDetail = (props) => {
                                                     variant="outlined"
                                                     size="small"
                                                     color="error"
+                                                    disabled={check ? false : true}
                                                 //onClick={() => handleRemove(index)}
                                                 >
                                                     ลบ
@@ -537,7 +541,8 @@ const EducationDetail = (props) => {
                                                         borderRadius: 2,
                                                         display: "flex",
                                                         justifyContent: "center",
-                                                        alignItems: "center"
+                                                        alignItems: "center",
+                                                        cursor: check ? "pointer" : "default"
                                                     }}
                                                 //onClick={() => (handleChange(index, "education", "จบการศึกษา"), setEducation(true))}
                                                 //onClick={() => setEducation(true)}
@@ -554,7 +559,8 @@ const EducationDetail = (props) => {
                                                         borderRadius: 2,
                                                         display: "flex",
                                                         justifyContent: "center",
-                                                        alignItems: "center"
+                                                        alignItems: "center",
+                                                        cursor: check ? "pointer" : "default"
                                                     }}
                                                 //onClick={() => (handleChange(index, "education", "กำลังศึกษาอยู่"), setEducation(false))}
                                                 >
@@ -575,7 +581,7 @@ const EducationDetail = (props) => {
                                                 fullWidth
                                                 size="small"
                                                 value={row.educationLevel}
-                                                disabled
+                                                disabled={check ? false : true}
                                             // onChange={(e) =>
                                             //     handleChange(index, "institution", e.target.value)
                                             // }
@@ -610,7 +616,7 @@ const EducationDetail = (props) => {
                                                             size="small"
                                                             value={row.institution}
                                                             placeholder="กรุณากรอกสถานศึกษา"
-                                                            disabled
+                                                            disabled={check ? false : true}
                                                         // onChange={(e) =>
                                                         //     handleChange(index, "institution", e.target.value)
                                                         // }
@@ -628,7 +634,7 @@ const EducationDetail = (props) => {
                                                             size="small"
                                                             placeholder="กรุณากรอกสถานศึกษา"
                                                             value={row.institution}
-                                                            disabled
+                                                            disabled={check ? false : true}
                                                         // onChange={(e) =>
                                                         //     handleChange(index, "institution", e.target.value)
                                                         // }
@@ -640,7 +646,7 @@ const EducationDetail = (props) => {
                                                             fullWidth
                                                             size="small"
                                                             value={row.educationCategory}
-                                                            disabled
+                                                            disabled={check ? false : true}
                                                         // onChange={(e) =>
                                                         //     handleChange(index, "institution", e.target.value)
                                                         // }
@@ -669,7 +675,7 @@ const EducationDetail = (props) => {
                                                             fullWidth
                                                             size="small"
                                                             value={row.faculty}
-                                                            disabled
+                                                            disabled={check ? false : true}
                                                             // onChange={(e) =>
                                                             //     handleChange(index, "faculty", e.target.value)
                                                             // }
@@ -682,7 +688,7 @@ const EducationDetail = (props) => {
                                                             fullWidth
                                                             size="small"
                                                             value={row.branch}
-                                                            disabled
+                                                            disabled={check ? false : true}
                                                             // onChange={(e) =>
                                                             //     handleChange(index, "branch", e.target.value)
                                                             // }
@@ -695,7 +701,7 @@ const EducationDetail = (props) => {
                                                             fullWidth
                                                             size="small"
                                                             value={row.degree}
-                                                            disabled
+                                                            disabled={check ? false : true}
                                                             // onChange={(e) =>
                                                             //     handleChange(index, "degree", e.target.value)
                                                             // }
@@ -713,7 +719,7 @@ const EducationDetail = (props) => {
                                                 size="small"
                                                 value={row.graduateYear}
                                                 placeholder="กรุณากรอกปีที่สำเร็จการศึกษา"
-                                                disabled
+                                                disabled={check ? false : true}
                                             // onChange={(e) =>
                                             //     handleChange(index, "graduateYear", e.target.value)
                                             // }
@@ -729,7 +735,7 @@ const EducationDetail = (props) => {
                                                 size="small"
                                                 value={row.gpa}
                                                 placeholder="กรุณากรอกเกรดเฉลี่ย"
-                                                disabled
+                                                disabled={check ? false : true}
                                             // onChange={(e) =>
                                             //     handleChange(index, "gpa", e.target.value)
                                             // }
@@ -740,8 +746,45 @@ const EducationDetail = (props) => {
                                         </Grid>
                                     </React.Fragment>
                                 ))}
+                            <Grid item size={12}>
+                                <Divider />
+                            </Grid>
+                            {/* <Grid item size={12} textAlign="center">
+                                {
+                                    !check ?
+                                        <Button variant="outlined" color="warning" size="small" onClick={() => setCheck(true)}>
+                                            แก้ไขข้อมูล
+                                        </Button>
+                                        :
+                                        <React.Fragment>
+                                            <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                                ยกเลิก
+                                            </Button>
+                                            <Button variant="contained" color="success" size="small" onClick={() => setCheck(false)}>
+                                                บันทึก
+                                            </Button>
+                                        </React.Fragment>
+                                }
+                            </Grid> */}
                         </Grid>
                     </DialogContent>
+                    <DialogActions sx={{ borderTop: `1px solid ${theme.palette.primary.dark}`, display: "flex", alignItems: "center", justifyContent: "center", height: "55px" }}>
+                        {
+                            !check ?
+                                <Button variant="contained" color="warning" size="small" onClick={() => setCheck(true)}>
+                                    แก้ไขข้อมูล
+                                </Button>
+                                :
+                                <React.Fragment>
+                                    <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                        ยกเลิก
+                                    </Button>
+                                    <Button variant="contained" color="success" size="small">
+                                        บันทึก
+                                    </Button>
+                                </React.Fragment>
+                        }
+                    </DialogActions>
                 </Dialog>
             )}
 

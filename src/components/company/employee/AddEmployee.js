@@ -55,6 +55,8 @@ import ThaiDateSelector from "../../../theme/ThaiDateSelector";
 import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
 import { database } from "../../../server/firebase";
 import FileUploadCard from "../../../theme/FileUploadCard";
+import logo from "../../../img/LogoShort.png";
+import none from "../../../img/none.png";
 
 // const Transition = React.forwardRef(function Transition(
 //     props: TransitionProps & { children: React.ReactElement },
@@ -79,6 +81,9 @@ const AddEmployee = () => {
     const [salary, setSalary] = React.useState("")
 
     const prefixes = ["นาย", "นาง", "นางสาว", "ดร.", "ศ.", "คุณ"];
+
+    const [employeeImage, setEmployeeImage] = React.useState(null);
+    const [file, setFile] = React.useState(false);
 
     const [citizencode, setCitizencode] = React.useState("");
     const [prefix, setPrefix] = React.useState("");
@@ -751,10 +756,16 @@ const AddEmployee = () => {
     const handleSave = async () => {
         if (!companyName.trim() || !firebaseDB) return;
 
+        if (!employeeImage) {
+            ShowWarning("กรุณาเลือกรูปภาพก่อนบันทึก");
+            return;
+        }
+
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
         const groupsRef = ref(firebaseDB, "workgroup");
         const companyRef = ref(firebaseDB, `workgroup/company/${companyId}`);
 
+        let path = "";
         let backendId = "";
         let backendGroupID = "";
         let backendCompanyID = "";
@@ -796,6 +807,32 @@ const AddEmployee = () => {
             return;
         }
 
+        try {
+            const formData = new FormData();
+            formData.append("image", employeeImage); // key ต้องตรงกับ backend
+
+            const response = await fetch(
+                `https://upload.happysoftth.com/humantech/${backendGroupID}/${backendCompanyID}/${backendId}/upload`,
+                {
+                    method: "POST",
+                    body: formData, // ✅ ใช้ FormData แทน JSON
+                }
+            );
+
+            if (!response.ok) {
+                const text = await response.text();
+                console.error("Backend error response:", text);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            path = data.path;
+        } catch (error) {
+            console.error("Error post image to backend:", error);
+            alert("เกิดข้อผิดพลาดขณะอัปโหลดรูปภาพ");
+            return;
+        }
+
         // console.log("backendGroupID : ", backendGroupID);
         // console.log("backendCompanyID : ", backendCompanyID);
 
@@ -807,7 +844,9 @@ const AddEmployee = () => {
             await set(child(employeeRef, String(nextIndex)), {
                 ID: nextIndex,
                 employeecode: employeeCode,
+                username: employeeCode,
                 password: "1234567",
+                faceverify: `http://${path}`,
                 nickname: nickname,
                 employeeid: nextIndex,
                 employmenttype: `${type.ID}-${type.name}`,
@@ -1112,6 +1151,152 @@ const AddEmployee = () => {
             ),
         },
         {
+            title: "เพิ่มรูปภาพ",
+            content: (
+                <>
+                    <Grid container spacing={2} marginTop={4}>
+                        <Grid item size={12} textAlign="center">
+                            <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: -1 }}>รูปภาพของพนักงาน</Typography>
+                        </Grid>
+                        <Grid item size={12} sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+                            <Box
+                                sx={{
+                                    position: "relative",
+                                    width: 250,
+                                    height: 250,
+                                    borderRadius: 50,
+                                    backgroundColor: theme.palette.primary.light,
+                                    border: `10px solid ${theme.palette.primary.light}`,
+                                    overflow: "hidden",
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                }}
+                            >
+                                {
+                                    employeeImage?.type.startsWith("image/") ?
+                                        <img
+                                            src={URL.createObjectURL(employeeImage)}
+                                            alt="preview"
+                                            style={{ height: "100%", borderRadius: 8 }}
+                                        />
+                                        :
+                                        <React.Fragment>
+                                            {/* Logo (รูปหลัก) */}
+                                            <Box
+                                                component="img"
+                                                src={logo}
+                                                sx={{
+                                                    width: "80%",
+                                                    height: "80%",
+                                                    objectFit: "contain",
+                                                    opacity: 0.2,
+                                                }}
+                                            />
+
+                                            {/* รูป X หรือ no-image ซ้อนทับ */}
+                                            {/* <Box
+                                    // component="img"
+                                    // src={none}
+                                    sx={{
+                                        position: "absolute",
+                                        top: 0,
+                                        left: 0,
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "contain",
+                                        opacity: 0.4,
+                                    }}
+                                >
+                                    None
+                                </Box> */}
+                                            <Box
+                                                sx={{
+                                                    position: "absolute",
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: "100%",
+                                                    height: "100%",
+                                                    display: "flex",
+                                                    justifyContent: "center",
+                                                    alignItems: "center",
+                                                    fontSize: 35,
+                                                    fontWeight: "bold",
+                                                    fontStyle: "italic",
+                                                    color: theme.palette.primary.main,
+                                                    opacity: 0.7,
+                                                    userSelect: "ไม่มีรูปภาพ",
+                                                    transform: "rotate(-30deg)", // เอียงได้ตามต้องการ
+                                                }}
+                                            >
+                                                ไม่มีรูปภาพ
+                                            </Box>
+                                        </React.Fragment>
+                                }
+                            </Box>
+                        </Grid>
+                        <Grid item size={12} textAlign="center">
+                            <Divider sx={{ mb: 2 }} />
+                            <Typography variant="subtitle2" fontWeight="bold" sx={{ marginBottom: -1 }}>แนบไฟล์รูปภาพของพนักงาน</Typography>
+                        </Grid>
+                        {/* <FileUploadCard
+                            file={vehicleCar}
+                            label="แนบไฟล์รูปภาพของพนักงาน"
+                            type={fileCar}
+                            onTypeChange={(val) => setFileCar(val)}
+                            onFileChange={(file) => setVehicleCar(file)}
+                        /> */}
+                        <Grid item size={3}></Grid>
+                        <Grid item size={6}>
+                            <Button
+                                variant="contained"
+                                component="label"
+                                size="small"
+                                fullWidth
+                                sx={{
+                                    height: "50px",
+                                    backgroundColor: file ? "#29b6f6" : "#eeeeee",
+                                    borderRadius: 2,
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                }}
+                                onClick={(val) => setFile(val)}
+                            >
+                                <Typography
+                                    variant="h6"
+                                    fontSize="22px"
+                                    fontWeight="bold"
+                                    color={file ? "white" : "textDisabled"}
+                                    sx={{ mt: 1 }}
+                                    gutterBottom
+                                >
+                                    กดเพื่อเพิ่มไฟล์
+                                </Typography>
+                                <ImageIcon
+                                    sx={{
+                                        fontSize: 40,
+                                        color: file ? "white" : "lightgray",
+                                        marginLeft: 2,
+                                    }}
+                                />
+                                <input
+                                    type="file"
+                                    hidden
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        const image = e.target.files?.[0];
+                                        if (image) setEmployeeImage(image);
+                                    }}
+                                />
+                            </Button>
+                        </Grid>
+                        <Grid item size={3}></Grid>
+                    </Grid>
+                </>
+            ),
+        },
+        {
             title: "ข้อมูลส่วนบุคคล",
             content: (
                 <>
@@ -1183,7 +1368,8 @@ const AddEmployee = () => {
                                         borderRadius: 2,
                                         display: "flex",
                                         justifyContent: "center",
-                                        alignItems: "center"
+                                        alignItems: "center",
+                                        cursor: "pointer"
                                     }}
                                     onClick={() => setOpenSex(true)}
                                 >
@@ -1199,7 +1385,8 @@ const AddEmployee = () => {
                                         borderRadius: 2,
                                         display: "flex",
                                         justifyContent: "center",
-                                        alignItems: "center"
+                                        alignItems: "center",
+                                        cursor: "pointer"
                                     }}
                                     onClick={() => setOpenSex(false)}
                                 >
@@ -1675,7 +1862,8 @@ const AddEmployee = () => {
                                             borderRadius: 2,
                                             display: "flex",
                                             justifyContent: "center",
-                                            alignItems: "center"
+                                            alignItems: "center",
+                                            cursor: "pointer"
                                         }}
                                         onClick={() => (handleChange(index, "education", "จบการศึกษา"), setEducation(true))}
                                     //onClick={() => setEducation(true)}
@@ -1692,7 +1880,8 @@ const AddEmployee = () => {
                                             borderRadius: 2,
                                             display: "flex",
                                             justifyContent: "center",
-                                            alignItems: "center"
+                                            alignItems: "center",
+                                            cursor: "pointer"
                                         }}
                                         onClick={() => (handleChange(index, "education", "กำลังศึกษาอยู่"), setEducation(false))}
                                     >

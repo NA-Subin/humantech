@@ -79,7 +79,7 @@ const SalaryDetail = (props) => {
     const [documentot, setDocumentOT] = useState([]);
     const [holiday, setHoliday] = useState([]);
     const [employeeTypes, setEmployeeTypes] = useState([]);
-    const [selectedType, setSelectedType] = useState("");
+    const [selectedType, setSelectedType] = useState(0);
 
     console.log("Leave : ", documentleave);
     console.log("OT : ", documentot);
@@ -657,7 +657,11 @@ const SalaryDetail = (props) => {
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
+    const typeCount = (id) =>
+        Rows.filter((t) => Number(t.employeetype?.split("-")[0] ?? 0) === id).length;
+
     console.log("Object.entries(groupedRows) : ", Object.entries(groupedRows));
+    console.log("selectType : ", selectedType);
 
     return (
         <React.Fragment>
@@ -674,7 +678,37 @@ const SalaryDetail = (props) => {
                         >
                             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>ประเภทการจ้างงาน : </Typography>
                             {employeeTypes.map((type) => (
-                                (Rows.filter((t) => Number(t.employeetype.split("-")[0]) === type.ID).length > 0) &&
+                                typeCount(type.ID) > 0 && (
+                                    <Paper key={type.ID} onClick={() => setSelectedType(type.ID)}
+                                        sx={{
+                                            textAlign: "center",
+                                            border: `1px solid ${theme.palette.primary.main}`,
+                                            boxShadow:
+                                                selectedType === type.ID
+                                                    ? "0px 4px 10px rgba(134, 134, 134, 0.63)"
+                                                    : "0px 1px 3px rgba(98, 98, 98, 0.1)",
+                                            borderRadius: "5px",
+                                            pt: 0.5,
+                                            pl: 1,
+                                            pr: 1,
+                                            mt: -0.5,
+                                            cursor: "pointer",
+                                            // transition: "0.2s",
+                                            backgroundColor: selectedType === type.ID ? theme.palette.primary.main : theme.palette.primary.light,
+                                            color: selectedType === type.ID ? "white" : "black",
+                                            "&:hover": {
+                                                borderColor: theme.palette.primary.main,
+                                                boxShadow: "0px 4px 10px rgba(134, 134, 134, 0.63)",
+                                            },
+                                        }}>
+                                        <Typography variant="subtitle2" gutterBottom>
+                                            {`${type.name} ${typeCount(type.ID)} คน`}
+                                        </Typography>
+                                    </Paper>
+                                )
+                            ))}
+                            {/* {employeeTypes.map((type) => (
+                                (Rows.filter((t) => (t.employeetype ? Number(t.employeetype.split("-")[0]) : 0) === type.ID).length > 0) &&
                                 <Paper
                                     key={type.ID}
                                     onClick={() => setSelectedType(type.ID)}
@@ -704,7 +738,7 @@ const SalaryDetail = (props) => {
                                         {`${type.name} ${Rows.filter((t) => Number(t.employeetype.split("-")[0]) === type.ID).length} คน`}
                                     </Typography>
                                 </Paper>
-                            ))}
+                            ))} */}
                         </Box>
                     </Grid>
                     <Grid item size={12}>
@@ -832,7 +866,7 @@ const SalaryDetail = (props) => {
                                                                     </TableRow>
 
                                                                     {/* ✅ รายชื่อพนักงานในตำแหน่ง */}
-                                                                    {empList.map((row, index) => (
+                                                                    {empList.filter((type) => Number(type.employeetype.split("-")[0]) === selectedType).map((row, index) => (
                                                                         <TableRow key={row.employid}>
                                                                             {/* <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell> */}
                                                                             <TableCell sx={{ textAlign: "center" }}>{row.employeecode}</TableCell>

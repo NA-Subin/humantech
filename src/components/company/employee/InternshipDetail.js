@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use } from "react";
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update } from "firebase/database";
 import '../../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -35,7 +35,7 @@ import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import dayjs from "dayjs";
 import { database } from "../../../server/firebase";
-import { Dialog, DialogContent, DialogTitle } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import ThaiDateSelector from "../../../theme/ThaiDateSelector";
 import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
 
@@ -48,6 +48,7 @@ const InternshipDetail = (props) => {
     const [thailand, setThailand] = useState([]);
     const [openDetail, setOpenDetail] = useState({});
     const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
+    const [check, setCheck] = useState(false);
 
     useEffect(() => {
         if (!database) return;
@@ -96,6 +97,7 @@ const InternshipDetail = (props) => {
 
 
     const internship = employees.map(emp => ({
+        ID: emp.ID,
         employeecode: emp.employeecode,
         employname: `${emp.employname} (${emp.nickname})` || '',
         position: emp.position ? emp.position.split("-")[1] ?? emp.position : '',
@@ -286,6 +288,47 @@ const InternshipDetail = (props) => {
             });
     };
 
+    const handleDetailChange = (field, value) => {
+        setOpenDetail(prev => ({
+            ...prev,
+            [field]: value,
+        }));
+    };
+
+    console.log("openDetail : ", openDetail);
+
+    const handleUpdate = () => {
+        if (openDetail?.ID === undefined || openDetail?.ID === null) {
+            return ShowError("ไม่พบข้อมูลพนักงาน");
+        }
+
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${openDetail.ID}`);
+
+        const data = {
+            specialAbilities1: openDetail?.specialAbilities1,
+            specialAbilities2: openDetail?.specialAbilities2,
+            specialAbilities3: openDetail?.specialAbilities3,
+            printingSpeedTH: openDetail?.printingSpeedTH,
+            printingSpeedENG: openDetail?.printingSpeedENG,
+            otherProjects: openDetail?.otherProjects,
+            referencePerson: openDetail?.referencePerson
+        };
+
+        update(companiesRef, {
+            internship: data  // ✅ แก้พิมพ์ผิด
+        })
+            .then(() => {
+                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                setEdit(false);
+                setCheck(false);
+                setOpenDetail({});
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error(error);
+            });
+    };
+
     const handleCancel = () => {
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
@@ -463,7 +506,7 @@ const InternshipDetail = (props) => {
                         >
                             <Grid container spacing={2}>
                                 <Grid item size={10}>
-                                    <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลทั่วไป</Typography>
+                                    <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลการทำงาน/ฝึกงาน</Typography>
                                 </Grid>
                                 <Grid item size={2} sx={{ textAlign: "right" }}>
                                     <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpenDetail({})}>
@@ -517,10 +560,14 @@ const InternshipDetail = (props) => {
                                     />
                                 </Grid>
                                 <Grid item size={12}>
+                                    <Divider sx={{ marginTop: 1 }} />
+                                </Grid>
+                                <Grid item size={12}>
                                     <ThaiDateSelector
                                         label="เริ่มตั้งแต่วันที่"
                                         value={toDateObject(openDetail?.dateStart)}
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("dateStart", e.target.value)}
                                     //onChange={(val) => setDateStart(val)}
                                     />
                                 </Grid>
@@ -528,7 +575,8 @@ const InternshipDetail = (props) => {
                                     <ThaiDateSelector
                                         label="จนถึงวันที่"
                                         value={toDateObject(openDetail?.dateEnd)}
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("dateEnd", e.target.value)}
                                     //onChange={(val) => setDateEnd(val)}
                                     />
                                 </Grid>
@@ -538,7 +586,8 @@ const InternshipDetail = (props) => {
                                         fullWidth
                                         size="small"
                                         value={openDetail?.company}
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("company", e.target.value)}
                                     // onChange={(e) => setInternshipCompany(e.target.value)}
                                     // placeholder="กรุณากรอกชื่อบริษัท"
                                     />
@@ -552,7 +601,7 @@ const InternshipDetail = (props) => {
                                         rows={3}
                                         fullWidth
                                         placeholder="กรุณากรอกที่อยู่"
-                                        disabled
+                                        disabled={!check}
                                     />
                                 </Grid>
                                 <Grid item size={12}>
@@ -560,7 +609,7 @@ const InternshipDetail = (props) => {
                                         label="ที่อยู่ปัจจุบัน"
                                         thailand={thailand}
                                         value={openDetail}
-                                        disabled
+                                        disabled={!check}
                                     // placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
                                     // onChange={(val) => setInternshipAddress(val)}
                                     />
@@ -571,7 +620,8 @@ const InternshipDetail = (props) => {
                                         fullWidth
                                         size="small"
                                         value={openDetail?.position}
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("position", e.target.value)}
                                     // onChange={(e) => setInternshipPosition(e.target.value)}
                                     // placeholder="กรุณากรอกตำแหน่งงาน"
                                     />
@@ -582,7 +632,8 @@ const InternshipDetail = (props) => {
                                         fullWidth
                                         size="small"
                                         value={openDetail?.positionType}
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("positionType", e.target.value)}
                                     // onChange={(e) => setInternshipTypeP(e.target.value)}
                                     // placeholder="กรุณากรอกประเภทงาน"
                                     />
@@ -593,7 +644,8 @@ const InternshipDetail = (props) => {
                                         fullWidth
                                         size="small"
                                         value={openDetail?.level}
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("level", e.target.value)}
                                     // onChange={(e) => setInternshipLevel(e.target.value)}
                                     // placeholder="กรุณากรอกระดับ"
                                     />
@@ -604,7 +656,8 @@ const InternshipDetail = (props) => {
                                         fullWidth
                                         size="small"
                                         value={openDetail?.salary}
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("salary", e.target.value)}
                                     // onChange={(e) => setInternshipSalary(e.target.value)}
                                     // placeholder="กรุณากรอกเงินเดือน"
                                     />
@@ -620,19 +673,49 @@ const InternshipDetail = (props) => {
                                         rows={3}
                                         fullWidth
                                         placeholder="กรุณากรอกรายละเอียด"
-                                        disabled
+                                        disabled={!check}
+                                        onChange={(e) => handleDetailChange("note", e.target.value)}
                                     />
                                 </Grid>
+                                <Grid item size={12}>
+                                    <Divider />
+                                </Grid>
+                                {/* <Grid item size={12} textAlign="center">
+                                    {
+                                        !check ?
+                                            <Button variant="outlined" color="warning" size="small" onClick={() => setCheck(true)}>
+                                                แก้ไขข้อมูล
+                                            </Button>
+                                            :
+                                            <React.Fragment>
+                                                <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                                    ยกเลิก
+                                                </Button>
+                                                <Button variant="contained" color="success" size="small" onClick={() => setCheck(false)}>
+                                                    บันทึก
+                                                </Button>
+                                            </React.Fragment>
+                                    }
+                                </Grid> */}
                             </Grid>
                         </DialogContent>
-                        {/* <DialogActions sx={{ justifyContent: "space-between", px: 3, borderTop: `1px solid ${theme.palette.primary.dark}` }}>
-                            <Button variant="contained" color="error" onClick={() => setOpenDetail({})}>
-                                ยกเลิก
-                            </Button>
-                            <Button variant="contained" color="success" onClick={() => setOpenDetail({})}>
-                                บันทึก
-                            </Button>
-                        </DialogActions> */}
+                        <DialogActions sx={{ borderTop: `1px solid ${theme.palette.primary.dark}`, display: "flex", alignItems: "center", justifyContent: "center", height: "55px" }}>
+                            {
+                                !check ?
+                                    <Button variant="contained" color="warning" size="small" onClick={() => setCheck(true)}>
+                                        แก้ไขข้อมูล
+                                    </Button>
+                                    :
+                                    <React.Fragment>
+                                        <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                            ยกเลิก
+                                        </Button>
+                                        <Button variant="contained" color="success" size="small">
+                                            บันทึก
+                                        </Button>
+                                    </React.Fragment>
+                            }
+                        </DialogActions>
                     </Dialog>
                 )
             }
