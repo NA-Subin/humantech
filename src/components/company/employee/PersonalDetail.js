@@ -523,7 +523,9 @@ const PersonalDetail = (props) => {
     };
 
     const handleUpdate = () => {
-        if (!openDetail?.ID) return ShowError("ไม่พบข้อมูลพนักงาน");
+        if (openDetail?.ID === undefined || openDetail?.ID === null) {
+            return ShowError("ไม่พบข้อมูลพนักงาน");
+        }
 
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${openDetail.ID}`);
 

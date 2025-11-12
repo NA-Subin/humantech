@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use } from "react";
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update } from "firebase/database";
 import '../../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -56,25 +56,32 @@ const TrainingDetail = (props) => {
 
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
-    const toDateString = (dateObj) => {
-        if (!dateObj || !dateObj.day || !dateObj.month || !dateObj.year) return '';
+    function formatToGregorian(birthDate) {
+        if (!birthDate || !birthDate.day || !birthDate.month || !birthDate.year) {
+            return ""; // ถ้าไม่มีข้อมูล ให้คืนค่าว่าง
+        }
 
-        const { day, month, year } = dateObj;
-        const gregorianYear = Number(year) - 543;
-        const date = dayjs(`${gregorianYear}-${month}-${day}`, "YYYY-M-D");
-        return date.format("DD/MM/YYYY"); // 👉 "01/03/2025"
-    };
+        const day = String(birthDate.day).padStart(2, "0");
+        const month = String(birthDate.month).padStart(2, "0");
+        const year = parseInt(birthDate.year, 10) - 543; // พ.ศ. → ค.ศ.
 
-    const toDateObject = (dateStr) => {
-        if (!dateStr) return { day: '', month: '', year: '' };
+        return `${day}/${month}/${year}`;
+    }
 
-        const date = dayjs(dateStr, "DD/MM/YYYY");
+    // ฟังก์ชันแปลงกลับจาก DD/MM/YYYY → birthDate Object (พ.ศ.)
+    function parseFromGregorian(dateStr) {
+        if (!dateStr) return null;
+
+        const [day, month, year] = dateStr.split("/");
+
+        if (!day || !month || !year) return null;
+
         return {
-            day: date.date(),
-            month: date.month() + 1,
-            year: String(date.year() + 543),
+            day: Number(day),
+            month: Number(month),
+            year: (Number(year) + 543).toString() // ค.ศ. → พ.ศ.
         };
-    };
+    }
 
     useEffect(() => {
         if (!database) return;
@@ -109,12 +116,15 @@ const TrainingDetail = (props) => {
 
         trains.forEach((train, trainIdx) => {
             trainingRows.push({
+                ID: emp.ID,
                 employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 course: train.course || "",
-                dateEnd: toDateString(train.dateEnd) || "",
-                dateStart: toDateString(train.dateStart) || "",
+                dateStart: train.dateStart || '',
+                dateEnd: train.dateEnd || '',
+                dateS: formatToGregorian(train.dateStart || ''),
+                dateE: formatToGregorian(train.dateEnd || ''),
                 file: train.file || null,
                 fileType: train.fileType || "",
                 institution: train.institution || "",
@@ -126,12 +136,15 @@ const TrainingDetail = (props) => {
         // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
         if (trains.length === 0) {
             trainingRows.push({
+                ID: emp.ID,
                 employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 course: "-",
                 dateEnd: "-",
                 dateStart: "-",
+                dateE: "",
+                dateS: "",
                 file: null,
                 fileType: "",
                 institution: "-",
@@ -144,8 +157,8 @@ const TrainingDetail = (props) => {
     const trainingColumns = [
         { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: 200, sticky: true },
         { label: "ตำแหน่ง", key: "position", type: "text", disabled: true, width: 150 },
-        { label: "วันที่เริ่มต้น", key: "dateStart", type: "date", width: 80 },
-        { label: "จนถึงวันที่", key: "dateEnd", type: "date", width: 80 },
+        { label: "วันที่เริ่มต้น", key: "dateS", type: "date", width: 80 },
+        { label: "จนถึงวันที่", key: "dateE", type: "date", width: 80 },
         { label: "สถาบัน", key: "institution", type: "text", width: 150 },
         { label: "หลักสูตร", key: "course", type: "text", width: 150 },
         {
@@ -166,7 +179,7 @@ const TrainingDetail = (props) => {
 
         console.log("updatedList : ", updatedList);
 
-        updatedList.forEach(row => {
+        updatedList.forEach((row, idx) => {
             // แยกชื่อและชื่อเล่นจาก row.employname
             const match = row.employname.match(/^(.*) \((.*)\)$/); // แยก "ชื่อ (ชื่อเล่น)"
             if (!match) return;
@@ -180,7 +193,7 @@ const TrainingDetail = (props) => {
 
             if (!matchedEmp) return; // ไม่เจอข้ามไปเลย
 
-            const key = `${matchedEmp.employname} (${matchedEmp.nickname})`;
+            const key = `${matchedEmp.ID}`;
 
             console.log("1.key : ", key);
             console.log("dateStart : ", row.dateStart);
@@ -192,8 +205,8 @@ const TrainingDetail = (props) => {
             if (row.employname && row.employname !== '-') {
                 empTrainingMap[key].push({
                     course: row.course,
-                    dateStart: row.dateStart ? toDateObject(row.dateStart) : { day: '', month: '', year: '' },
-                    dateEnd: row.dateEnd ? toDateObject(row.dateEnd) : { day: '', month: '', year: '' },
+                    dateStart: updatedList[idx].dateS ? parseFromGregorian(updatedList[idx].dateS) : null,
+                    dateEnd: updatedList[idx].dateE ? parseFromGregorian(updatedList[idx].dateE) : null,
                     file: row.file || null,
                     fileType: row.fileType,
                     institution: row.institution,
@@ -202,7 +215,7 @@ const TrainingDetail = (props) => {
         });
 
         const merged = employees.map(emp => {
-            const key = `${emp.employname} (${emp.nickname})`;
+            const key = `${emp.ID}`;
             console.log("2.key : ", key);
             return {
                 ...emp,
@@ -295,6 +308,44 @@ const TrainingDetail = (props) => {
             });
     };
 
+    const handleDetailChange = (index, field, value) => {
+        setOpenDetail(prev => {
+            const updatedList = prev.trainingList.map((item, idx) =>
+                idx === index ? { ...item, [field]: value } : item
+            );
+
+            return {
+                ...prev,
+                trainingList: updatedList
+            };
+        });
+    };
+
+    const handleAdd = () => {
+        setOpenDetail(prev => ({
+            ...prev,
+            trainingList: [
+                ...prev.trainingList,
+                {
+                    course: "",
+                    dateEnd: null,
+                    dateStart: null,
+                    dateE: "",
+                    dateS: "",
+                    fileType: "",
+                    institution: ""
+                }
+            ]
+        }));
+    };
+
+    const handleRemove = (index) => {
+        setOpenDetail(prev => ({
+            ...prev,
+            trainingList: prev.trainingList.filter((_, idx) => idx !== index)
+        }));
+    };
+
     const handleCancel = () => {
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
@@ -305,6 +356,44 @@ const TrainingDetail = (props) => {
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
+    const handleUpdate = () => {
+        if (openDetail?.ID === undefined || openDetail?.ID === null) {
+            return ShowError("ไม่พบข้อมูลพนักงาน");
+        }
+
+        // ✅ Process trainingList ก่อน save
+        const cleanTraining = openDetail.trainingList?.map(item => {
+            return {
+                ...item,
+
+                // ถ้ามี dateStart ใช้เลย ถ้าไม่มีให้แปลงจาก dateS
+                dateStart: item.dateStart !== null ? item.dateStart : parseFromGregorian(item.dateS),
+
+                // ถ้ามี dateEnd ใช้เลย ถ้าไม่มีให้แปลงจาก dateE
+                dateEnd: item.dateEnd !== null ? item.dateEnd : parseFromGregorian(item.dateE)
+            };
+        }).map(({ dateS, dateE, ...rest }) => rest);
+        // 👆 ลบ dateS, dateE ออกจาก object
+
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${openDetail.ID}`);
+
+        update(companiesRef, {
+            trainingList: cleanTraining
+        })
+            .then(() => {
+                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                setEdit(false);
+                setCheck(false);
+                setOpenDetail({});
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error(error);
+            });
+    };
+
+    console.log("trainingRows : ", trainingRows);
+    console.log("openDetal : ", openDetail);
 
     return (
         <Box sx={{ marginTop: 5, width: "100%" }}>
@@ -364,33 +453,53 @@ const TrainingDetail = (props) => {
                                                     :
                                                     trainingRows.map((row, index) => (
                                                         <TableRow
-                                                            onClick={() => row.isFirst && setOpenDetail(row)}
-                                                            onMouseEnter={() => setHoveredEmpCode(row.employeecode)}
+                                                            onClick={() => {
+                                                                const rows = trainingRows.filter(r => r.ID === row.ID);
+
+                                                                const detail = {
+                                                                    ID: rows[0].ID,
+                                                                    employeecode: rows[0].employeecode,
+                                                                    employname: rows[0].employname,
+                                                                    position: rows[0].position,
+                                                                    trainingList: rows.map(r => ({
+                                                                        course: r.course,
+                                                                        dateEnd: r.dateEnd,
+                                                                        dateStart: r.dateStart,
+                                                                        dateE: r.dateE,
+                                                                        dateS: r.dateS,
+                                                                        fileType: r.fileType,
+                                                                        institution: r.institution
+                                                                    }))
+                                                                };
+
+                                                                setOpenDetail(detail);
+                                                            }}
+                                                            onMouseEnter={() => setHoveredEmpCode(row.ID)}
                                                             onMouseLeave={() => setHoveredEmpCode(null)}
                                                             sx={{
-                                                                cursor: hoveredEmpCode === row.employeecode ? 'pointer' : 'default',
-                                                                backgroundColor: hoveredEmpCode === row.employeecode ? theme.palette.primary.light : 'inherit',
+                                                                cursor: hoveredEmpCode === row.ID ? 'pointer' : 'default',
+                                                                backgroundColor: hoveredEmpCode === row.ID ? theme.palette.primary.light : 'inherit',
                                                             }}
                                                         >
                                                             {row.isFirst && (
                                                                 <>
-                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{index + 1}</TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{index + 1}</TableCell>
                                                                     <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "left" }}>
-                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>
+                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>
                                                                             {row.employname}
                                                                         </Typography>
                                                                     </TableCell>
                                                                     <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "left" }}>
-                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>
+                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>
                                                                             {row.position}
                                                                         </Typography>
                                                                     </TableCell>
                                                                 </>
                                                             )}
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.dateStart}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.dateEnd}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.institution}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.course}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.dateS}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.dateE}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.institution}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.course}</TableCell>
                                                             {
                                                                 row.fileType === "pdf" ?
                                                                     (
@@ -481,7 +590,7 @@ const TrainingDetail = (props) => {
                 </Box>
             } */}
 
-            {openDetail?.employname && openDetail?.isFirst && (
+            {openDetail && Object.keys(openDetail).length > 0 && (
                 <Dialog
                     open={true}
                     onClose={() => setOpenDetail({})}
@@ -527,7 +636,7 @@ const TrainingDetail = (props) => {
                                             ? openDetail.employname.split(" (")[1].replace(")", "")
                                             : ""
                                     }
-                                    disabled={check ? false : true}
+                                    disabled
                                 />
                             </Grid>
 
@@ -539,7 +648,7 @@ const TrainingDetail = (props) => {
                                     value={
                                         openDetail?.employname?.split(" (")[0] || ""
                                     }
-                                    disabled={check ? false : true}
+                                    disabled
                                 />
                             </Grid>
 
@@ -549,7 +658,7 @@ const TrainingDetail = (props) => {
                                     fullWidth
                                     size="small"
                                     value={openDetail?.position}
-                                    disabled={check ? false : true}
+                                    disabled
                                 />
                             </Grid>
 
@@ -558,8 +667,7 @@ const TrainingDetail = (props) => {
                             </Grid>
 
                             {/* ดึงเฉพาะ row education ของคนนี้ทั้งหมด */}
-                            {trainingRows
-                                .filter((row) => row.employname === openDetail.employname)
+                            {openDetail?.trainingList
                                 .map((row, idx) => (
                                     <React.Fragment key={idx}>
                                         <Grid item size={10}>
@@ -573,8 +681,8 @@ const TrainingDetail = (props) => {
                                                     variant="outlined"
                                                     size="small"
                                                     color="error"
-                                                    disabled={check ? false : true}
-                                                //onClick={() => handleRemove(index)}
+                                                    disabled={!check}
+                                                    onClick={() => handleRemove(idx)}
                                                 >
                                                     ลบ
                                                 </Button>
@@ -584,8 +692,9 @@ const TrainingDetail = (props) => {
                                         <Grid item size={12}>
                                             <ThaiDateSelector
                                                 label="เริ่มตั้งแต่วันที่"
-                                                value={toDateObject(row.dateStart)}
-                                                disabled={check ? false : true}
+                                                value={row.dateStart}
+                                                disabled={!check}
+                                                onChange={(val) => handleDetailChange(idx, "dateStart", val)}
                                             // onChange={(val) =>
                                             //     handleTrainingChange(index, "dateStart", val)
                                             // }
@@ -594,8 +703,9 @@ const TrainingDetail = (props) => {
                                         <Grid item size={12}>
                                             <ThaiDateSelector
                                                 label="จนถึง"
-                                                value={toDateObject(row.dateEnd)}
-                                                disabled={check ? false : true}
+                                                value={row.dateEnd}
+                                                disabled={!check}
+                                                onChange={(val) => handleDetailChange(idx, "dateEnd", val)}
                                             // onChange={(val) =>
                                             //     handleTrainingChange(index, "dateEnd", val)
                                             // }
@@ -607,7 +717,8 @@ const TrainingDetail = (props) => {
                                                 fullWidth
                                                 size="small"
                                                 value={row.institution}
-                                                disabled={check ? false : true}
+                                                disabled={!check}
+                                                onChange={(e) => handleDetailChange(idx, "institution", e.target.value)}
                                                 // onChange={(e) =>
                                                 //     handleTrainingChange(index, "institution", e.target.value)
                                                 // }
@@ -620,7 +731,8 @@ const TrainingDetail = (props) => {
                                                 fullWidth
                                                 size="small"
                                                 value={row.course}
-                                                disabled={check ? false : true}
+                                                disabled={!check}
+                                                onChange={(e) => handleDetailChange(idx, "course", e.target.value)}
                                                 // onChange={(e) =>
                                                 //     handleTrainingChange(index, "course", e.target.value)
                                                 // }
@@ -632,6 +744,24 @@ const TrainingDetail = (props) => {
                                         </Grid>
                                     </React.Fragment>
                                 ))}
+                            {
+                                check &&
+                                <React.Fragment>
+                                    <Grid item size={12}>
+                                        <Divider />
+                                    </Grid>
+                                    <Grid item size={12} textAlign="center">
+                                        <Button
+                                            variant="outlined"
+                                            size="small"
+                                            color="info"
+                                            onClick={handleAdd}
+                                        >
+                                            เพิ่มข้อมูลการฝึกอบรม
+                                        </Button>
+                                    </Grid>
+                                </React.Fragment>
+                            }
                             {/* <Grid item size={12} textAlign="center">
                                 {
                                     !check ?
@@ -662,7 +792,7 @@ const TrainingDetail = (props) => {
                                     <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
                                         ยกเลิก
                                     </Button>
-                                    <Button variant="contained" color="success" size="small">
+                                    <Button variant="contained" color="success" size="small" onClick={handleUpdate} >
                                         บันทึก
                                     </Button>
                                 </React.Fragment>

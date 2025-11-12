@@ -397,7 +397,7 @@ const IncomeDetail = (props) => {
                                     />
                                 </Paper>
                                 :
-                                <TableContainer component={Paper} textAlign="center" sx={{ height: "60vh", overflow: "auto" }}>
+                                <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", overflow: "auto" }}>
                                     {/* <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: `${500 + (150 * income.length)}px` }}> */}
                                     <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                                         <TableHead

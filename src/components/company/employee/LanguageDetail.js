@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use } from "react";
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update } from "firebase/database";
 import '../../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -86,13 +86,14 @@ const LanguageDetail = (props) => {
 
         langs.forEach((lang, langIdx) => {
             languageRows.push({
+                ID: emp.ID,
                 employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 language: lang.language || "",
-                speak: lang.speaking || "",
-                read: lang.reading || "",
-                write: lang.writing || "",
+                speaking: lang.speaking || "",
+                reading: lang.reading || "",
+                writing: lang.writing || "",
                 isFirst: langIdx === 0,
                 rowSpan: langs.length,
             });
@@ -101,13 +102,14 @@ const LanguageDetail = (props) => {
         // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
         if (langs.length === 0) {
             languageRows.push({
+                ID: emp.ID,
                 employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
                 language: "-",
-                speak: "-",
-                read: "-",
-                write: "-",
+                speaking: "-",
+                reading: "-",
+                writing: "-",
                 isFirst: true,
                 rowSpan: 1,
             });
@@ -239,6 +241,63 @@ const LanguageDetail = (props) => {
             });
     };
 
+    const handleDetailChange = (index, field, value) => {
+        setOpenDetail(prev => {
+            const updatedList = prev.languageList.map((item, idx) =>
+                idx === index ? { ...item, [field]: value } : item
+            );
+
+            return {
+                ...prev,
+                languageList: updatedList
+            };
+        });
+    };
+
+    const handleAdd = () => {
+        setOpenDetail(prev => ({
+            ...prev,
+            languageList: [
+                ...prev.languageList,
+                {
+                    language: "-",
+                    speaking: "-",
+                    reading: "-",
+                    writing: "-",
+                }
+            ]
+        }));
+    };
+
+    const handleRemove = (index) => {
+        setOpenDetail(prev => ({
+            ...prev,
+            languageList: prev.languageList.filter((_, idx) => idx !== index)
+        }));
+    };
+
+    const handleUpdate = () => {
+        if (openDetail?.ID === undefined || openDetail?.ID === null) {
+            return ShowError("ไม่พบข้อมูลพนักงาน");
+        }
+
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${openDetail.ID}`);
+
+        update(companiesRef, {
+            languageList: openDetail.languageList
+        })
+            .then(() => {
+                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                setEdit(false);
+                setCheck(false);
+                setOpenDetail({});
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error(error);
+            });
+    };
+
     const handleCancel = () => {
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
@@ -248,6 +307,8 @@ const LanguageDetail = (props) => {
             setEdit(false);
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
+
+    console.log("openDetail : ", openDetail);
 
 
     return (
@@ -303,25 +364,42 @@ const LanguageDetail = (props) => {
                                                         languageRows.map((row, index) => (
                                                             <TableRow
                                                                 key={index}
-                                                                onClick={() => row.isFirst && setOpenDetail(row)}
-                                                                onMouseEnter={() => setHoveredEmpCode(row.employeecode)}
+                                                                onClick={() => {
+                                                                    const rows = languageRows.filter(r => r.ID === row.ID);
+
+                                                                    const detail = {
+                                                                        ID: rows[0].ID,
+                                                                        employeecode: rows[0].employeecode,
+                                                                        employname: rows[0].employname,
+                                                                        position: rows[0].position,
+                                                                        languageList: rows.map(r => ({
+                                                                            language: r.language,
+                                                                            reading: r.reading,
+                                                                            speaking: r.speaking,
+                                                                            writing: r.writing
+                                                                        }))
+                                                                    };
+
+                                                                    setOpenDetail(detail);
+                                                                }}
+                                                                onMouseEnter={() => setHoveredEmpCode(row.ID)}
                                                                 onMouseLeave={() => setHoveredEmpCode(null)}
                                                                 sx={{
-                                                                    cursor: hoveredEmpCode === row.employeecode ? 'pointer' : 'default',
-                                                                    backgroundColor: hoveredEmpCode === row.employeecode ? theme.palette.primary.light : 'inherit',
+                                                                    cursor: hoveredEmpCode === row.ID ? 'pointer' : 'default',
+                                                                    backgroundColor: hoveredEmpCode === row.ID ? theme.palette.primary.light : 'inherit',
                                                                 }}
                                                             >
                                                                 {row.isFirst && (
                                                                     <>
-                                                                        <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{index + 1}</TableCell>
-                                                                        <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.employname}</TableCell>
-                                                                        <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.position}</TableCell>
+                                                                        <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{index + 1}</TableCell>
+                                                                        <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.employname}</TableCell>
+                                                                        <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.position}</TableCell>
                                                                     </>
                                                                 )}
-                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.language}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.speak}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.read}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.write}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.language}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.speaking}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.reading}</TableCell>
+                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.writing}</TableCell>
                                                             </TableRow>
                                                         ))
                                                     )
@@ -390,7 +468,7 @@ const LanguageDetail = (props) => {
                 </Box>
             } */}
 
-            {openDetail?.employname && openDetail?.isFirst && (
+            {openDetail && Object.keys(openDetail).length > 0 && (
                 <Dialog
                     open={true}
                     onClose={() => setOpenDetail({})}
@@ -406,7 +484,7 @@ const LanguageDetail = (props) => {
                     <DialogTitle sx={{ textAlign: "center", fontWeight: "bold" }}>
                         <Grid container spacing={2}>
                             <Grid item size={10}>
-                                <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลการฝึกอบรม</Typography>
+                                <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลภาษา</Typography>
                             </Grid>
                             <Grid item size={2} sx={{ textAlign: "right" }}>
                                 <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpenDetail({})}>
@@ -436,7 +514,7 @@ const LanguageDetail = (props) => {
                                             ? openDetail.employname.split(" (")[1].replace(")", "")
                                             : ""
                                     }
-                                    disabled={check ? false : true}
+                                    disabled
                                 />
                             </Grid>
 
@@ -448,7 +526,7 @@ const LanguageDetail = (props) => {
                                     value={
                                         openDetail?.employname?.split(" (")[0] || ""
                                     }
-                                    disabled={check ? false : true}
+                                    disabled
                                 />
                             </Grid>
 
@@ -458,7 +536,7 @@ const LanguageDetail = (props) => {
                                     fullWidth
                                     size="small"
                                     value={openDetail?.position}
-                                    disabled={check ? false : true}
+                                    disabled
                                 />
                             </Grid>
 
@@ -467,8 +545,7 @@ const LanguageDetail = (props) => {
                             </Grid>
 
                             {/* ดึงเฉพาะ row education ของคนนี้ทั้งหมด */}
-                            {languageRows
-                                .filter((row) => row.employname === openDetail.employname)
+                            {openDetail?.languageList
                                 .map((row, idx) => (
                                     <React.Fragment key={idx}>
                                         <Grid item size={10}>
@@ -482,8 +559,8 @@ const LanguageDetail = (props) => {
                                                     variant="outlined"
                                                     size="small"
                                                     color="error"
-                                                    disabled={check ? false : true}
-                                                //onClick={() => handleRemove(index)}
+                                                    disabled={!check}
+                                                    onClick={() => handleRemove(idx)}
                                                 >
                                                     ลบ
                                                 </Button>
@@ -495,7 +572,8 @@ const LanguageDetail = (props) => {
                                                 fullWidth
                                                 size="small"
                                                 value={row.language}
-                                                disabled={check ? false : true}
+                                                disabled={!check}
+                                                onChange={(val) => handleDetailChange(idx, "language", val)}
                                             // onChange={(e) =>
                                             //     handleLanguageChange(index, "language", e.target.value)
                                             // }
@@ -531,8 +609,9 @@ const LanguageDetail = (props) => {
                                                     <TextField
                                                         fullWidth
                                                         size="small"
-                                                        value={row.speak}
-                                                        disabled={check ? false : true}
+                                                        value={row.speaking}
+                                                        disabled={!check}
+                                                        onChange={(e) => handleDetailChange(idx, "speaking", e.target.value)}
                                                     // onChange={(e) => handleLanguageChange(index, "speaking", e.target.value)}
                                                     // placeholder="กรุณากรอกความสามารถในการพูด"
                                                     />
@@ -544,8 +623,9 @@ const LanguageDetail = (props) => {
                                                     <TextField
                                                         fullWidth
                                                         size="small"
-                                                        value={row.read}
-                                                        disabled={check ? false : true}
+                                                        value={row.reading}
+                                                        disabled={!check}
+                                                        onChange={(e) => handleDetailChange(idx, "reading", e.target.value)}
                                                     // onChange={(e) => handleLanguageChange(index, "reading", e.target.value)}
                                                     // placeholder="กรุณากรอกความสามารถในการอ่าน"
                                                     />
@@ -558,8 +638,9 @@ const LanguageDetail = (props) => {
                                                     <TextField
                                                         fullWidth
                                                         size="small"
-                                                        value={row.write}
-                                                        disabled={check ? false : true}
+                                                        value={row.writing}
+                                                        disabled={!check}
+                                                        onChange={(e) => handleDetailChange(idx, "writing", e.target.value)}
                                                     // onChange={(e) => handleLanguageChange(index, "writing", e.target.value)}
                                                     // placeholder="กรุณากรอกความสามารถในการเขียน"
                                                     />
@@ -600,7 +681,7 @@ const LanguageDetail = (props) => {
                                     <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
                                         ยกเลิก
                                     </Button>
-                                    <Button variant="contained" color="success" size="small">
+                                    <Button variant="contained" color="success" size="small" onClick={handleUpdate} >
                                         บันทึก
                                     </Button>
                                 </React.Fragment>

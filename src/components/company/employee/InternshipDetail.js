@@ -75,34 +75,43 @@ const InternshipDetail = (props) => {
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
-    const toDateString = (dateObj) => {
-        if (!dateObj || !dateObj.day || !dateObj.month || !dateObj.year) return '';
+    function formatToGregorian(birthDate) {
+        if (!birthDate || !birthDate.day || !birthDate.month || !birthDate.year) {
+            return ""; // ถ้าไม่มีข้อมูล ให้คืนค่าว่าง
+        }
 
-        const { day, month, year } = dateObj;
-        const gregorianYear = Number(year) - 543;
-        const date = dayjs(`${gregorianYear}-${month}-${day}`, "YYYY-M-D");
-        return date.format("DD/MM/YYYY"); // 👉 "01/03/2025"
-    };
+        const day = String(birthDate.day).padStart(2, "0");
+        const month = String(birthDate.month).padStart(2, "0");
+        const year = parseInt(birthDate.year, 10) - 543; // พ.ศ. → ค.ศ.
 
-    const toDateObject = (dateStr) => {
-        if (!dateStr) return { day: '', month: '', year: '' };
+        return `${day}/${month}/${year}`;
+    }
 
-        const date = dayjs(dateStr, "DD/MM/YYYY");
+    // ฟังก์ชันแปลงกลับจาก DD/MM/YYYY → birthDate Object (พ.ศ.)
+    function parseFromGregorian(dateStr) {
+        if (!dateStr) return null;
+
+        const [day, month, year] = dateStr.split("/");
+
+        if (!day || !month || !year) return null;
+
         return {
-            day: date.date(),
-            month: date.month() + 1,
-            year: String(date.year() + 543),
+            day: Number(day),
+            month: Number(month),
+            year: (Number(year) + 543).toString() // ค.ศ. → พ.ศ.
         };
-    };
-
+    }
 
     const internship = employees.map(emp => ({
         ID: emp.ID,
         employeecode: emp.employeecode,
         employname: `${emp.employname} (${emp.nickname})` || '',
         position: emp.position ? emp.position.split("-")[1] ?? emp.position : '',
-        dateStart: emp.internship?.dateStart ? toDateString(emp.internship.dateStart) : '',
-        dateEnd: emp.internship?.dateEnd ? toDateString(emp.internship.dateEnd) : '',
+        dateStart: emp.internship?.dateStart || '',
+        dateEnd: emp.internship?.dateEnd || '',
+        dateS: formatToGregorian(emp.internship?.dateStart || ''),
+        dateE: formatToGregorian(emp.internship?.dateEnd || ''),
+        address: emp.personal?.address || '',
         company: emp.internship?.company || '',
         province: emp.internship?.address?.province || '',
         amphure: emp.internship?.address?.amphure || '',
@@ -118,8 +127,8 @@ const InternshipDetail = (props) => {
     const internshipColumns = [
         { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: 300 },
         { label: "ตำแหน่ง", key: "position", type: "text", disabled: true, width: 200 },
-        { label: "วันที่เริ่มต้น", key: "dateStart", type: "date", width: 180 },
-        { label: "จนถึงวันที่", key: "dateEnd", type: "date", width: 180 },
+        { label: "วันที่เริ่มต้น", key: "dateS", type: "date", width: 180 },
+        { label: "จนถึงวันที่", key: "dateE", type: "date", width: 180 },
         { label: "ชื่อบริษัท", key: "company", type: "text", width: 250 },
 
         {
@@ -193,8 +202,8 @@ const InternshipDetail = (props) => {
                 ...emp,
                 internship: {
                     ...emp.internship,
-                    dateStart: toDateObject(updatedList[idx].dateStart),
-                    dateEnd: toDateObject(updatedList[idx].dateEnd),
+                    dateStart: updatedList[idx].dateS ? parseFromGregorian(updatedList[idx].dateS) : null,
+                    dateEnd: updatedList[idx].dateE ? parseFromGregorian(updatedList[idx].dateE) : null,
                     company: updatedList[idx].company,
                     address: {
                         province: provinceKey || '',
@@ -237,8 +246,6 @@ const InternshipDetail = (props) => {
     }, [firebaseDB, companyId]);
 
     console.log("employees : ", employees);
-
-
 
     const handleSave = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
@@ -305,13 +312,20 @@ const InternshipDetail = (props) => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${openDetail.ID}`);
 
         const data = {
-            specialAbilities1: openDetail?.specialAbilities1,
-            specialAbilities2: openDetail?.specialAbilities2,
-            specialAbilities3: openDetail?.specialAbilities3,
-            printingSpeedTH: openDetail?.printingSpeedTH,
-            printingSpeedENG: openDetail?.printingSpeedENG,
-            otherProjects: openDetail?.otherProjects,
-            referencePerson: openDetail?.referencePerson
+            address: openDetail?.address || {
+                amphure: openDetail?.amphure || "",
+                province: openDetail?.province || "",
+                tambon: openDetail?.tambon || "",
+                zipCode: openDetail?.zipCode || ""
+            },
+            company: openDetail?.company,
+            dateEnd: openDetail?.dateEnd || parseFromGregorian(openDetail?.dateE) || "",
+            dateStart: openDetail?.dateStart || parseFromGregorian(openDetail?.dateS) || "",
+            level: openDetail?.level,
+            note: openDetail?.note,
+            position: openDetail?.positionIntern,
+            positionType: openDetail?.positionType,
+            salary: openDetail?.salary
         };
 
         update(companiesRef, {
@@ -406,8 +420,8 @@ const InternshipDetail = (props) => {
                                                             <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{index + 1}</TableCell>
                                                             <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.employname}</TableCell>
                                                             <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.position}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.dateStart}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.dateEnd}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.dateS}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.dateE}</TableCell>
                                                             <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.company}</TableCell>
                                                             <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.tambon.split("-")[1]}</TableCell>
                                                             <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }}>{row.amphure.split("-")[1]}</TableCell>
@@ -485,7 +499,7 @@ const InternshipDetail = (props) => {
             } */}
 
             {
-                openDetail?.employname && (
+                openDetail && Object.keys(openDetail).length > 0 && (
                     <Dialog
                         open
                         onClose={() => setOpenDetail({})}
@@ -565,18 +579,18 @@ const InternshipDetail = (props) => {
                                 <Grid item size={12}>
                                     <ThaiDateSelector
                                         label="เริ่มตั้งแต่วันที่"
-                                        value={toDateObject(openDetail?.dateStart)}
+                                        value={openDetail?.dateStart}
                                         disabled={!check}
-                                        onChange={(e) => handleDetailChange("dateStart", e.target.value)}
+                                        onChange={(val) => handleDetailChange("dateStart", val)}
                                     //onChange={(val) => setDateStart(val)}
                                     />
                                 </Grid>
                                 <Grid item size={12}>
                                     <ThaiDateSelector
                                         label="จนถึงวันที่"
-                                        value={toDateObject(openDetail?.dateEnd)}
+                                        value={openDetail?.dateEnd}
                                         disabled={!check}
-                                        onChange={(e) => handleDetailChange("dateEnd", e.target.value)}
+                                        onChange={(val) => handleDetailChange("dateEnd", val)}
                                     //onChange={(val) => setDateEnd(val)}
                                     />
                                 </Grid>
@@ -608,8 +622,9 @@ const InternshipDetail = (props) => {
                                     <ThaiAddressSelector
                                         label="ที่อยู่ปัจจุบัน"
                                         thailand={thailand}
-                                        value={openDetail}
+                                        value={openDetail?.address}
                                         disabled={!check}
+                                        onChange={(val) => handleDetailChange("address", val)}
                                     // placeholder="กรุณากรอกที่อยู่ปัจจุบัน"
                                     // onChange={(val) => setInternshipAddress(val)}
                                     />
@@ -619,9 +634,9 @@ const InternshipDetail = (props) => {
                                     <TextField
                                         fullWidth
                                         size="small"
-                                        value={openDetail?.position}
+                                        value={openDetail?.positionIntern}
                                         disabled={!check}
-                                        onChange={(e) => handleDetailChange("position", e.target.value)}
+                                        onChange={(e) => handleDetailChange("positionIntern", e.target.value)}
                                     // onChange={(e) => setInternshipPosition(e.target.value)}
                                     // placeholder="กรุณากรอกตำแหน่งงาน"
                                     />
@@ -710,7 +725,7 @@ const InternshipDetail = (props) => {
                                         <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
                                             ยกเลิก
                                         </Button>
-                                        <Button variant="contained" color="success" size="small">
+                                        <Button variant="contained" color="success" size="small" onClick={handleUpdate} >
                                             บันทึก
                                         </Button>
                                     </React.Fragment>

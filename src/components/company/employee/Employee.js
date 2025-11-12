@@ -727,7 +727,9 @@ const Employee = () => {
                             nickname: updatedEmp.nickname ?? "",
                         },
                         workshifthistory: currentHistory,
-                        password: updatedEmp.password ?? "1234567",
+                        username: updatedEmp.username ? updatedEmp.username : updatedEmp.employeecode,
+                        password: updatedEmp.password ? updatedEmp.password : "1234567",
+                        faceverify: updatedEmp.faceverify ?? ""
                     };
                 } else {
                     // shift ใหม่ → เพิ่ม history entry
@@ -773,7 +775,9 @@ const Employee = () => {
                             lastname: updatedEmp.lastname ?? "",
                         },
                         workshifthistory: [...currentHistory, newHistoryEntry],
-                        password: "1234567",
+                        username: updatedEmp.username ? updatedEmp.username : updatedEmp.employeecode,
+                        password: updatedEmp.password ? updatedEmp.password : "1234567",
+                        faceverify: updatedEmp.faceverify ?? ""
                     };
                 }
 

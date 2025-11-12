@@ -123,6 +123,8 @@ const AccountDetail = (props) => {
     const [sections, setSections] = useState([]);
     const [positions, setPositions] = useState([]);
     const [employees, setEmployees] = useState([]);
+    const [employeeTypes, setEmployeeTypes] = useState([]);
+    const [selectedType, setSelectedType] = useState("all");
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
@@ -160,6 +162,15 @@ const AccountDetail = (props) => {
     if (employee && employee !== "all-ทั้งหมด") {
         const empId = Number(employee.split("-")[0]);
         filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
+    }
+
+    if (selectedType !== "all") {
+        filteredEmployees = filteredEmployees.filter(emp => {
+            if (selectedType === "all") return true;
+
+            const typeId = emp.employmenttype?.split("-")[0];
+            return Number(typeId || 0) === selectedType;
+        });
     }
 
     console.log("filteredEmployees : ", filteredEmployees);
@@ -363,6 +374,9 @@ const AccountDetail = (props) => {
         return row;
     });
 
+    const typeCount = (id) =>
+        employees.filter((t) => Number(t.employmenttype?.split("-")[0] ?? 0) === id).length;
+
     // 4️⃣ กรอง columns ที่มีค่าไม่เป็น 0 อย่างน้อย 1 แถว
     const visibleIncome = incomeActive.filter(inc =>
         Rows.some(row => (row[`income${inc.ID}`] ?? 0) !== 0)
@@ -404,6 +418,21 @@ const AccountDetail = (props) => {
             } else {
                 setHoliday(holidaysData);
             }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const employeeTypeRef = ref(firebaseDB, `workgroup/company/${companyId}/employeetype`);
+
+        const unsubscribe = onValue(employeeTypeRef, (snapshot) => {
+            const employeeTypeData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            setEmployeeTypes(employeeTypeData);
         });
 
         return () => unsubscribe();
@@ -1037,6 +1066,74 @@ const AccountDetail = (props) => {
                     </Box>
                 </Grid>
                 <Grid item size={12}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "left",
+                            gap: 1, // เพิ่มช่องว่างระหว่างช่อง
+                        }}
+                    >
+                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>ประเภทการจ้างงาน : </Typography>
+                        <Paper onClick={() => setSelectedType("all")}
+                            sx={{
+                                textAlign: "center",
+                                border: `1px solid ${theme.palette.primary.main}`,
+                                boxShadow:
+                                    selectedType === "all"
+                                        ? "0px 4px 10px rgba(134, 134, 134, 0.63)"
+                                        : "0px 1px 3px rgba(98, 98, 98, 0.1)",
+                                borderRadius: "5px",
+                                pt: 0.5,
+                                pl: 1,
+                                pr: 1,
+                                mt: -0.5,
+                                cursor: "pointer",
+                                // transition: "0.2s",
+                                backgroundColor: selectedType === "all" ? theme.palette.primary.main : theme.palette.primary.light,
+                                color: selectedType === "all" ? "white" : "black",
+                                "&:hover": {
+                                    borderColor: theme.palette.primary.main,
+                                    boxShadow: "0px 4px 10px rgba(134, 134, 134, 0.63)",
+                                },
+                            }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                                ทั้งหมด
+                            </Typography>
+                        </Paper>
+                        {employeeTypes.map((type) => (
+                            typeCount(type.ID) > 0 && (
+                                <Paper key={type.ID} onClick={() => setSelectedType(type.ID)}
+                                    sx={{
+                                        textAlign: "center",
+                                        border: `1px solid ${theme.palette.primary.main}`,
+                                        boxShadow:
+                                            selectedType === type.ID
+                                                ? "0px 4px 10px rgba(134, 134, 134, 0.63)"
+                                                : "0px 1px 3px rgba(98, 98, 98, 0.1)",
+                                        borderRadius: "5px",
+                                        pt: 0.5,
+                                        pl: 1,
+                                        pr: 1,
+                                        mt: -0.5,
+                                        cursor: "pointer",
+                                        // transition: "0.2s",
+                                        backgroundColor: selectedType === type.ID ? theme.palette.primary.main : theme.palette.primary.light,
+                                        color: selectedType === type.ID ? "white" : "black",
+                                        "&:hover": {
+                                            borderColor: theme.palette.primary.main,
+                                            boxShadow: "0px 4px 10px rgba(134, 134, 134, 0.63)",
+                                        },
+                                    }}>
+                                    <Typography variant="subtitle2" gutterBottom>
+                                        {`${type.name} ${typeCount(type.ID)} คน`}
+                                    </Typography>
+                                </Paper>
+                            )
+                        ))}
+                    </Box>
+                </Grid>
+                <Grid item size={12}>
                     <TableContainer component={Paper} textAlign="center">
                         <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1060px" }}>
                             <TableHead>
@@ -1084,7 +1181,16 @@ const AccountDetail = (props) => {
                                         )}
                                     </TableCell>
                                     <TableCell sx={{ textAlign: "center" }}>
-                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>{filteredEmployees.length}</Typography>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>
+                                            {
+                                                filteredEmployees.filter(emp => {
+                                                    if (selectedType === "all") return true;
+
+                                                    const typeId = emp.employmenttype?.split("-")[0];
+                                                    return Number(typeId || 0) === selectedType;
+                                                }).length
+                                            }
+                                        </Typography>
                                     </TableCell>
                                     <TableCell>
                                         <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
@@ -1150,7 +1256,16 @@ const AccountDetail = (props) => {
                                         )}
                                     </TableCell>
                                     <TableCell sx={{ textAlign: "center" }} >
-                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>{filteredEmployees.length}</Typography>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>
+                                            {
+                                                filteredEmployees.filter(emp => {
+                                                    if (selectedType === "all") return true;
+
+                                                    const typeId = emp.employmenttype?.split("-")[0];
+                                                    return Number(typeId || 0) === selectedType;
+                                                }).length
+                                            }
+                                        </Typography>
                                     </TableCell>
                                     <TableCell>
                                         <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>
@@ -1215,7 +1330,16 @@ const AccountDetail = (props) => {
                                         )}
                                     </TableCell>
                                     <TableCell sx={{ textAlign: "center" }} >
-                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>{filteredEmployees.length}</Typography>
+                                        <Typography variant="subtitle2" sx={{ whiteSpace: "nowrap" }} gutterBottom>
+                                            {
+                                                filteredEmployees.filter(emp => {
+                                                    if (selectedType === "all") return true;
+
+                                                    const typeId = emp.employmenttype?.split("-")[0];
+                                                    return Number(typeId || 0) === selectedType;
+                                                }).length
+                                            }
+                                        </Typography>
                                     </TableCell>
                                     <TableCell>
                                         <Box sx={{ display: "flex", justifyContent: "right", alignItems: "center" }}>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, use } from "react";
-import { getDatabase, ref, push, onValue, set } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update } from "firebase/database";
 import '../../../App.css'
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
@@ -33,7 +33,7 @@ import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
-import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle, MenuItem } from "@mui/material";
 
 const EducationDetail = (props) => {
     const { menu, data } = props;
@@ -54,7 +54,13 @@ const EducationDetail = (props) => {
 
     const educationRows = [];
 
-    console.log("openDetail : ", openDetail);
+    const educationLevels = [
+        { value: "ประถมศึกษา", label: "ประถมศึกษา" },
+        { value: "มัธยมศึกษา", label: "มัธยมศึกษา" },
+        { value: "ปริญญาตรี", label: "ปริญญาตรี" },
+        { value: "ปริญญาโท", label: "ปริญญาโท" },
+        { value: "ปริญญาเอก", label: "ปริญญาเอก" }
+    ];
 
     // const language = employees.map(emp => ({
     //     employname: emp.employname,
@@ -68,6 +74,7 @@ const EducationDetail = (props) => {
 
         educations.forEach((education, educationIdx) => {
             educationRows.push({
+                ID: emp.ID,
                 employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
@@ -88,6 +95,7 @@ const EducationDetail = (props) => {
         // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
         if (educations.length === 0) {
             educationRows.push({
+                ID: emp.ID,
                 employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
@@ -150,7 +158,7 @@ const EducationDetail = (props) => {
         const empLangMap = {};
 
         updatedList.forEach(row => {
-            const name = row.employname;
+            const name = row.ID;
             if (!empLangMap[name]) {
                 empLangMap[name] = [];
             }
@@ -174,7 +182,7 @@ const EducationDetail = (props) => {
         const merged = employees.map(emp => {
             return {
                 ...emp,
-                educationList: empLangMap[`${emp.employname} (${emp.nickname})`] || [],
+                educationList: empLangMap[`${emp.ID}`] || [],
             };
         });
 
@@ -183,6 +191,46 @@ const EducationDetail = (props) => {
         console.log("employees map", employees.map(e => e.employname));
 
         setEmployees(merged);
+    };
+
+    const handleDetailChange = (index, field, value) => {
+        setOpenDetail(prev => {
+            const updatedList = prev.educationList.map((item, idx) =>
+                idx === index ? { ...item, [field]: value } : item
+            );
+
+            return {
+                ...prev,
+                educationList: updatedList
+            };
+        });
+    };
+
+    const handleAdd = () => {
+        setOpenDetail(prev => ({
+            ...prev,
+            educationList: [
+                ...prev.educationList,
+                {
+                    education: "",
+                    educationLevel: "",
+                    institution: "",
+                    educationCategory: "",
+                    faculty: "",
+                    branch: "",
+                    degree: "",
+                    graduateYear: "",
+                    gpa: "",
+                }
+            ]
+        }));
+    };
+
+    const handleRemove = (index) => {
+        setOpenDetail(prev => ({
+            ...prev,
+            educationList: prev.educationList.filter((_, idx) => idx !== index)
+        }));
     };
 
     console.log("educationRows : ", educationRows);
@@ -264,6 +312,28 @@ const EducationDetail = (props) => {
             });
     };
 
+    const handleUpdate = () => {
+        if (openDetail?.ID === undefined || openDetail?.ID === null) {
+            return ShowError("ไม่พบข้อมูลพนักงาน");
+        }
+
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${openDetail.ID}`);
+
+        update(companiesRef, {
+            educationList: openDetail?.educationList  // ✅ แก้พิมพ์ผิด
+        })
+            .then(() => {
+                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                setEdit(false);
+                setCheck(false);
+                setOpenDetail({});
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error(error);
+            });
+    };
+
     const handleCancel = () => {
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
@@ -274,6 +344,7 @@ const EducationDetail = (props) => {
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
+    console.log("openDetail : ", openDetail);
 
     return (
         <Box sx={{ marginTop: 5, width: "100%" }}>
@@ -334,35 +405,57 @@ const EducationDetail = (props) => {
                                                     educationRows.map((row, index) => (
                                                         <TableRow
                                                             key={index}
-                                                            onClick={() => row.isFirst && setOpenDetail(row)}
-                                                            onMouseEnter={() => setHoveredEmpCode(row.employeecode)}
+                                                            onClick={() => {
+                                                                const rows = educationRows.filter(r => r.ID === row.ID);
+
+                                                                const detail = {
+                                                                    ID: rows[0].ID,
+                                                                    employeecode: rows[0].employeecode,
+                                                                    employname: rows[0].employname,
+                                                                    position: rows[0].position,
+                                                                    educationList: rows.map(r => ({
+                                                                        education: r.education,
+                                                                        educationLevel: r.educationLevel,
+                                                                        institution: r.institution,
+                                                                        educationCategory: r.educationCategory,
+                                                                        faculty: r.faculty,
+                                                                        branch: r.branch,
+                                                                        degree: r.degree,
+                                                                        graduateYear: r.graduateYear,
+                                                                        gpa: r.gpa,
+                                                                    }))
+                                                                };
+
+                                                                setOpenDetail(detail);
+                                                            }}
+                                                            onMouseEnter={() => setHoveredEmpCode(row.ID)}
                                                             onMouseLeave={() => setHoveredEmpCode(null)}
                                                             sx={{
-                                                                cursor: hoveredEmpCode === row.employeecode ? 'pointer' : 'default',
-                                                                backgroundColor: hoveredEmpCode === row.employeecode ? theme.palette.primary.light : 'inherit',
+                                                                cursor: hoveredEmpCode === row.ID ? 'pointer' : 'default',
+                                                                backgroundColor: hoveredEmpCode === row.ID ? theme.palette.primary.light : 'inherit',
                                                             }}
                                                         >
                                                             {row.isFirst && (
                                                                 <>
-                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{count = count + 1}</TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{count = count + 1}</TableCell>
                                                                     <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "left", position: "sticky", left: 0, zIndex: 2, backgroundColor: "#f5f5f5" }}>
-                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{row.employname}</Typography>
+                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }} gutterBottom>{row.employname}</Typography>
                                                                     </TableCell>
                                                                     <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "left" }}>
-                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{row.position}</Typography>
+                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }} gutterBottom>{row.position}</Typography>
                                                                     </TableCell>
                                                                 </>
                                                             )}
                                                             {/* ถ้าไม่ใช่ isFirst ไม่ต้องแสดง 2 คอลัมน์แรก */}
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.education}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.educationLevel}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.institution}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.educationCategory}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.faculty}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.branch}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.degree}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.graduateYear}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal', }}>{row.gpa}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.education}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.educationLevel}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.institution}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.educationCategory}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.faculty}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.branch}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.degree}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.graduateYear}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.gpa}</TableCell>
                                                         </TableRow>
                                                     ))}
                                         </TableBody>
@@ -429,7 +522,7 @@ const EducationDetail = (props) => {
                 </Box>
             } */}
 
-            {openDetail?.employname && openDetail?.isFirst && (
+            {openDetail && Object.keys(openDetail).length > 0 && (
                 <Dialog
                     open={true}
                     onClose={() => setOpenDetail({})}
@@ -475,7 +568,7 @@ const EducationDetail = (props) => {
                                             ? openDetail.employname.split(" (")[1].replace(")", "")
                                             : ""
                                     }
-                                    disabled={check ? false : true}
+                                    disabled
                                 />
                             </Grid>
 
@@ -487,7 +580,7 @@ const EducationDetail = (props) => {
                                     value={
                                         openDetail?.employname?.split(" (")[0] || ""
                                     }
-                                    disabled={check ? false : true}
+                                    disabled
                                 />
                             </Grid>
 
@@ -497,7 +590,7 @@ const EducationDetail = (props) => {
                                     fullWidth
                                     size="small"
                                     value={openDetail?.position}
-                                    disabled={check ? false : true}
+                                    disabled
                                 />
                             </Grid>
 
@@ -506,8 +599,7 @@ const EducationDetail = (props) => {
                             </Grid>
 
                             {/* ดึงเฉพาะ row education ของคนนี้ทั้งหมด */}
-                            {educationRows
-                                .filter((row) => row.employname === openDetail.employname)
+                            {openDetail?.educationList
                                 .map((row, idx) => (
                                     <React.Fragment key={idx}>
                                         <Grid item size={10}>
@@ -516,13 +608,13 @@ const EducationDetail = (props) => {
                                             </Typography>
                                         </Grid>
                                         <Grid item size={2} textAlign="right">
-                                            {educationRows.length > 1 && (
+                                            {openDetail?.educationList.length > 1 && (
                                                 <Button
                                                     variant="outlined"
                                                     size="small"
                                                     color="error"
-                                                    disabled={check ? false : true}
-                                                //onClick={() => handleRemove(index)}
+                                                    disabled={!check}
+                                                    onClick={() => handleRemove(idx)}
                                                 >
                                                     ลบ
                                                 </Button>
@@ -544,6 +636,7 @@ const EducationDetail = (props) => {
                                                         alignItems: "center",
                                                         cursor: check ? "pointer" : "default"
                                                     }}
+                                                    onClick={() => handleDetailChange(idx, "education", "จบการศึกษา")}
                                                 //onClick={() => (handleChange(index, "education", "จบการศึกษา"), setEducation(true))}
                                                 //onClick={() => setEducation(true)}
                                                 >
@@ -562,6 +655,7 @@ const EducationDetail = (props) => {
                                                         alignItems: "center",
                                                         cursor: check ? "pointer" : "default"
                                                     }}
+                                                    onClick={(e) => handleDetailChange(idx, "education", "กำลังศึกษาอยู่")}
                                                 //onClick={() => (handleChange(index, "education", "กำลังศึกษาอยู่"), setEducation(false))}
                                                 >
                                                     <Typography variant="h6" fontWeight="bold" color={row.education === "จบการศึกษา" ? "textDisabled" : "white"} gutterBottom>กำลังศึกษาอยู่</Typography>
@@ -578,30 +672,20 @@ const EducationDetail = (props) => {
                                                 ระดับการศึกษา
                                             </Typography>
                                             <TextField
-                                                fullWidth
-                                                size="small"
-                                                value={row.educationLevel}
-                                                disabled={check ? false : true}
-                                            // onChange={(e) =>
-                                            //     handleChange(index, "institution", e.target.value)
-                                            // }
-                                            />
-                                            {/* <TextField
                                                 select
                                                 fullWidth
                                                 size="small"
                                                 value={row.educationLevel}
+                                                disabled={!check}
                                                 SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
-                                                onChange={(e) =>
-                                                    handleChange(index, "educationLevel", e.target.value)
-                                                }
+                                                onChange={(e) => handleDetailChange(idx, "educationLevel", e.target.value)}
                                             >
                                                 {educationLevels.map((option) => (
                                                     <MenuItem key={option.value} value={option.value}>
                                                         {option.label}
                                                     </MenuItem>
                                                 ))}
-                                            </TextField> */}
+                                            </TextField>
                                         </Grid>
 
                                         {
@@ -616,7 +700,8 @@ const EducationDetail = (props) => {
                                                             size="small"
                                                             value={row.institution}
                                                             placeholder="กรุณากรอกสถานศึกษา"
-                                                            disabled={check ? false : true}
+                                                            disabled={!check}
+                                                            onChange={(e) => handleDetailChange(idx, "institution", e.target.value)}
                                                         // onChange={(e) =>
                                                         //     handleChange(index, "institution", e.target.value)
                                                         // }
@@ -634,7 +719,8 @@ const EducationDetail = (props) => {
                                                             size="small"
                                                             placeholder="กรุณากรอกสถานศึกษา"
                                                             value={row.institution}
-                                                            disabled={check ? false : true}
+                                                            disabled={!check}
+                                                            onChange={(e) => handleDetailChange(idx, "institution", e.target.value)}
                                                         // onChange={(e) =>
                                                         //     handleChange(index, "institution", e.target.value)
                                                         // }
@@ -646,7 +732,8 @@ const EducationDetail = (props) => {
                                                             fullWidth
                                                             size="small"
                                                             value={row.educationCategory}
-                                                            disabled={check ? false : true}
+                                                            disabled={!check}
+                                                            onChange={(e) => handleDetailChange(idx, "educationCategory", e.target.value)}
                                                         // onChange={(e) =>
                                                         //     handleChange(index, "institution", e.target.value)
                                                         // }
@@ -675,7 +762,8 @@ const EducationDetail = (props) => {
                                                             fullWidth
                                                             size="small"
                                                             value={row.faculty}
-                                                            disabled={check ? false : true}
+                                                            disabled={!check}
+                                                            onChange={(e) => handleDetailChange(idx, "faculty", e.target.value)}
                                                             // onChange={(e) =>
                                                             //     handleChange(index, "faculty", e.target.value)
                                                             // }
@@ -688,7 +776,8 @@ const EducationDetail = (props) => {
                                                             fullWidth
                                                             size="small"
                                                             value={row.branch}
-                                                            disabled={check ? false : true}
+                                                            disabled={!check}
+                                                            onChange={(e) => handleDetailChange(idx, "branch", e.target.value)}
                                                             // onChange={(e) =>
                                                             //     handleChange(index, "branch", e.target.value)
                                                             // }
@@ -701,7 +790,8 @@ const EducationDetail = (props) => {
                                                             fullWidth
                                                             size="small"
                                                             value={row.degree}
-                                                            disabled={check ? false : true}
+                                                            disabled={!check}
+                                                            onChange={(e) => handleDetailChange(idx, "degree", e.target.value)}
                                                             // onChange={(e) =>
                                                             //     handleChange(index, "degree", e.target.value)
                                                             // }
@@ -719,7 +809,8 @@ const EducationDetail = (props) => {
                                                 size="small"
                                                 value={row.graduateYear}
                                                 placeholder="กรุณากรอกปีที่สำเร็จการศึกษา"
-                                                disabled={check ? false : true}
+                                                disabled={!check}
+                                                onChange={(e) => handleDetailChange(idx, "graduateYear", e.target.value)}
                                             // onChange={(e) =>
                                             //     handleChange(index, "graduateYear", e.target.value)
                                             // }
@@ -735,20 +826,33 @@ const EducationDetail = (props) => {
                                                 size="small"
                                                 value={row.gpa}
                                                 placeholder="กรุณากรอกเกรดเฉลี่ย"
-                                                disabled={check ? false : true}
+                                                disabled={!check}
+                                                onChange={(e) => handleDetailChange(idx, "gpa", e.target.value)}
                                             // onChange={(e) =>
                                             //     handleChange(index, "gpa", e.target.value)
                                             // }
                                             />
                                         </Grid>
-                                        <Grid item size={12}>
-                                            <Divider sx={{ marginTop: 1 }} />
-                                        </Grid>
                                     </React.Fragment>
                                 ))}
-                            <Grid item size={12}>
-                                <Divider />
-                            </Grid>
+                            {
+                                check &&
+                                <React.Fragment>
+                                    <Grid item size={12}>
+                                        <Divider />
+                                    </Grid>
+                                    <Grid item size={12} textAlign="center">
+                                        <Button
+                                            variant="outlined"
+                                            size="small"
+                                            color="info"
+                                            onClick={handleAdd}
+                                        >
+                                            เพิ่มข้อมูลการศึกษา
+                                        </Button>
+                                    </Grid>
+                                </React.Fragment>
+                            }
                             {/* <Grid item size={12} textAlign="center">
                                 {
                                     !check ?
@@ -779,7 +883,7 @@ const EducationDetail = (props) => {
                                     <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
                                         ยกเลิก
                                     </Button>
-                                    <Button variant="contained" color="success" size="small">
+                                    <Button variant="contained" color="success" size="small" onClick={handleUpdate} >
                                         บันทึก
                                     </Button>
                                 </React.Fragment>

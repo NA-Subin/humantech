@@ -79,7 +79,7 @@ const SalaryDetail = (props) => {
     const [documentot, setDocumentOT] = useState([]);
     const [holiday, setHoliday] = useState([]);
     const [employeeTypes, setEmployeeTypes] = useState([]);
-    const [selectedType, setSelectedType] = useState(0);
+    const [selectedType, setSelectedType] = useState("all");
 
     console.log("Leave : ", documentleave);
     console.log("OT : ", documentot);
@@ -216,7 +216,12 @@ const SalaryDetail = (props) => {
     };
 
     // 3️⃣ สร้าง Rows จาก filteredEmployees
-    const Rows = filteredEmployees.map(emp => {
+    const Rows = filteredEmployees.filter(emp => {
+        if (selectedType === "all") return true;
+
+        const typeId = emp.employmenttype?.split("-")[0];
+        return Number(typeId || 0) === selectedType;
+    }).map(emp => {
         const docIncome = documentincome.find(doc => doc.employid === emp.ID);
         const docDeduction = documentdeduction.find(doc => doc.employid === emp.ID);
         const attendantCount = emp.attendant?.[year]?.[m + 1]?.filter(item =>
@@ -658,7 +663,7 @@ const SalaryDetail = (props) => {
     };
 
     const typeCount = (id) =>
-        Rows.filter((t) => Number(t.employeetype?.split("-")[0] ?? 0) === id).length;
+        filteredEmployees.filter((t) => Number(t.employmenttype?.split("-")[0] ?? 0) === id).length;
 
     console.log("Object.entries(groupedRows) : ", Object.entries(groupedRows));
     console.log("selectType : ", selectedType);
@@ -677,6 +682,32 @@ const SalaryDetail = (props) => {
                             }}
                         >
                             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>ประเภทการจ้างงาน : </Typography>
+                            <Paper onClick={() => setSelectedType("all")}
+                                sx={{
+                                    textAlign: "center",
+                                    border: `1px solid ${theme.palette.primary.main}`,
+                                    boxShadow:
+                                        selectedType === "all"
+                                            ? "0px 4px 10px rgba(134, 134, 134, 0.63)"
+                                            : "0px 1px 3px rgba(98, 98, 98, 0.1)",
+                                    borderRadius: "5px",
+                                    pt: 0.5,
+                                    pl: 1,
+                                    pr: 1,
+                                    mt: -0.5,
+                                    cursor: "pointer",
+                                    // transition: "0.2s",
+                                    backgroundColor: selectedType === "all" ? theme.palette.primary.main : theme.palette.primary.light,
+                                    color: selectedType === "all" ? "white" : "black",
+                                    "&:hover": {
+                                        borderColor: theme.palette.primary.main,
+                                        boxShadow: "0px 4px 10px rgba(134, 134, 134, 0.63)",
+                                    },
+                                }}>
+                                <Typography variant="subtitle2" gutterBottom>
+                                    ทั้งหมด
+                                </Typography>
+                            </Paper>
                             {employeeTypes.map((type) => (
                                 typeCount(type.ID) > 0 && (
                                     <Paper key={type.ID} onClick={() => setSelectedType(type.ID)}
@@ -866,54 +897,55 @@ const SalaryDetail = (props) => {
                                                                     </TableRow>
 
                                                                     {/* ✅ รายชื่อพนักงานในตำแหน่ง */}
-                                                                    {empList.filter((type) => Number(type.employeetype.split("-")[0]) === selectedType).map((row, index) => (
-                                                                        <TableRow key={row.employid}>
-                                                                            {/* <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell> */}
-                                                                            <TableCell sx={{ textAlign: "center" }}>{row.employeecode}</TableCell>
-                                                                            <TableCell sx={{ textAlign: "center", position: "sticky", left: 0, backgroundColor: "white" }}>{row.employname}</TableCell>
-                                                                            <TableCell sx={{ textAlign: "center" }}>{row.attendantCount !== 0 ? `${row.attendantCount} วัน` : "-"}</TableCell>
-                                                                            <TableCell sx={{ textAlign: "center" }}>{row.holidayCount !== 0 ? `${row.holidayCount} วัน` : "-"}</TableCell>
-                                                                            {visibleLeave.map(ded => (
-                                                                                <TableCell key={ded.leaveid} sx={{ textAlign: "center" }}>
-                                                                                    {row[`leave${ded.leaveid}`]
-                                                                                        ? `${new Intl.NumberFormat("en-US").format(row[`leave${ded.leaveid}`])} วัน`
+                                                                    {empList
+                                                                        .map((row, index) => (
+                                                                            <TableRow key={row.employid}>
+                                                                                {/* <TableCell sx={{ textAlign: "center" }}>{index + 1}</TableCell> */}
+                                                                                <TableCell sx={{ textAlign: "center" }}>{row.employeecode}</TableCell>
+                                                                                <TableCell sx={{ textAlign: "center", position: "sticky", left: 0, backgroundColor: "white" }}>{row.employname}</TableCell>
+                                                                                <TableCell sx={{ textAlign: "center" }}>{row.attendantCount !== 0 ? `${row.attendantCount} วัน` : "-"}</TableCell>
+                                                                                <TableCell sx={{ textAlign: "center" }}>{row.holidayCount !== 0 ? `${row.holidayCount} วัน` : "-"}</TableCell>
+                                                                                {visibleLeave.map(ded => (
+                                                                                    <TableCell key={ded.leaveid} sx={{ textAlign: "center" }}>
+                                                                                        {row[`leave${ded.leaveid}`]
+                                                                                            ? `${new Intl.NumberFormat("en-US").format(row[`leave${ded.leaveid}`])} วัน`
+                                                                                            : "-"
+                                                                                        }
+                                                                                    </TableCell>
+                                                                                ))}
+                                                                                <TableCell sx={{ textAlign: "center" }}>{row.missingWork !== 0 ? `${row.missingWork} วัน` : "-"}</TableCell>
+                                                                                <TableCell sx={{ textAlign: "center" }}>{row.otHours !== 0 ? `${row.otHours} ชม.` : "-"}</TableCell>
+                                                                                <TableCell sx={{ textAlign: "center" }}>{row.workday !== 0 ? `${row.workday} วัน` : "-"}</TableCell>
+                                                                                <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.salary)}</TableCell>
+
+                                                                                {visibleIncome.map(inc => (
+                                                                                    <TableCell key={inc.ID} sx={{ textAlign: "center" }}>
+                                                                                        {row[`income${inc.ID}`] ? new Intl.NumberFormat("en-US").format(row[`income${inc.ID}`]) : "-"}
+                                                                                    </TableCell>
+                                                                                ))}
+
+                                                                                {visibleIncome.length !== 0 && <TableCell sx={{ textAlign: "center" }}>{row.totalIncome ? new Intl.NumberFormat("en-US").format(row.totalIncome) : "-"}</TableCell>}
+
+                                                                                {visibleDeduction.map(ded => (
+                                                                                    <TableCell key={ded.ID} sx={{ textAlign: "center" }}>
+                                                                                        {row[`deduction${ded.ID}`]
+                                                                                            ? new Intl.NumberFormat("en-US").format(-Math.abs(row[`deduction${ded.ID}`]))
+                                                                                            : "-"
+                                                                                        }
+                                                                                    </TableCell>
+                                                                                ))}
+
+                                                                                {visibleDeduction.length !== 0 && <TableCell sx={{ textAlign: "center" }}>
+                                                                                    {row.totalDeduction
+                                                                                        ? new Intl.NumberFormat("en-US").format(-Math.abs(row.totalDeduction))
                                                                                         : "-"
                                                                                     }
                                                                                 </TableCell>
-                                                                            ))}
-                                                                            <TableCell sx={{ textAlign: "center" }}>{row.missingWork !== 0 ? `${row.missingWork} วัน` : "-"}</TableCell>
-                                                                            <TableCell sx={{ textAlign: "center" }}>{row.otHours !== 0 ? `${row.otHours} ชม.` : "-"}</TableCell>
-                                                                            <TableCell sx={{ textAlign: "center" }}>{row.workday !== 0 ? `${row.workday} วัน` : "-"}</TableCell>
-                                                                            <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.salary)}</TableCell>
-
-                                                                            {visibleIncome.map(inc => (
-                                                                                <TableCell key={inc.ID} sx={{ textAlign: "center" }}>
-                                                                                    {row[`income${inc.ID}`] ? new Intl.NumberFormat("en-US").format(row[`income${inc.ID}`]) : "-"}
-                                                                                </TableCell>
-                                                                            ))}
-
-                                                                            {visibleIncome.length !== 0 && <TableCell sx={{ textAlign: "center" }}>{row.totalIncome ? new Intl.NumberFormat("en-US").format(row.totalIncome) : "-"}</TableCell>}
-
-                                                                            {visibleDeduction.map(ded => (
-                                                                                <TableCell key={ded.ID} sx={{ textAlign: "center" }}>
-                                                                                    {row[`deduction${ded.ID}`]
-                                                                                        ? new Intl.NumberFormat("en-US").format(-Math.abs(row[`deduction${ded.ID}`]))
-                                                                                        : "-"
-                                                                                    }
-                                                                                </TableCell>
-                                                                            ))}
-
-                                                                            {visibleDeduction.length !== 0 && <TableCell sx={{ textAlign: "center" }}>
-                                                                                {row.totalDeduction
-                                                                                    ? new Intl.NumberFormat("en-US").format(-Math.abs(row.totalDeduction))
-                                                                                    : "-"
                                                                                 }
-                                                                            </TableCell>
-                                                                            }
 
-                                                                            <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.total)}</TableCell>
-                                                                        </TableRow>
-                                                                    ))}
+                                                                                <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.total)}</TableCell>
+                                                                            </TableRow>
+                                                                        ))}
                                                                 </>
                                                             ))}
                                                         </>

@@ -361,7 +361,7 @@ const OtherDetail = (props) => {
             } */}
 
             {
-                openDetail?.employname && (
+                openDetail && Object.keys(openDetail).length > 0 && (
                     <Dialog
                         open
                         onClose={() => setOpenDetail({})}
