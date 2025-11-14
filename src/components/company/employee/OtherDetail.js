@@ -582,7 +582,14 @@ const OtherDetail = (props) => {
                                     </Button>
                                     :
                                     <React.Fragment>
-                                        <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                        <Button variant="contained" color="error" size="small" sx={{ mr: 2 }}
+                                            onClick={
+                                                () => {
+                                                    setCheck(false);
+                                                    setOpenDetail(other.find((emp) => emp.ID === openDetail?.ID));
+                                                }
+                                            }
+                                        >
                                             ยกเลิก
                                         </Button>
                                         <Button variant="contained" color="success" size="small" onClick={handleUpdate}>

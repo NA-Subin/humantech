@@ -140,7 +140,7 @@ function CompanyRoutes({ page }: { page?: string }) {
       return <CalculateSalary />;
     case "tax":
       return <TaxDetail />;
-    case "deduction":
+    case "taxdeduction":
       return <TaxDeductionDetail />;
     case "leave":
       return <LeaveDetail />;

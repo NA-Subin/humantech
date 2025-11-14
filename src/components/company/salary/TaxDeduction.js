@@ -47,20 +47,20 @@ const TaxDeductionDetail = () => {
     const [editTaxDeduction, setEditTaxDeduction] = useState(false);
     const [taxDeduction, setTaxDeduction] = useState(
         [
-            { title: "ค่าลดหย่อนส่วนตัว", amount: 60000, unit: "บาท", detail: "สำหรับผู้มีเงินได้ทุกคน" },
-            { title: "คู่สมรสไม่มีเงินได้", amount: 60000, unit: "บาท", detail: "หากสมรสและคู่สมรสไม่มีรายได้" },
-            { title: "บุตร (คนที่ 1-2)", amount: 30000, unit: "บาท/คน", detail: "ลดหย่อนได้สำหรับบุตรชอบด้วยกฎหมาย" },
-            { title: "บุตรคนที่ 3 ขึ้นไป (เกิดปี 2561 เป็นต้นไป)", amount: 60000, unit: "บาท/คน", detail: "สำหรับบุตรชอบด้วยกฎหมาย คนที่ 3 ขึ้นไป" },
-            { title: "ค่าอุปการะบิดามารดา", amount: 30000, unit: "บาท/คน", detail: "อายุเกิน 60 ปี และไม่มีรายได้เกิน 30,000 บาทต่อปี" },
-            { title: "ค่าอุปการะคนพิการ/ทุพพลภาพ", amount: 60000, unit: "บาท/คน", detail: "สำหรับผู้ดูแลบุคคลพิการ" },
-            { title: "เบี้ยประกันชีวิต", amount: 100000, unit: "บาท", detail: "ตามที่จ่ายจริง สูงสุดไม่เกิน 100,000 บาท" },
-            { title: "เบี้ยประกันสุขภาพบิดามารดา", amount: 15000, unit: "บาท", detail: "สูงสุดไม่เกิน 15,000 บาท (รวมทุกกรมธรรม์)" },
-            { title: "กองทุนสำรองเลี้ยงชีพ / กบข. / กองทุนครูเอกชน / RMF", amount: 500000, unit: "บาท", detail: "รวมกันไม่เกิน 500,000 บาท และไม่เกิน 15% ของรายได้" },
-            { title: "กองทุน SSF", amount: 200000, unit: "บาท", detail: "ไม่เกิน 30% ของเงินได้ที่ต้องเสียภาษี และไม่เกิน 200,000 บาท" },
-            { title: "ดอกเบี้ยเงินกู้ยืมเพื่อซื้อที่อยู่อาศัย", amount: 100000, unit: "บาท", detail: "เฉพาะดอกเบี้ย ไม่รวมเงินต้น" },
-            { title: "เงินบริจาคเพื่อการศึกษา กีฬา สาธารณประโยชน์", amount: 0, unit: "บาท", detail: "หักได้ไม่เกิน 10% ของเงินได้หลังหักค่าใช้จ่ายและค่าลดหย่อน" },
-            { title: "เงินบริจาคให้พรรคการเมือง", amount: 10000, unit: "บาท", detail: "สูงสุดไม่เกิน 10,000 บาท" },
-            { title: "ค่าฝึกอบรม/พัฒนาฝีมือ", amount: 20000, unit: "บาท", detail: "ลดหย่อนได้ตามจ่ายจริง ไม่เกิน 20,000 บาท" }
+            // { title: "ค่าลดหย่อนส่วนตัว", amount: 60000, unit: "บาท", detail: "สำหรับผู้มีเงินได้ทุกคน" },
+            // { title: "คู่สมรสไม่มีเงินได้", amount: 60000, unit: "บาท", detail: "หากสมรสและคู่สมรสไม่มีรายได้" },
+            // { title: "บุตร (คนที่ 1-2)", amount: 30000, unit: "บาท/คน", detail: "ลดหย่อนได้สำหรับบุตรชอบด้วยกฎหมาย" },
+            // { title: "บุตรคนที่ 3 ขึ้นไป (เกิดปี 2561 เป็นต้นไป)", amount: 60000, unit: "บาท/คน", detail: "สำหรับบุตรชอบด้วยกฎหมาย คนที่ 3 ขึ้นไป" },
+            // { title: "ค่าอุปการะบิดามารดา", amount: 30000, unit: "บาท/คน", detail: "อายุเกิน 60 ปี และไม่มีรายได้เกิน 30,000 บาทต่อปี" },
+            // { title: "ค่าอุปการะคนพิการ/ทุพพลภาพ", amount: 60000, unit: "บาท/คน", detail: "สำหรับผู้ดูแลบุคคลพิการ" },
+            // { title: "เบี้ยประกันชีวิต", amount: 100000, unit: "บาท", detail: "ตามที่จ่ายจริง สูงสุดไม่เกิน 100,000 บาท" },
+            // { title: "เบี้ยประกันสุขภาพบิดามารดา", amount: 15000, unit: "บาท", detail: "สูงสุดไม่เกิน 15,000 บาท (รวมทุกกรมธรรม์)" },
+            // { title: "กองทุนสำรองเลี้ยงชีพ / กบข. / กองทุนครูเอกชน / RMF", amount: 500000, unit: "บาท", detail: "รวมกันไม่เกิน 500,000 บาท และไม่เกิน 15% ของรายได้" },
+            // { title: "กองทุน SSF", amount: 200000, unit: "บาท", detail: "ไม่เกิน 30% ของเงินได้ที่ต้องเสียภาษี และไม่เกิน 200,000 บาท" },
+            // { title: "ดอกเบี้ยเงินกู้ยืมเพื่อซื้อที่อยู่อาศัย", amount: 100000, unit: "บาท", detail: "เฉพาะดอกเบี้ย ไม่รวมเงินต้น" },
+            // { title: "เงินบริจาคเพื่อการศึกษา กีฬา สาธารณประโยชน์", amount: 0, unit: "บาท", detail: "หักได้ไม่เกิน 10% ของเงินได้หลังหักค่าใช้จ่ายและค่าลดหย่อน" },
+            // { title: "เงินบริจาคให้พรรคการเมือง", amount: 10000, unit: "บาท", detail: "สูงสุดไม่เกิน 10,000 บาท" },
+            // { title: "ค่าฝึกอบรม/พัฒนาฝีมือ", amount: 20000, unit: "บาท", detail: "ลดหย่อนได้ตามจ่ายจริง ไม่เกิน 20,000 บาท" }
         ]
     );
 
@@ -110,24 +110,24 @@ const TaxDeductionDetail = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
-    // useEffect(() => {
-    //     if (!firebaseDB || !companyId) return;
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
 
-    //     const taxRef = ref(firebaseDB, `workgroup/company/${companyId}/deduction`);
+        const taxRef = ref(firebaseDB, `workgroup/company/${companyId}/deduction`);
 
-    //     const unsubscribe = onValue(taxRef, (snapshot) => {
-    //         const taxData = snapshot.val();
+        const unsubscribe = onValue(taxRef, (snapshot) => {
+            const taxData = snapshot.val();
 
-    //         // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
-    //         if (!taxData) {
-    //             setTaxDeduction([{ ID: 0, title: "", detail: "", amount: "", unit: "" }]);
-    //         } else {
-    //             setTaxDeduction(taxData);
-    //         }
-    //     });
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!taxData) {
+                setTaxDeduction([{ ID: 0, title: "", detail: "", amount: "", unit: "" }]);
+            } else {
+                setTaxDeduction(taxData);
+            }
+        });
 
-    //     return () => unsubscribe();
-    // }, [firebaseDB, companyId]);
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
 
     const handleSave = () => {
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/deduction`);
@@ -225,7 +225,13 @@ const TaxDeductionDetail = () => {
                                     :
                                     <TableContainer component={Paper} textAlign="center" sx={{ height: "55vh" }}>
                                         <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "5px" }, width: "100%" }}>
-                                            <TableHead>
+                                            <TableHead
+                                                sx={{
+                                                    position: "sticky",
+                                                    top: 0,
+                                                    zIndex: 2,
+                                                }}
+                                            >
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
                                                     <TablecellHeader sx={{ width: "40%" }}>ค่าลดหย่อน</TablecellHeader>

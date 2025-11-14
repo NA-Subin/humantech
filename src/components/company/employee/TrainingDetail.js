@@ -789,7 +789,32 @@ const TrainingDetail = (props) => {
                                 </Button>
                                 :
                                 <React.Fragment>
-                                    <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                    <Button variant="contained" color="error" size="small" sx={{ mr: 2 }}
+                                        onClick={
+                                            () => {
+                                                setCheck(false);
+                                                const rows = trainingRows.filter(r => r.ID === openDetail?.ID);
+
+                                                const detail = {
+                                                    ID: rows[0].ID,
+                                                    employeecode: rows[0].employeecode,
+                                                    employname: rows[0].employname,
+                                                    position: rows[0].position,
+                                                    trainingList: rows.map(r => ({
+                                                        course: r.course,
+                                                        dateEnd: r.dateEnd,
+                                                        dateStart: r.dateStart,
+                                                        dateE: r.dateE,
+                                                        dateS: r.dateS,
+                                                        fileType: r.fileType,
+                                                        institution: r.institution
+                                                    }))
+                                                };
+
+                                                setOpenDetail(detail);
+                                            }
+                                        }
+                                    >
                                         ยกเลิก
                                     </Button>
                                     <Button variant="contained" color="success" size="small" onClick={handleUpdate} >

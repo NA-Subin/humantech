@@ -260,6 +260,37 @@ const AddEmployee = () => {
         },
     ]);
 
+    const [tax, setTax] = useState([
+        {
+            language: "",
+            speaking: "",
+            reading: "",
+            writing: "",
+        },
+    ]);
+
+    // state สำหรับเก็บค่าที่เลือกหลายตัว
+    const [selectedTaxes, setSelectedTaxes] = useState([]);
+
+    // ฟังก์ชัน toggle เมื่อกดเลือก
+    const handleSelectTax = (tax) => {
+        setSelectedTaxes(prev => {
+            const exists = prev.some(item => item.ID === tax.ID);
+            if (exists) {
+                return prev.filter(item => item.ID !== tax.ID);
+            }
+            return [...prev, {
+                ID: selectedTaxes.length,
+                taxid: tax.ID,
+                name: tax.title,
+                amount: tax.amount,
+                date: dayjs(new Date).format("DD/MM/YYYY")
+            }]; // เพิ่มทั้ง object
+        });
+    };
+
+    console.log("select Tax : ", selectedTaxes);
+
     const [trainingList, setTrainingList] = useState([
         {
             dateStart: "",
@@ -310,6 +341,7 @@ const AddEmployee = () => {
     const [department, setDepartment] = useState([{ DepartmentName: '', Section: '' }]);
     const [workshifts, setWorkshifts] = useState([]);
     const [employeetype, setEmployeetype] = useState([]);
+    const [taxDeduction, setTaxDeduction] = useState([]);
     const [type, setType] = useState({});
     const [workshift, setWorkshift] = useState("");
     const [position, setPosition] = useState([{
@@ -450,6 +482,25 @@ const AddEmployee = () => {
             const found = list.find((item, index) => String(index) === companyId);
             if (found) {
                 setSelectedCompany(found);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const taxRef = ref(firebaseDB, `workgroup/company/${companyId}/deduction`);
+
+        const unsubscribe = onValue(taxRef, (snapshot) => {
+            const taxData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!taxData) {
+                setTaxDeduction([{ ID: 0, title: "", detail: "", amount: "", unit: "" }]);
+            } else {
+                setTaxDeduction(taxData);
             }
         });
 
@@ -863,6 +914,7 @@ const AddEmployee = () => {
                 specialAbilities: specialAbilities,
                 workshift: workshiftName,
                 workshifthistory: workshifthistory,
+                taxdeduction: selectedTaxes,
                 empbackendid: backendId
             });
 
@@ -963,6 +1015,7 @@ const AddEmployee = () => {
                 positionname: "",
                 sectionid: "",
             }]);
+            setSelectedTaxes([]);
 
         } catch (error) {
             console.error("Error adding company:", error);
@@ -1823,6 +1876,46 @@ const AddEmployee = () => {
                             onFileChange={(file) => setVehicle(file)}
                         /> */}
                     </Grid>
+                </>
+            ),
+        },
+        {
+            title: "ค่าลดหย่อนภาษี",
+            content: (
+                <>
+                    <Box>
+                        <Typography variant="subtitle1" sx={{ marginTop: 2 }} fontWeight="bold">
+                            กรุณาเลือกค่าลดหย่อนภาษี
+                        </Typography>
+                        <Divider sx={{ mt: 1, mb: 1 }} />
+                        {taxDeduction.map((tax, index) => {
+                            const isSelected = selectedTaxes.some(item => item.taxid === tax.ID);
+
+                            return (
+                                <Box
+                                    key={index}
+                                    sx={{
+                                        mr: 2, // ระยะห่างขวา
+                                        mt: 1,
+                                        display: "inline-block", // ทำให้กว้างเท่าข้อความ
+                                        border: `1px solid ${theme.palette.primary.main}`,
+                                        borderRadius: 2,
+                                        px: 1.5,   // padding ซ้ายขวาเล็กน้อย
+                                        py: 0.5,
+                                        cursor: "pointer",
+                                        color: isSelected ? "#fff" : theme.palette.primary.main,
+                                        backgroundColor: isSelected ? theme.palette.primary.main : "transparent",
+                                        transition: "0.2s",
+                                        userSelect: "none",
+                                        fontSize: "15px"
+                                    }}
+                                    onClick={() => handleSelectTax(tax)}
+                                >
+                                    {tax.title}
+                                </Box>
+                            );
+                        })}
+                    </Box>
                 </>
             ),
         },

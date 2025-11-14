@@ -880,7 +880,33 @@ const EducationDetail = (props) => {
                                 </Button>
                                 :
                                 <React.Fragment>
-                                    <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                    <Button variant="contained" color="error" size="small" sx={{ mr: 2 }}
+                                        onClick={
+                                            () => {
+                                                setCheck(false);
+                                                const rows = educationRows.filter(r => r.ID === openDetail?.ID);
+
+                                                const detail = {
+                                                    ID: rows[0].ID,
+                                                    employeecode: rows[0].employeecode,
+                                                    employname: rows[0].employname,
+                                                    position: rows[0].position,
+                                                    educationList: rows.map(r => ({
+                                                        education: r.education,
+                                                        educationLevel: r.educationLevel,
+                                                        institution: r.institution,
+                                                        educationCategory: r.educationCategory,
+                                                        faculty: r.faculty,
+                                                        branch: r.branch,
+                                                        degree: r.degree,
+                                                        graduateYear: r.graduateYear,
+                                                        gpa: r.gpa,
+                                                    }))
+                                                };
+                                                setOpenDetail(detail);
+                                            }
+                                        }
+                                    >
                                         ยกเลิก
                                     </Button>
                                     <Button variant="contained" color="success" size="small" onClick={handleUpdate} >

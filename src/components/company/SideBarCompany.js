@@ -1338,7 +1338,7 @@ export default function SideBarCompany() {
                             </Typography>}
 
                             {['ประกันสังคม', 'ภาษี',
-                                //'ค่าลดหย่อนภาษี',
+                                'ค่าลดหย่อนภาษี',
                                 'รายได้เพิ่มเติม', 'รายหักเพิ่มเติม'].map((text, index) => {
                                     const isSelected = selectedMenu === text;
                                     const button = (
@@ -1356,11 +1356,11 @@ export default function SideBarCompany() {
                                                     ? `/?domain=${domain}&company=${companyName}&salary=social-security`
                                                     : index === 1
                                                         ? `/?domain=${domain}&company=${companyName}&salary=tax`
-                                                        // : index === 2
-                                                        //     ? `/?domain=${domain}&company=${companyName}&salary=deduction`
                                                         : index === 2
-                                                            ? `/?domain=${domain}&company=${companyName}&salary=income`
-                                                            : `/?domain=${domain}&company=${companyName}&salary=deductions`
+                                                            ? `/?domain=${domain}&company=${companyName}&salary=taxdeduction`
+                                                            : index === 3
+                                                                ? `/?domain=${domain}&company=${companyName}&salary=income`
+                                                                : `/?domain=${domain}&company=${companyName}&salary=deductions`
                                             }
                                             onClick={() => setSelectedMenu(text)}
                                             sx={{
@@ -1928,8 +1928,8 @@ export default function SideBarCompany() {
                                                 : index === 1 ? `/?domain=${domain}&company=${companyName}&report=ot`
                                                     : index === 2 ? `/?domain=${domain}&company=${companyName}&report=time`
                                                         // : index === 3 ? `/?domain=${domain}&company=${companyName}&report=working-outside`
-                                                            // : index === 4 ? `/?domain=${domain}&company=${companyName}&report=work-certificate`
-                                                            : `/?domain=${domain}&company=${companyName}&report=report-loan`
+                                                        // : index === 4 ? `/?domain=${domain}&company=${companyName}&report=work-certificate`
+                                                        : `/?domain=${domain}&company=${companyName}&report=report-loan`
                                         }
                                         sx={{
                                             minHeight: 32,

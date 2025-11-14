@@ -17,13 +17,13 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import CloseIcon from '@mui/icons-material/Close';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { styled } from '@mui/material/styles';
 import Paper from '@mui/material/Paper';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
+import CloseIcon from '@mui/icons-material/Close';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import theme from "../../../theme/theme";
 import FolderOffRoundedIcon from '@mui/icons-material/FolderOffRounded';
@@ -33,25 +33,55 @@ import { useFirebase } from "../../../server/ProjectFirebaseContext";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
-import { database } from "../../../server/firebase";
+import dayjs from "dayjs";
 import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { database } from "../../../server/firebase";
+import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
+import ThaiDateSelector from "../../../theme/ThaiDateSelector";
 
-const LanguageDetail = (props) => {
+const SalaryDetail = (props) => {
     const { menu, data } = props;
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
-
-    const [edit, setEdit] = useState("");
     const [check, setCheck] = useState(false);
 
+    const [edit, setEdit] = useState("");
+    const [openDetail, setOpenDetail] = useState("");
+    const [thailand, setThailand] = useState([]);
+    const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
-    const [thailand, setThailand] = useState([]);
-    const [openDetail, setOpenDetail] = useState({});
-    const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
+
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
+
+    function formatToGregorian(birthDate) {
+        if (!birthDate || !birthDate.day || !birthDate.month || !birthDate.year) {
+            return ""; // ถ้าไม่มีข้อมูล ให้คืนค่าว่าง
+        }
+
+        const day = String(birthDate.day).padStart(2, "0");
+        const month = String(birthDate.month).padStart(2, "0");
+        const year = parseInt(birthDate.year, 10) - 543; // พ.ศ. → ค.ศ.
+
+        return `${day}/${month}/${year}`;
+    }
+
+    // ฟังก์ชันแปลงกลับจาก DD/MM/YYYY → birthDate Object (พ.ศ.)
+    function parseFromGregorian(dateStr) {
+        if (!dateStr) return null;
+
+        const [day, month, year] = dateStr.split("/");
+
+        if (!day || !month || !year) return null;
+
+        return {
+            day: Number(day),
+            month: Number(month),
+            year: (Number(year) + 543).toString() // ค.ศ. → พ.ศ.
+        };
+    }
 
     useEffect(() => {
         if (!database) return;
@@ -72,7 +102,7 @@ const LanguageDetail = (props) => {
         return () => unsubscribe();
     }, [database]);
 
-    const languageRows = [];
+    const salaryRows = [];
 
     // const language = employees.map(emp => ({
     //     employname: emp.employname,
@@ -82,86 +112,103 @@ const LanguageDetail = (props) => {
 
     employees.forEach(emp => {
         const position = emp.position.split("-")[1];
-        const langs = emp.languageList || [];
+        const sal = emp.salaryhistory || [];
 
-        langs.forEach((lang, langIdx) => {
-            languageRows.push({
+        sal.forEach((train, trainIdx) => {
+            salaryRows.push({
                 ID: emp.ID,
                 employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
-                language: lang.language || "",
-                speaking: lang.speaking || "",
-                reading: lang.reading || "",
-                writing: lang.writing || "",
-                isFirst: langIdx === 0,
-                rowSpan: langs.length,
+                salary: train.salary || "",
+                datestart: parseFromGregorian(train.datestart || ''),
+                dateend: parseFromGregorian(train.dateend || ''),
+                dateS: train.datestart || '',
+                dateE: train.dateend || '',
+                isFirst: trainIdx === 0,
+                rowSpan: sal.length,
             });
         });
 
         // ถ้าไม่มีภาษาเลยก็ใส่แถวว่างไว้
-        if (langs.length === 0) {
-            languageRows.push({
+        if (sal.length === 0) {
+            salaryRows.push({
                 ID: emp.ID,
                 employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
-                language: "-",
-                speaking: "-",
-                reading: "-",
-                writing: "-",
+                salary: "-",
+                dateend: "-",
+                datestart: "-",
+                dateE: "",
+                dateS: "",
                 isFirst: true,
                 rowSpan: 1,
             });
         }
     });
 
-    const languageColumns = [
+    const salaryColumns = [
         { label: "ชื่อ", key: "employname", type: "text", disabled: true, width: 200, sticky: true },
         { label: "ตำแหน่ง", key: "position", type: "text", disabled: true, width: 150 },
-        { label: "ภาษา", key: "language", type: "text", width: 150 },
-        { label: "พูด", key: "speak", type: "text", width: 120 },
-        { label: "อ่าน", key: "read", type: "text", width: 120 },
-        { label: "เขียน", key: "write", type: "text", width: 120 },
+        { label: "วันที่เริ่มต้น", key: "dateS", type: "date", width: 120 },
+        { label: "จนถึงวันที่", key: "dateE", type: "date", width: 120 },
+        { label: "เงินเดือน", key: "salary", type: "text", width: 100 },
     ];
 
-    const handleLanguageChange = (updatedList) => {
-        // สร้าง map ของ employee ชื่อ => ภาษา list ใหม่
-        const empLangMap = {};
+    const handleTraningChange = (updatedList) => {
+        const empTrainingMap = {};
 
-        updatedList.forEach(row => {
-            const name = row.employname;
-            if (!empLangMap[name]) {
-                empLangMap[name] = [];
+        console.log("updatedList : ", updatedList);
+
+        updatedList.forEach((row, idx) => {
+            // แยกชื่อและชื่อเล่นจาก row.employname
+            const match = row.employname.match(/^(.*) \((.*)\)$/); // แยก "ชื่อ (ชื่อเล่น)"
+            if (!match) return;
+
+            const fullName = match[1].trim();     // เช่น "นราวิชญ์ สุบินนาม"
+            const nickname = match[2].trim();     // เช่น "อาร์ม"
+
+            const matchedEmp = employees.find(emp => {
+                return emp.employname.trim() === fullName && emp.nickname.trim() === nickname;
+            });
+
+            if (!matchedEmp) return; // ไม่เจอข้ามไปเลย
+
+            const key = `${matchedEmp.ID}`;
+
+            console.log("1.key : ", key);
+            console.log("datestart : ", row.datestart);
+
+            if (!empTrainingMap[key]) {
+                empTrainingMap[key] = [];
             }
-            // ถ้า language เป็น '-' หรือข้อมูลว่าง ให้ข้าม
-            if (row.language && row.language !== '-') {
-                empLangMap[name].push({
-                    language: row.language,
-                    speaking: row.speak,
-                    reading: row.read,
-                    writing: row.write,
+
+            if (row.employname && row.employname !== '-') {
+                empTrainingMap[key].push({
+                    salary: row.salary,
+                    datestart: updatedList[idx].dateS ? parseFromGregorian(updatedList[idx].dateS) : null,
+                    dateend: updatedList[idx].dateE ? parseFromGregorian(updatedList[idx].dateE) : null,
                 });
             }
         });
 
-        // สร้าง employees ใหม่ โดยแทนที่ languageList ด้วยข้อมูลใหม่จาก empLangMap
         const merged = employees.map(emp => {
+            const key = `${emp.ID}`;
+            console.log("2.key : ", key);
             return {
                 ...emp,
-                languageList: empLangMap[`${emp.employname} (${emp.nickname})`] || [],
+                salaryhistory: empTrainingMap[key] || [],
             };
         });
 
-        console.log("merged", merged);
-        console.log("empLangMap keys", Object.keys(empLangMap));
-        console.log("employees map", employees.map(e => e.employname));
+        console.log("empTrainingMap : ", empTrainingMap);
 
         setEmployees(merged);
     };
 
 
-    console.log("languageRows : ", languageRows);
+    console.log("salaryRows : ", salaryRows);
 
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -192,7 +239,7 @@ const LanguageDetail = (props) => {
         const invalidMessages = [];
 
         employees.forEach((row, rowIndex) => {
-            languageColumns.forEach((col) => {
+            salaryColumns.forEach((col) => {
                 const value = row[col.key];
 
                 if (value === "") {
@@ -204,32 +251,31 @@ const LanguageDetail = (props) => {
                     invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ต้องเป็นตัวเลข`);
                     return;
                 }
-
-                if (
-                    col.type === "select" &&
-                    !col.options?.some(opt => opt.value === value)
-                ) {
-                    invalidMessages.push(`แถวที่ ${rowIndex + 1}: "${col.label}" ไม่ตรงกับตัวเลือกที่กำหนด`);
-                    return;
-                }
             });
         });
 
-        // ✅ ตรวจสอบว่า employee.name ซ้ำหรือไม่
-        const names = employees.map(row => row.name?.trim()).filter(Boolean); // ตัดช่องว่างด้วย
+        // แก้เป็น employname แทน name
+        const names = employees.map(row => row.employname?.trim()).filter(Boolean);
         const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
         if (duplicates.length > 0) {
             invalidMessages.push(`มีชื่อ: ${[...new Set(duplicates)].join(", ")} ซ้ำกัน`);
         }
 
-        // ❌ แสดงคำเตือนถ้ามีข้อผิดพลาด
         if (invalidMessages.length > 0) {
             ShowWarning("กรุณากรอกข้อมูลให้เรียบร้อย", invalidMessages.join("\n"));
             return;
         }
 
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(companiesRef, employees)
+        // แปลงข้อมูลก่อนบันทึก
+        const employeesToSave = employees.map(emp => ({
+            ...emp,
+            salaryhistory: (emp.salaryhistory || []).map(train => ({
+                ...train,
+                file: typeof train.file === "object" && train.file !== null ? train.file.name || null : train.file || null,
+            })),
+        }));
+
+        set(companiesRef, employeesToSave)
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
                 console.log("บันทึกสำเร็จ");
@@ -243,13 +289,13 @@ const LanguageDetail = (props) => {
 
     const handleDetailChange = (index, field, value) => {
         setOpenDetail(prev => {
-            const updatedList = prev.languageList.map((item, idx) =>
+            const updatedList = prev.salaryhistory.map((item, idx) =>
                 idx === index ? { ...item, [field]: value } : item
             );
 
             return {
                 ...prev,
-                languageList: updatedList
+                salaryhistory: updatedList
             };
         });
     };
@@ -257,13 +303,14 @@ const LanguageDetail = (props) => {
     const handleAdd = () => {
         setOpenDetail(prev => ({
             ...prev,
-            languageList: [
-                ...prev.languageList,
+            salaryhistory: [
+                ...prev.salaryhistory,
                 {
-                    language: "-",
-                    speaking: "-",
-                    reading: "-",
-                    writing: "-",
+                    salary: "",
+                    dateend: null,
+                    datestart: null,
+                    dateE: "",
+                    dateS: "",
                 }
             ]
         }));
@@ -272,8 +319,18 @@ const LanguageDetail = (props) => {
     const handleRemove = (index) => {
         setOpenDetail(prev => ({
             ...prev,
-            languageList: prev.languageList.filter((_, idx) => idx !== index)
+            salaryhistory: prev.salaryhistory.filter((_, idx) => idx !== index)
         }));
+    };
+
+    const handleCancel = () => {
+        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+
+        onValue(employeeRef, (snapshot) => {
+            const employeeData = snapshot.val() || [{ ID: 0, name: '', employeenumber: '' }];
+            setEmployees(employeeData);
+            setEdit(false);
+        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
     const handleUpdate = () => {
@@ -281,10 +338,59 @@ const LanguageDetail = (props) => {
             return ShowError("ไม่พบข้อมูลพนักงาน");
         }
 
+        // ✅ Process salaryhistory ก่อน save
+        const cleanTraining = openDetail.salaryhistory
+            ?.map((item, index) => {
+                // 1) ใช้ datestart / dateend object ถ้ามี
+                let startObj = item.datestart;
+                let endObj = item.dateend;
+
+                // 2) ถ้าไม่มีให้ parse จาก dateS/dateE แบบ DD/MM/YYYY
+                if (!startObj && item.dateS) {
+                    const [d, m, y] = parseFromGregorian(item.dateS).split("/");
+                    startObj = { day: Number(d), month: Number(m), year: y };
+                }
+                if (!endObj && item.dateE) {
+                    const [d, m, y] = parseFromGregorian(item.dateE).split("/");
+                    endObj = { day: Number(d), month: Number(m), year: y };
+                }
+
+                // 3) แปลง พ.ศ. เป็น ค.ศ.
+                const startYearCE = Number(startObj.year) - 543;
+                const endYearCE = Number(endObj.year) - 543;
+
+                // 4) แปลงเป็นรูปแบบ DD/MM/YYYY
+                const datestart = `${String(startObj.day).padStart(2, "0")}/${String(startObj.month).padStart(2, "0")}/${startYearCE}`;
+                const dateend = `${String(endObj.day).padStart(2, "0")}/${String(endObj.month).padStart(2, "0")}/${endYearCE}`;
+
+                return {
+                    ...item,
+                    ID: index,   // ⭐ เพิ่ม ID ให้ตรง index ที่ map กำหนด
+
+                    datestart,
+                    dateend,
+
+                    DDstart: String(startObj.day).padStart(2, "0"),
+                    MMstart: String(startObj.month).padStart(2, "0"),
+                    YYYYstart: String(startYearCE),
+
+                    DDend: String(endObj.day).padStart(2, "0"),
+                    MMend: String(endObj.month).padStart(2, "0"),
+                    YYYYend: String(endYearCE),
+                };
+            })
+            .map(({ dateS, dateE, ...rest }) => rest);   // ลบ field เก่า
+        // 👆 ลบ dateS, dateE ออกจาก object
+
+        const lastSalary = cleanTraining?.length
+            ? cleanTraining[cleanTraining.length - 1].salary
+            : "";
+
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${openDetail.ID}`);
 
         update(companiesRef, {
-            languageList: openDetail.languageList
+            salary: lastSalary,
+            salaryhistory: cleanTraining
         })
             .then(() => {
                 ShowSuccess("บันทึกข้อมูลสำเร็จ");
@@ -298,18 +404,8 @@ const LanguageDetail = (props) => {
             });
     };
 
-    const handleCancel = () => {
-        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
-
-        onValue(employeeRef, (snapshot) => {
-            const employeeData = snapshot.val() || [{ ID: 0, name: '', employeenumber: '' }];
-            setEmployees(employeeData);
-            setEdit(false);
-        }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
-    };
-
-    console.log("openDetail : ", openDetail);
-
+    console.log("salaryRows : ", salaryRows);
+    console.log("openDetal : ", openDetail);
 
     return (
         <Box sx={{ marginTop: 5, width: "100%" }}>
@@ -326,84 +422,89 @@ const LanguageDetail = (props) => {
                             <Paper elevation={2} sx={{ borderRadius: 1.5, overflow: "hidden" }}>
                                 <TableExcel
                                     styles={{ height: "60vh" }} // ✅ ส่งเป็น object
-                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}
+                                    stylesTable={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1065px" }}
                                     types="list"
-                                    columns={languageColumns}
-                                    initialData={languageRows}
-                                    onDataChange={handleLanguageChange}
+                                    columns={salaryColumns}
+                                    initialData={salaryRows}
+                                    onDataChange={handleTraningChange}
                                 />
                             </Paper>
                             :
                             <React.Fragment>
-                                <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลภาษารายคนให้กดชื่อในตารางได้เลย</Typography>
+                                <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลเงินเดือนรายคนให้กดชื่อในตารางได้เลย</Typography>
                                 <TableContainer component={Paper} textAlign="center" sx={{ height: "60vh" }}>
-                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
-                                        <TableHead>
+                                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1065px" }}>
+                                        <TableHead
+                                            sx={{
+                                                position: "sticky",
+                                                top: 0,
+                                                zIndex: 3,
+                                            }}
+                                        >
                                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 50 }}>ลำดับ</TablecellHeader>
-                                                <TablecellHeader rowSpan={2}>ชื่อ</TablecellHeader>
-                                                <TablecellHeader rowSpan={2}>ตำแหน่ง</TablecellHeader>
-                                                <TablecellHeader colSpan={4}>ภาษาที่ใช้</TablecellHeader>
-                                            </TableRow>
-                                            <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                                <TablecellHeader>ภาษา</TablecellHeader>
-                                                <TablecellHeader>พูด</TablecellHeader>
-                                                <TablecellHeader>อ่าน</TablecellHeader>
-                                                <TablecellHeader>เขียน</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 200, position: "sticky", left: 0, zIndex: 2, backgroundColor: theme.palette.primary.dark }}>ชื่อ</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 150 }}>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 120 }}>วันที่เริ่มต้น</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 120 }}>จนถึงวันที่</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 100 }}>เงินเดือน</TablecellHeader>
                                             </TableRow>
                                         </TableHead>
-
                                         <TableBody>
                                             {
-                                                languageRows.length === 0 ?
+                                                salaryRows.length === 0 ?
                                                     <TableRow>
-                                                        <TablecellNoData colSpan={7}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                                        <TablecellNoData colSpan={9}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                                     </TableRow>
                                                     :
-                                                    (
-                                                        languageRows.map((row, index) => (
-                                                            <TableRow
-                                                                key={index}
-                                                                onClick={() => {
-                                                                    const rows = languageRows.filter(r => r.ID === row.ID);
+                                                    salaryRows.map((row, index) => (
+                                                        <TableRow
+                                                            onClick={() => {
+                                                                const rows = salaryRows.filter(r => r.ID === row.ID);
 
-                                                                    const detail = {
-                                                                        ID: rows[0].ID,
-                                                                        employeecode: rows[0].employeecode,
-                                                                        employname: rows[0].employname,
-                                                                        position: rows[0].position,
-                                                                        languageList: rows.map(r => ({
-                                                                            language: r.language,
-                                                                            reading: r.reading,
-                                                                            speaking: r.speaking,
-                                                                            writing: r.writing
-                                                                        }))
-                                                                    };
+                                                                const detail = {
+                                                                    ID: rows[0].ID,
+                                                                    employeecode: rows[0].employeecode,
+                                                                    employname: rows[0].employname,
+                                                                    position: rows[0].position,
+                                                                    salaryhistory: rows.map(r => ({
+                                                                        salary: r.salary,
+                                                                        dateend: r.dateend,
+                                                                        datestart: r.datestart,
+                                                                        dateE: r.dateE,
+                                                                        dateS: r.dateS,
+                                                                    }))
+                                                                };
 
-                                                                    setOpenDetail(detail);
-                                                                }}
-                                                                onMouseEnter={() => setHoveredEmpCode(row.ID)}
-                                                                onMouseLeave={() => setHoveredEmpCode(null)}
-                                                                sx={{
-                                                                    cursor: hoveredEmpCode === row.ID ? 'pointer' : 'default',
-                                                                    backgroundColor: hoveredEmpCode === row.ID ? theme.palette.primary.light : 'inherit',
-                                                                }}
-                                                            >
-                                                                {row.isFirst && (
-                                                                    <>
-                                                                        <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{index + 1}</TableCell>
-                                                                        <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.employname}</TableCell>
-                                                                        <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.position}</TableCell>
-                                                                    </>
-                                                                )}
-                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.language}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.speaking}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.reading}</TableCell>
-                                                                <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', }}>{row.writing}</TableCell>
-                                                            </TableRow>
-                                                        ))
-                                                    )
-                                            }
+                                                                setOpenDetail(detail);
+                                                            }}
+                                                            onMouseEnter={() => setHoveredEmpCode(row.ID)}
+                                                            onMouseLeave={() => setHoveredEmpCode(null)}
+                                                            sx={{
+                                                                cursor: hoveredEmpCode === row.ID ? 'pointer' : 'default',
+                                                                backgroundColor: hoveredEmpCode === row.ID ? theme.palette.primary.light : 'inherit',
+                                                            }}
+                                                        >
+                                                            {row.isFirst && (
+                                                                <>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{index + 1}</TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "left" }}>
+                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>
+                                                                            {row.employname}
+                                                                        </Typography>
+                                                                    </TableCell>
+                                                                    <TableCell rowSpan={row.rowSpan} sx={{ textAlign: "left" }}>
+                                                                        <Typography variant="subtitle2" sx={{ marginLeft: 2, fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal', whiteSpace: "nowrap" }} gutterBottom>
+                                                                            {row.position}
+                                                                        </Typography>
+                                                                    </TableCell>
+                                                                </>
+                                                            )}
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.dateS}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.dateE}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.salary}</TableCell>
+                                                        </TableRow>
+                                                    ))}
                                         </TableBody>
                                     </Table>
                                 </TableContainer>
@@ -431,7 +532,7 @@ const LanguageDetail = (props) => {
                                 onClick={() => setEdit(true)}
                                 endIcon={<ManageAccountsIcon fontSize="large" />}
                             >
-                                แก้ไขข้อมูลภาษา
+                                แก้ไขข้อมูลเงินเดือน
                             </Button>
                     }
                 </Grid>
@@ -484,7 +585,7 @@ const LanguageDetail = (props) => {
                     <DialogTitle sx={{ textAlign: "center", fontWeight: "bold" }}>
                         <Grid container spacing={2}>
                             <Grid item size={10}>
-                                <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลภาษา</Typography>
+                                <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลเงินเดือน</Typography>
                             </Grid>
                             <Grid item size={2} sx={{ textAlign: "right" }}>
                                 <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpenDetail({})}>
@@ -545,7 +646,7 @@ const LanguageDetail = (props) => {
                             </Grid>
 
                             {/* ดึงเฉพาะ row education ของคนนี้ทั้งหมด */}
-                            {openDetail?.languageList
+                            {openDetail?.salaryhistory
                                 .map((row, idx) => (
                                     <React.Fragment key={idx}>
                                         <Grid item size={10}>
@@ -554,7 +655,7 @@ const LanguageDetail = (props) => {
                                             </Typography>
                                         </Grid>
                                         <Grid item size={2} textAlign="right">
-                                            {languageRows.length > 1 && (
+                                            {salaryRows.length > 1 && (
                                                 <Button
                                                     variant="outlined"
                                                     size="small"
@@ -568,87 +669,44 @@ const LanguageDetail = (props) => {
                                         </Grid>
 
                                         <Grid item size={12}>
+                                            <ThaiDateSelector
+                                                label="เริ่มตั้งแต่วันที่"
+                                                value={row.datestart}
+                                                disabled={!check}
+                                                onChange={(val) => handleDetailChange(idx, "datestart", val)}
+                                            // onChange={(val) =>
+                                            //     handleTrainingChange(index, "datestart", val)
+                                            // }
+                                            />
+                                        </Grid>
+                                        <Grid item size={12}>
+                                            <ThaiDateSelector
+                                                label="จนถึง"
+                                                value={row.dateend}
+                                                disabled={!check}
+                                                onChange={(val) => handleDetailChange(idx, "dateend", val)}
+                                            // onChange={(val) =>
+                                            //     handleTrainingChange(index, "dateend", val)
+                                            // }
+                                            />
+                                        </Grid>
+                                        <Grid item size={12}>
+                                            <Typography variant="subtitle2" fontWeight="bold" >เงินเดือน</Typography>
                                             <TextField
                                                 fullWidth
                                                 size="small"
-                                                value={row.language}
+                                                value={row.salary}
                                                 disabled={!check}
-                                                onChange={(val) => handleDetailChange(idx, "language", val)}
-                                            // onChange={(e) =>
-                                            //     handleLanguageChange(index, "language", e.target.value)
-                                            // }
-                                            // placeholder="กรุณากรอกชื่อภาษา"
+                                                onChange={(e) => handleDetailChange(idx, "salary", e.target.value)}
+                                                // onChange={(e) =>
+                                                //     handleTrainingChange(index, "course", e.target.value)
+                                                // }
+                                                placeholder="กรุณากรอกหลักสูตร"
                                             />
-                                            {/* <TextField
-                                                select
-                                                fullWidth
-                                                size="small"
-                                                value={lang.language}
-                                                onChange={(e) =>
-                                                    handleLanguageChange(index, "language", e.target.value)
-                                                }
-                                            >
-                                                <MenuItem value="ไทย">ภาษาไทย</MenuItem>
-                                                <MenuItem value="อังกฤษ">ภาษาอังกฤษ</MenuItem>
-                                                <MenuItem value="ญี่ปุ่น">ภาษาญี่ปุ่น</MenuItem>
-                                                <MenuItem value="เกาหลี">ภาษาเกาหลี</MenuItem>
-                                            </TextField> */}
                                         </Grid>
-                                        <Grid item size={0.5} />
-                                        <Grid item size={3.5}>
-                                            <Box sx={{ borderRadius: 40, backgroundColor: "#80cbc4", width: "150px", height: "150px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                                <Typography variant="h5" fontWeight="bold" sx={{ color: "white" }} gutterBottom>{row.language}</Typography>
-                                            </Box>
+                                        <Grid item size={12}>
+                                            <Divider sx={{ marginTop: 1 }} />
                                         </Grid>
-                                        <Grid item size={7.5}>
-                                            <Grid container spacing={2}>
-                                                <Grid item size={2}>
-                                                    <Typography variant="subtitle2" sx={{ marginTop: 1, textAlign: "right" }} fontWeight="bold">พูด</Typography>
-                                                </Grid>
-                                                <Grid item size={10}>
-                                                    <TextField
-                                                        fullWidth
-                                                        size="small"
-                                                        value={row.speaking}
-                                                        disabled={!check}
-                                                        onChange={(e) => handleDetailChange(idx, "speaking", e.target.value)}
-                                                    // onChange={(e) => handleLanguageChange(index, "speaking", e.target.value)}
-                                                    // placeholder="กรุณากรอกความสามารถในการพูด"
-                                                    />
-                                                </Grid>
-                                                <Grid item size={2}>
-                                                    <Typography variant="subtitle2" sx={{ marginTop: 1, textAlign: "right" }} fontWeight="bold">อ่าน</Typography>
-                                                </Grid>
-                                                <Grid item size={10}>
-                                                    <TextField
-                                                        fullWidth
-                                                        size="small"
-                                                        value={row.reading}
-                                                        disabled={!check}
-                                                        onChange={(e) => handleDetailChange(idx, "reading", e.target.value)}
-                                                    // onChange={(e) => handleLanguageChange(index, "reading", e.target.value)}
-                                                    // placeholder="กรุณากรอกความสามารถในการอ่าน"
-                                                    />
-                                                </Grid>
-
-                                                <Grid item size={2}>
-                                                    <Typography variant="subtitle2" sx={{ marginTop: 1, textAlign: "right" }} fontWeight="bold">เขียน</Typography>
-                                                </Grid>
-                                                <Grid item size={10}>
-                                                    <TextField
-                                                        fullWidth
-                                                        size="small"
-                                                        value={row.writing}
-                                                        disabled={!check}
-                                                        onChange={(e) => handleDetailChange(idx, "writing", e.target.value)}
-                                                    // onChange={(e) => handleLanguageChange(index, "writing", e.target.value)}
-                                                    // placeholder="กรุณากรอกความสามารถในการเขียน"
-                                                    />
-                                                </Grid>
-                                            </Grid>
-                                        </Grid>
-                                        <Grid item size={0.5} />
-                                        <Grid item size={12}><Divider sx={{ mt: 1 }} /></Grid>
                                     </React.Fragment>
                                 ))}
                             {
@@ -664,28 +722,11 @@ const LanguageDetail = (props) => {
                                             color="info"
                                             onClick={handleAdd}
                                         >
-                                            เพิ่มข้อมูลภาษา
+                                            เพิ่มข้อมูลเงินเดือน
                                         </Button>
                                     </Grid>
                                 </React.Fragment>
                             }
-                            {/* <Grid item size={12} textAlign="center">
-                                {
-                                    !check ?
-                                        <Button variant="outlined" color="warning" size="small" onClick={() => setCheck(true)}>
-                                            แก้ไขข้อมูล
-                                        </Button>
-                                        :
-                                        <React.Fragment>
-                                            <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
-                                                ยกเลิก
-                                            </Button>
-                                            <Button variant="contained" color="success" size="small" onClick={() => setCheck(false)}>
-                                                บันทึก
-                                            </Button>
-                                        </React.Fragment>
-                                }
-                            </Grid> */}
                         </Grid>
                     </DialogContent>
                     <DialogActions sx={{ borderTop: `1px solid ${theme.palette.primary.dark}`, display: "flex", alignItems: "center", justifyContent: "center", height: "55px" }}>
@@ -700,20 +741,22 @@ const LanguageDetail = (props) => {
                                         onClick={
                                             () => {
                                                 setCheck(false);
-                                                const rows = languageRows.filter(r => r.ID === openDetail?.ID);
+                                                const rows = salaryRows.filter(r => r.ID === openDetail?.ID);
 
                                                 const detail = {
                                                     ID: rows[0].ID,
                                                     employeecode: rows[0].employeecode,
                                                     employname: rows[0].employname,
                                                     position: rows[0].position,
-                                                    languageList: rows.map(r => ({
-                                                        language: r.language,
-                                                        reading: r.reading,
-                                                        speaking: r.speaking,
-                                                        writing: r.writing
+                                                    salaryhistory: rows.map(r => ({
+                                                        salary: r.salary,
+                                                        dateend: r.dateend,
+                                                        datestart: r.datestart,
+                                                        dateE: r.dateE,
+                                                        dateS: r.dateS,
                                                     }))
                                                 };
+
                                                 setOpenDetail(detail);
                                             }
                                         }
@@ -732,4 +775,4 @@ const LanguageDetail = (props) => {
     )
 }
 
-export default LanguageDetail
+export default SalaryDetail

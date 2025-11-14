@@ -210,7 +210,13 @@ const TaxDetail = () => {
                                     :
                                     <TableContainer component={Paper} textAlign="center" sx={{ height: "55vh" }}>
                                         <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "5px" }, width: "100%" }}>
-                                            <TableHead>
+                                            <TableHead
+                                                sx={{
+                                                    position: "sticky",
+                                                    top: 0,
+                                                    zIndex: 2,
+                                                }}
+                                            >
                                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                                     <TablecellHeader sx={{ width: "5%" }}>ลำดับ</TablecellHeader>
                                                     <TablecellHeader sx={{ width: "25%" }}>เงินได้สุทธิ (บาท)</TablecellHeader>

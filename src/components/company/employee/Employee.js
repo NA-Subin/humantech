@@ -57,6 +57,8 @@ import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import ImageIcon from '@mui/icons-material/Image';
 import logo from "../../../img/LogoShort.png";
 import none from "../../../img/none.png";
+import SalaryDetail from "./SalaryDetail";
+import WorkshiftDetail from "./workshiftDetail";
 
 dayjs.extend(customParseFormat);
 
@@ -81,6 +83,8 @@ const Employee = () => {
     const [menu, setMenu] = useState("");
     const paperRef = useRef(null);
     const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
+    const [taxDeduction, setTaxDeduction] = useState([]);
+    const [selectedTaxes, setSelectedTaxes] = useState([]);
     console.log("checkEmployee : ", checkEmployee);
 
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
@@ -125,6 +129,25 @@ const Employee = () => {
             });
         }
     }, [menu]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const taxRef = ref(firebaseDB, `workgroup/company/${companyId}/deduction`);
+
+        const unsubscribe = onValue(taxRef, (snapshot) => {
+            const taxData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!taxData) {
+                setTaxDeduction([{ ID: 0, title: "", detail: "", amount: "", unit: "" }]);
+            } else {
+                setTaxDeduction(taxData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
 
     useEffect(() => {
         const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/department`);
@@ -193,7 +216,6 @@ const Employee = () => {
 
                         // ✅ เพิ่มตัวเลือก "ไม่มี" ที่ด้านบน
                         opts.unshift({ value: '0-ไม่มี', label: 'ไม่มี', keyposition: "ไม่มี" });
-
                         setPositionDetail(opts);
                     } else {
                         // ✅ ถ้าไม่มี position เลย
@@ -306,6 +328,67 @@ const Employee = () => {
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
     const [opendetail, setOpenDetail] = useState({});
+
+    // ฟังก์ชัน toggle เมื่อกดเลือก
+    const handleSelectTax = (tax) => {
+        setSelectedTaxes(prev => {
+            const exists = prev.some(item => item.ID === tax.ID);
+            if (exists) {
+                return prev.filter(item => item.ID !== tax.ID);
+            }
+            return [...prev, {
+                ID: selectedTaxes.length,
+                taxid: tax.ID,
+                name: tax.title,
+                amount: tax.amount,
+                date: dayjs(new Date).format("DD/MM/YYYY")
+            }]; // เพิ่มทั้ง object
+        });
+    };
+
+    const handleDetailChange = (field, value) => {
+        if (field === "taxdeduction") {
+            setOpenDetail(prev => {
+                const exists = prev.taxdeduction?.some(item => item.taxid === value.ID);
+
+                let updatedList;
+
+                if (exists) {
+                    // ลบรายการที่มี taxid ตรงกัน
+                    updatedList = prev.taxdeduction.filter(item => item.taxid !== value.ID);
+                } else {
+                    // เพิ่มรายการใหม่
+                    updatedList = [
+                        ...(prev.taxdeduction || []),
+                        {
+                            taxid: value.ID,
+                            name: value.title,
+                            amount: value.amount,
+                            date: dayjs(new Date()).format("DD/MM/YYYY")
+                        }
+                    ];
+                }
+
+                // 👉 สร้าง ID ใหม่ให้เป็น index ของ array ทุกครั้ง
+                updatedList = updatedList.map((item, index) => ({
+                    ...item,
+                    ID: index
+                }));
+
+                return {
+                    ...prev,
+                    [field]: updatedList,
+                };
+            });
+
+        } else {
+            setOpenDetail(prev => ({
+                ...prev,
+                [field]: value,
+            }));
+        }
+    };
+
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
     const personal = employees.map(emp => ({
@@ -399,6 +482,10 @@ const Employee = () => {
         switch (key) {
             case 'ข้อมูลทั่วไป':
                 return <PersonalDetail data={key} />;
+            case 'เงินเดือน':
+                return <SalaryDetail data={key} />;
+            case 'กะการทำงาน':
+                return <WorkshiftDetail data={key} />;
             case 'การศึกษา':
                 return <EducationDetail data={key} />;
             case 'การทำงาน/ฝึกงาน':
@@ -1099,6 +1186,89 @@ const Employee = () => {
             });
     };
 
+    const handleUpdateEmployee = async () => {
+        if (opendetail?.ID === undefined || opendetail?.ID === null) {
+            return ShowError("ไม่พบข้อมูลพนักงาน");
+        }
+
+        const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${opendetail.ID}`);
+        const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
+        const groupsRef = ref(firebaseDB, "workgroup");
+        const companyRef = ref(firebaseDB, `workgroup/company/${companyId}`);
+
+        let path = "";
+        let backendGroupID = "";
+        let backendCompanyID = "";
+
+        try {
+            const groupSnap = await get(groupsRef);
+            if (groupSnap.exists()) {
+                backendGroupID = groupSnap.val().backendid;
+            } else {
+                throw new Error("ไม่พบค่า backenid");
+            }
+
+            const companySnap = await get(companyRef);
+            if (companySnap.exists()) {
+                backendCompanyID = companySnap.val().cpnbackendid;
+            } else {
+                throw new Error("ไม่พบค่า cpnbackendid");
+            }
+            const formData = new FormData();
+            formData.append("image", opendetail?.faceverify); // key ต้องตรงกับ backend
+
+            const response = await fetch(
+                `https://upload.happysoftth.com/humantech/${backendGroupID}/${backendCompanyID}/${opendetail?.empbackendid}/upload`,
+                {
+                    method: "POST",
+                    body: formData, // ✅ ใช้ FormData แทน JSON
+                }
+            );
+
+            if (!response.ok) {
+                const text = await response.text();
+                console.error("Backend error response:", text);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            path = data.path;
+        } catch (error) {
+            console.error("Error post image to backend:", error);
+            alert("เกิดข้อผิดพลาดขณะอัปโหลดรูปภาพ");
+            return;
+        }
+
+        update(companiesRef, {
+            employeecode: opendetail?.employeecode,
+            employname: opendetail?.employname,
+            nickname: opendetail?.nickname,
+            department: opendetail?.department,
+            section: opendetail?.section,
+            position: opendetail?.position,
+            employmenttype: opendetail?.employmenttype,
+            salary: opendetail?.salary,
+            taxdeduction: opendetail?.taxdeduction,
+            faceverify: `http://${path}`,
+            personal: {
+                ...opendetail?.personal,
+                name: opendetail?.employname,
+                lastname: opendetail?.employname,
+                nickname: opendetail?.employname,
+                prefix: opendetail?.employname,
+            }
+        })
+            .then(() => {
+                ShowSuccess("บันทึกข้อมูลสำเร็จ");
+                setCheck(false);
+                setOpenDetail({});
+            })
+            .catch((error) => {
+                ShowError("เกิดข้อผิดพลาดในการบันทึก");
+                console.error(error);
+            });
+    }
+
     const handleCancel = () => {
         const employeeRef = ref(firebaseDB, `workgroup/company/${companyId}/employee`);
 
@@ -1110,6 +1280,9 @@ const Employee = () => {
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
+    console.log("openDetail : ", opendetail);
+    console.log("positions : ", positions);
+    console.log("positionDetail : ", positionDetail);
 
     return (
         <Container maxWidth="xl" sx={{ p: 5, width: windowWidth - 290 }}>
@@ -1180,6 +1353,8 @@ const Employee = () => {
                         {/* <Paper > */}
                         {[
                             'ข้อมูลทั่วไป',
+                            'เงินเดือน',
+                            'กะการทำงาน',
                             'การศึกษา',
                             'การทำงาน/ฝึกงาน',
                             'การฝึกอบรม',
@@ -1441,7 +1616,13 @@ const Employee = () => {
                                                     {
                                                         (opendetail?.faceverify !== undefined && opendetail?.faceverify !== "") ?
                                                             <img
-                                                                src={opendetail?.faceverify}
+                                                                src={
+                                                                    typeof opendetail?.faceverify === "string"
+                                                                        ? opendetail.faceverify
+                                                                        : opendetail?.faceverify instanceof File
+                                                                            ? URL.createObjectURL(opendetail.faceverify)
+                                                                            : undefined
+                                                                }
                                                                 alt="preview"
                                                                 style={{ height: "100%", borderRadius: 8 }}
                                                             />
@@ -1519,10 +1700,10 @@ const Employee = () => {
                                                             type="file"
                                                             hidden
                                                             accept="image/*"
-                                                        // onChange={(e) => {
-                                                        //     const image = e.target.files?.[0];
-                                                        //     if (image) setEmployeeImage(image);
-                                                        // }}
+                                                            onChange={(e) => {
+                                                                const image = e.target.files?.[0];
+                                                                if (image) handleDetailChange("faceverify", image);
+                                                            }}
                                                         />
                                                     </Button>
                                                 }
@@ -1536,7 +1717,8 @@ const Employee = () => {
                                                     fullWidth
                                                     size="small"
                                                     value={opendetail?.employeecode}
-                                                    disabled={check ? false : true}
+                                                    onChange={(e) => handleDetailChange("employeecode", e.target.value)}
+                                                    disabled={!check}
                                                 //onChange={(e) => setNickname(e.target.value)}
                                                 />
                                             </Grid>
@@ -1546,7 +1728,8 @@ const Employee = () => {
                                                     fullWidth
                                                     size="small"
                                                     value={opendetail?.nickname}
-                                                    disabled={check ? false : true}
+                                                    onChange={(e) => handleDetailChange("nickname", e.target.value)}
+                                                    disabled={!check}
                                                 //onChange={(e) => setName(e.target.value)}
                                                 />
                                             </Grid>
@@ -1556,50 +1739,83 @@ const Employee = () => {
                                                     fullWidth
                                                     size="small"
                                                     value={opendetail?.employname}
-                                                    disabled={check ? false : true}
+                                                    onChange={(e) => handleDetailChange("employname", e.target.value)}
+                                                    disabled={!check}
                                                 //onChange={(e) => setLastName(e.target.value)}
                                                 />
                                             </Grid>
-                                            <Grid item size={6}>
-                                                <Typography variant="subtitle2" fontWeight="bold">ฝ่ายงาน</Typography>
-                                                <TextField
-                                                    fullWidth
-                                                    size="small"
-                                                    value={
-                                                        opendetail?.department?.includes("-")
-                                                            ? opendetail.department.split("-")[1]
-                                                            : ""
-                                                    }
-                                                    disabled={check ? false : true}
-                                                />
-                                            </Grid>
+                                            {
+                                                !check &&
+                                                <React.Fragment>
+                                                    <Grid item size={6}>
+                                                        <Typography variant="subtitle2" fontWeight="bold">ฝ่ายงาน</Typography>
+                                                        <TextField
+                                                            fullWidth
+                                                            size="small"
+                                                            value={
+                                                                opendetail?.department?.includes("-")
+                                                                    ? opendetail.department.split("-")[1]
+                                                                    : ""
+                                                            }
+                                                            disabled={!check}
+                                                        />
+                                                    </Grid>
 
-                                            <Grid item size={6}>
-                                                <Typography variant="subtitle2" fontWeight="bold">ส่วนงาน</Typography>
-                                                <TextField
-                                                    fullWidth
-                                                    size="small"
-                                                    value={
-                                                        opendetail?.section?.includes("-")
-                                                            ? opendetail.section.split("-")[1]
-                                                            : ""
-                                                    }
-                                                    disabled={check ? false : true}
-                                                />
-                                            </Grid>
-
+                                                    <Grid item size={6}>
+                                                        <Typography variant="subtitle2" fontWeight="bold">ส่วนงาน</Typography>
+                                                        <TextField
+                                                            fullWidth
+                                                            size="small"
+                                                            value={
+                                                                opendetail?.section?.includes("-")
+                                                                    ? opendetail.section.split("-")[1]
+                                                                    : ""
+                                                            }
+                                                            disabled={!check}
+                                                        />
+                                                    </Grid>
+                                                </React.Fragment>
+                                            }
                                             <Grid item size={6}>
                                                 <Typography variant="subtitle2" fontWeight="bold">ตำแหน่ง</Typography>
                                                 <TextField
                                                     fullWidth
+                                                    select
                                                     size="small"
-                                                    value={
-                                                        opendetail?.position?.includes("-")
-                                                            ? opendetail.position.split("-")[1]
-                                                            : ""
-                                                    }
-                                                    disabled={check ? false : true}
-                                                />
+                                                    value={(() => {
+                                                        // ดึงตำแหน่งปัจจุบัน เช่น "5-หัวหน้าแผนก"
+                                                        if (!opendetail?.position || !opendetail.position.includes("-")) return "";
+
+                                                        const posID = Number(opendetail.position.split("-")[0]);
+
+                                                        // หา object ของตำแหน่งที่ตรงกับชื่อ
+                                                        return positions.find(p => p.ID === posID) || "";
+                                                    })()}
+                                                    onChange={(e) => {
+                                                        const data = e.target.value; // data = object ของตำแหน่งที่เลือก
+
+                                                        handleDetailChange("department", data.deptid);
+                                                        handleDetailChange("section", data.sectionid);
+                                                        handleDetailChange("position", `${data.ID}-${data.positionname}`);
+                                                    }}
+                                                    disabled={!check}
+                                                >
+                                                    {positions.map((item, index) => {
+                                                        const count = employees.filter(
+                                                            (emp) => Number(emp.position.split("-")[0]) === item.ID
+                                                        ).length;
+
+                                                        const isFull = count >= Number(item.max);
+
+                                                        return (
+                                                            !isFull && (
+                                                                <MenuItem key={index} value={item}>
+                                                                    {item.positionname}
+                                                                </MenuItem>
+                                                            )
+                                                        );
+                                                    })}
+                                                </TextField>
                                             </Grid>
 
                                             {
@@ -1629,7 +1845,8 @@ const Employee = () => {
                                                             ? opendetail.employmenttype.split("-")[1]
                                                             : ""
                                                     }
-                                                    disabled={check ? false : true}
+                                                    onChange={(e) => handleDetailChange("employmenttype", e.target.value)}
+                                                    disabled={!check}
                                                 />
                                             </Grid>
 
@@ -1639,8 +1856,45 @@ const Employee = () => {
                                                     fullWidth
                                                     size="small"
                                                     value={opendetail?.salary}
-                                                    disabled={check ? false : true}
+                                                    onChange={(e) => handleDetailChange("salary", e.target.value)}
+                                                    disabled={!check}
                                                 />
+                                            </Grid>
+                                            <Grid item size={12}>
+                                                <Divider />
+                                            </Grid>
+                                            <Grid item size={12}>
+                                                {(opendetail?.taxdeduction !== undefined || check) && <Typography variant="subtitle2" fontWeight="bold" marginBottom={-1} gutterBottom>ค่าลดหย่อนภาษี</Typography>}
+                                                {taxDeduction.map((tax, index) => {
+                                                    const isSelected = opendetail?.taxdeduction ? opendetail?.taxdeduction.some(item => item.taxid === tax.ID) : false;
+                                                    const checkdata = check ? true : isSelected;
+
+                                                    return (
+                                                        checkdata &&
+                                                        <Box
+                                                            key={index}
+                                                            sx={{
+                                                                mr: 2, // ระยะห่างขวา
+                                                                mt: 1,
+                                                                display: "inline-block", // ทำให้กว้างเท่าข้อความ
+                                                                border: check ? `1px solid ${theme.palette.primary.main}` : "none",
+                                                                borderRadius: 2,
+                                                                px: 1.5,   // padding ซ้ายขวาเล็กน้อย
+                                                                py: 0.5,
+                                                                cursor: check ? "pointer" : "default",
+                                                                color: check ? (isSelected ? "#fff" : theme.palette.primary.main) : "gray",
+                                                                backgroundColor: check ? (isSelected ? theme.palette.primary.main : "transparent") : "lightgray",
+                                                                transition: "0.2s",
+                                                                userSelect: "none",
+                                                                fontSize: "15px"
+                                                            }}
+                                                            // onClick={() => handleSelectTax(tax)}
+                                                            onClick={() => handleDetailChange("taxdeduction", tax)}
+                                                        >
+                                                            {tax.title}
+                                                        </Box>
+                                                    );
+                                                })}
                                             </Grid>
                                             {/* <Grid item size={12}>
                                                 <Divider />
@@ -1965,10 +2219,17 @@ const Employee = () => {
                                                 </Button>
                                                 :
                                                 <React.Fragment>
-                                                    <Button variant="contained" color="error" size="small" sx={{ mr: 2 }} onClick={() => setCheck(false)}>
+                                                    <Button variant="contained" color="error" size="small" sx={{ mr: 2 }}
+                                                        onClick={
+                                                            () => {
+                                                                setCheck(false);
+                                                                setOpenDetail(employees.find((emp) => emp.ID === opendetail?.ID));
+                                                            }
+                                                        }
+                                                    >
                                                         ยกเลิก
                                                     </Button>
-                                                    <Button variant="contained" color="success" size="small" onClick={() => setCheck(false)}>
+                                                    <Button variant="contained" color="success" size="small" onClick={handleUpdateEmployee}>
                                                         บันทึก
                                                     </Button>
                                                 </React.Fragment>
