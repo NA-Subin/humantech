@@ -38,6 +38,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material
 import { database } from "../../../server/firebase";
 import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
 import ThaiDateSelector from "../../../theme/ThaiDateSelector";
+import { formatThaiSlash } from "../../../theme/DateTH";
 
 const SalaryDetail = (props) => {
     const { menu, data } = props;
@@ -114,18 +115,19 @@ const SalaryDetail = (props) => {
         const position = emp.position.split("-")[1];
         const sal = emp.salaryhistory || [];
 
-        sal.forEach((train, trainIdx) => {
+        sal.forEach((s, sIdx) => {
             salaryRows.push({
                 ID: emp.ID,
                 employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
-                salary: train.salary || "",
-                datestart: parseFromGregorian(train.datestart || ''),
-                dateend: parseFromGregorian(train.dateend || ''),
-                dateS: train.datestart || '',
-                dateE: train.dateend || '',
-                isFirst: trainIdx === 0,
+                salaryID: sIdx,
+                salary: s.salary || "",
+                datestart: parseFromGregorian(s.datestart || ''),
+                dateend: parseFromGregorian(s.dateend || ''),
+                dateS: s.datestart || '',
+                dateE: s.dateend || '',
+                isFirst: sIdx === 0,
                 rowSpan: sal.length,
             });
         });
@@ -137,6 +139,7 @@ const SalaryDetail = (props) => {
                 employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
+                salaryID: null,
                 salary: "-",
                 dateend: "-",
                 datestart: "-",
@@ -287,40 +290,92 @@ const SalaryDetail = (props) => {
             });
     };
 
+    // แปลง ThaiDateSelector object → JS Date
+    const toDate = (thai) => {
+        if (!thai) return null;
+        const { day, month, year } = thai;
+        return new Date(year, month - 1, day);
+    };
+
+    // แปลง JS Date → ThaiDateSelector object
+    const toThaiObj = (date) => {
+        if (!date) return null;
+        return {
+            day: date.getDate(),
+            month: date.getMonth() + 1,
+            year: date.getFullYear(),
+        };
+    };
+
+    const minusOneDay = (thaiObj) => {
+        if (!thaiObj) return null; // กัน NULL !!!
+
+        const d = toDate(thaiObj);
+        d.setDate(d.getDate() - 1);
+        return toThaiObj(d);
+    };
+
+
     const handleDetailChange = (index, field, value) => {
         setOpenDetail(prev => {
-            const updatedList = prev.salaryhistory.map((item, idx) =>
-                idx === index ? { ...item, [field]: value } : item
-            );
+            let history = [...prev.salaryhistory];
+            history[index] = { ...history[index], [field]: value };
 
-            return {
-                ...prev,
-                salaryhistory: updatedList
-            };
+            // ถ้าแก้ datestart ของรายการล่าสุด → ตั้ง dateend ของรายการก่อนหน้า = (datestart - 1 วัน)
+            const lastIndex = history.length - 1;
+
+            if (field === "datestart" && index === lastIndex && lastIndex > 0) {
+                history[lastIndex - 1] = {
+                    ...history[lastIndex - 1],
+                    dateend: minusOneDay(value),
+                };
+            }
+
+            return { ...prev, salaryhistory: history };
         });
     };
 
     const handleAdd = () => {
-        setOpenDetail(prev => ({
-            ...prev,
-            salaryhistory: [
-                ...prev.salaryhistory,
-                {
-                    salary: "",
-                    dateend: null,
-                    datestart: null,
-                    dateE: "",
-                    dateS: "",
-                }
-            ]
-        }));
+        setOpenDetail(prev => {
+            const history = prev.salaryhistory || [];
+
+            const newItem = {
+                salary: "",
+                datestart: null,
+                dateend: "now", // ค่าใหม่สุด always now
+                dateE: "",
+                dateS: "",
+            };
+
+            return {
+                ...prev,
+                salaryhistory: [...history, newItem]
+            };
+        });
     };
 
-    const handleRemove = (index) => {
-        setOpenDetail(prev => ({
-            ...prev,
-            salaryhistory: prev.salaryhistory.filter((_, idx) => idx !== index)
-        }));
+    const canEdit = (idx) => {
+        const len = openDetail.salaryhistory.length;
+        if (len === 1) return true;      // ถ้ามีตัวเดียว แก้ไขได้หมด
+        return idx === len - 1;          // ถ้ามีหลายตัว แก้ไขได้เฉพาะอันสุดท้าย
+    };
+
+    const handleRemove = () => {
+        setOpenDetail(prev => {
+            const history = [...prev.salaryhistory];
+            if (history.length <= 1) return prev;
+
+            history.pop(); // ลบรายการสุดท้าย
+
+            // ปรับอันก่อนหน้าให้ dateend = now
+            const lastIndex = history.length - 1;
+            history[lastIndex] = {
+                ...history[lastIndex],
+                dateend: "now",
+            };
+
+            return { ...prev, salaryhistory: history };
+        });
     };
 
     const handleCancel = () => {
@@ -341,31 +396,72 @@ const SalaryDetail = (props) => {
         // ✅ Process salaryhistory ก่อน save
         const cleanTraining = openDetail.salaryhistory
             ?.map((item, index) => {
-                // 1) ใช้ datestart / dateend object ถ้ามี
+                // --- START --- //
                 let startObj = item.datestart;
                 let endObj = item.dateend;
 
-                // 2) ถ้าไม่มีให้ parse จาก dateS/dateE แบบ DD/MM/YYYY
+                // ⭐ ตรวจสอบกรณีที่เป็น now
+                const isNowEnd =
+                    endObj === "now" ||
+                    endObj === null ||
+                    endObj === undefined ||
+                    endObj === "";
+
+                // ------------------------
+                // 1) START: ถ้าไม่มี datestart object → parse จาก dateS
+                // ------------------------
                 if (!startObj && item.dateS) {
                     const [d, m, y] = parseFromGregorian(item.dateS).split("/");
-                    startObj = { day: Number(d), month: Number(m), year: y };
+                    startObj = {
+                        day: Number(d),
+                        month: Number(m),
+                        year: Number(y)
+                    };
                 }
-                if (!endObj && item.dateE) {
+
+                // ------------------------
+                // 2) END: ถ้าไม่ใช่ now และต้อง parse object ก่อน
+                // ------------------------
+                if (!isNowEnd && !endObj && item.dateE) {
                     const [d, m, y] = parseFromGregorian(item.dateE).split("/");
-                    endObj = { day: Number(d), month: Number(m), year: y };
+                    endObj = {
+                        day: Number(d),
+                        month: Number(m),
+                        year: Number(y)
+                    };
                 }
 
-                // 3) แปลง พ.ศ. เป็น ค.ศ.
+                // ------------------------
+                // 3) YEAR Convert (Buddhist → Gregorian)
+                // ------------------------
                 const startYearCE = Number(startObj.year) - 543;
-                const endYearCE = Number(endObj.year) - 543;
 
-                // 4) แปลงเป็นรูปแบบ DD/MM/YYYY
-                const datestart = `${String(startObj.day).padStart(2, "0")}/${String(startObj.month).padStart(2, "0")}/${startYearCE}`;
-                const dateend = `${String(endObj.day).padStart(2, "0")}/${String(endObj.month).padStart(2, "0")}/${endYearCE}`;
+                // หากเป็น now → ไม่ต้องแปลง
+                const endYearCE = isNowEnd ? null : Number(endObj.year) - 543;
+
+                // ------------------------
+                // 4) Format วันที่
+                // ------------------------
+                const datestart = `${String(startObj.day).padStart(2, "0")}/${String(
+                    startObj.month
+                ).padStart(2, "0")}/${startYearCE}`;
+
+                const dateend = isNowEnd
+                    ? "now"
+                    : `${String(endObj.day).padStart(2, "0")}/${String(
+                        endObj.month
+                    ).padStart(2, "0")}/${endYearCE}`;
+
+                // ------------------------
+                // 5) ค่า end ทั้งหมด
+                // ------------------------
+                const DDend = isNowEnd ? "now" : String(endObj.day).padStart(2, "0");
+                const MMend = isNowEnd ? "now" : String(endObj.month).padStart(2, "0");
+                const YYYYend = isNowEnd ? "now" : String(endYearCE);
 
                 return {
                     ...item,
-                    ID: index,   // ⭐ เพิ่ม ID ให้ตรง index ที่ map กำหนด
+                    ID: index,
 
                     datestart,
                     dateend,
@@ -374,12 +470,12 @@ const SalaryDetail = (props) => {
                     MMstart: String(startObj.month).padStart(2, "0"),
                     YYYYstart: String(startYearCE),
 
-                    DDend: String(endObj.day).padStart(2, "0"),
-                    MMend: String(endObj.month).padStart(2, "0"),
-                    YYYYend: String(endYearCE),
+                    DDend,
+                    MMend,
+                    YYYYend,
                 };
             })
-            .map(({ dateS, dateE, ...rest }) => rest);   // ลบ field เก่า
+            .map(({ dateS, dateE, ...rest }) => rest);
         // 👆 ลบ dateS, dateE ออกจาก object
 
         const lastSalary = cleanTraining?.length
@@ -445,6 +541,7 @@ const SalaryDetail = (props) => {
                                                 <TablecellHeader rowSpan={2} sx={{ width: 50 }}>ลำดับ</TablecellHeader>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 200, position: "sticky", left: 0, zIndex: 2, backgroundColor: theme.palette.primary.dark }}>ชื่อ</TablecellHeader>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 150 }}>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 120 }}>ปรับเปลี่ยนเงินเดือน</TablecellHeader>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 120 }}>วันที่เริ่มต้น</TablecellHeader>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 120 }}>จนถึงวันที่</TablecellHeader>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 100 }}>เงินเดือน</TablecellHeader>
@@ -467,7 +564,8 @@ const SalaryDetail = (props) => {
                                                                     employeecode: rows[0].employeecode,
                                                                     employname: rows[0].employname,
                                                                     position: rows[0].position,
-                                                                    salaryhistory: rows.map(r => ({
+                                                                    salaryhistory: rows.map((r, index) => ({
+                                                                        salaryID: index,
                                                                         salary: r.salary,
                                                                         dateend: r.dateend,
                                                                         datestart: r.datestart,
@@ -500,8 +598,9 @@ const SalaryDetail = (props) => {
                                                                     </TableCell>
                                                                 </>
                                                             )}
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.dateS}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.dateE}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.salaryID !== null ? `ปรับครั้งที่ ${row.salaryID + 1}` : ""}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{formatThaiSlash(row.dateS)}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{formatThaiSlash(row.dateE)}</TableCell>
                                                             <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.salary}</TableCell>
                                                         </TableRow>
                                                     ))}
@@ -672,32 +771,34 @@ const SalaryDetail = (props) => {
                                             <ThaiDateSelector
                                                 label="เริ่มตั้งแต่วันที่"
                                                 value={row.datestart}
-                                                disabled={!check}
-                                                onChange={(val) => handleDetailChange(idx, "datestart", val)}
+                                                disabled={!check || !canEdit(idx)}
+                                                onChange={(val) => canEdit(idx) && handleDetailChange(idx, "datestart", val)}
                                             // onChange={(val) =>
                                             //     handleTrainingChange(index, "datestart", val)
                                             // }
                                             />
                                         </Grid>
-                                        <Grid item size={12}>
-                                            <ThaiDateSelector
-                                                label="จนถึง"
-                                                value={row.dateend}
-                                                disabled={!check}
-                                                onChange={(val) => handleDetailChange(idx, "dateend", val)}
-                                            // onChange={(val) =>
-                                            //     handleTrainingChange(index, "dateend", val)
-                                            // }
-                                            />
-                                        </Grid>
+                                        {
+                                            !canEdit(idx) &&
+                                            <Grid item size={12}>
+                                                <ThaiDateSelector
+                                                    label="จนถึง"
+                                                    value={row.dateend}
+                                                    disabled
+                                                // onChange={(val) =>
+                                                //     handleTrainingChange(index, "dateend", val)
+                                                // }
+                                                />
+                                            </Grid>
+                                        }
                                         <Grid item size={12}>
                                             <Typography variant="subtitle2" fontWeight="bold" >เงินเดือน</Typography>
                                             <TextField
                                                 fullWidth
                                                 size="small"
                                                 value={row.salary}
-                                                disabled={!check}
-                                                onChange={(e) => handleDetailChange(idx, "salary", e.target.value)}
+                                                disabled={!check || !canEdit(idx)}
+                                                onChange={(e) => canEdit(idx) && handleDetailChange(idx, "salary", e.target.value)}
                                                 // onChange={(e) =>
                                                 //     handleTrainingChange(index, "course", e.target.value)
                                                 // }
@@ -748,7 +849,8 @@ const SalaryDetail = (props) => {
                                                     employeecode: rows[0].employeecode,
                                                     employname: rows[0].employname,
                                                     position: rows[0].position,
-                                                    salaryhistory: rows.map(r => ({
+                                                    salaryhistory: rows.map((r, index) => ({
+                                                        salaryID: index,
                                                         salary: r.salary,
                                                         dateend: r.dateend,
                                                         datestart: r.datestart,

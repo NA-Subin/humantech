@@ -88,6 +88,10 @@ const SalaryDetail = (props) => {
     const m = month.month();
     const daysInMonth = month.daysInMonth();
 
+    console.log("Month : ", m);
+    console.log("Years : ", year);
+    console.log("days Month : ", daysInMonth);
+
     const holidaysInMonth = holiday.filter(h =>
         parseInt(h.YYYY) === year && parseInt(h.MM) === m + 1
     );
@@ -215,6 +219,32 @@ const SalaryDetail = (props) => {
         };
     };
 
+    const parseDate = (str) => {
+        if (str === "now") return new Date(9999, 11, 31); // ค่ามากสุดแทน now
+
+        const [d, m, y] = str.split("/");
+        return new Date(Number(y), Number(m) - 1, Number(d));
+    };
+
+    const getSalaryByMonth = (salaryhistory, selectedMonth, selectedYear) => {
+        if (!salaryhistory || salaryhistory.length === 0) return 0;
+
+        // วันที่ที่ต้องการตรวจสอบ = วันที่ 1 ของเดือนนั้น
+        const targetDate = new Date(selectedYear, selectedMonth, 1);
+
+        for (const item of salaryhistory) {
+            const startDate = parseDate(item.datestart);
+            const endDate = parseDate(item.dateend);
+
+            if (startDate <= targetDate && targetDate <= endDate) {
+                return Number(item.salary);
+            }
+        }
+
+        // ไม่มีช่วงไหนครอบ → return 0
+        return 0;
+    };
+
     // 3️⃣ สร้าง Rows จาก filteredEmployees
     const Rows = filteredEmployees.filter(emp => {
         if (selectedType === "all") return true;
@@ -266,6 +296,8 @@ const SalaryDetail = (props) => {
 
         const employeetype = emp.employmenttype ? emp.employmenttype.split("-")[1] : 0
 
+        const salary = getSalaryByMonth(emp.salaryhistory, m, year);
+
         const row = {
             employeecode: emp.employeecode,
             employeetype: emp.employmenttype,
@@ -273,7 +305,7 @@ const SalaryDetail = (props) => {
             section: emp.section,
             position: emp.position,
             workshift: emp.workshift,
-            salary: Number(emp.salary),
+            salary: Number(salary),
             employid: emp.ID,
             employname: `${emp.employname} (${emp.nickname})`,
             workday: employeetype !== 0 ? workingDays : 0,
@@ -285,7 +317,8 @@ const SalaryDetail = (props) => {
             missingWork: 0,
             totalIncome: 0,
             totalDeduction: 0,
-            total: 0
+            total: 0,
+            sso: 0,
         };
 
         // income flat
@@ -323,7 +356,8 @@ const SalaryDetail = (props) => {
             (employeetype !== 0 ? workingDays : 0) -
             (attendantCount + holidayResult.holidayDates.length + Number(totalLeaveDays));
 
-        row.total = (Number(emp.salary) + row.totalIncome) - row.totalDeduction;
+        row.total = (Number(salary) + row.totalIncome) - row.totalDeduction;
+        row.sso = Number(salary >= 15000 ? 15000 : salary) * 0.05;
 
         return row;
     });

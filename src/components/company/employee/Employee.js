@@ -58,7 +58,7 @@ import ImageIcon from '@mui/icons-material/Image';
 import logo from "../../../img/LogoShort.png";
 import none from "../../../img/none.png";
 import SalaryDetail from "./SalaryDetail";
-import WorkshiftDetail from "./workshiftDetail";
+import WorkshiftDetail from "./WorkshiftDetail";
 
 dayjs.extend(customParseFormat);
 
@@ -290,7 +290,7 @@ const Employee = () => {
             options: employeetype,
             width: 120,
         },
-        { label: "เงินเดือน", key: "salary", type: "number", width: 100 },
+        // { label: "เงินเดือน", key: "salary", type: "number", width: 100 },
     ];
 
     useEffect(() => {
@@ -1455,8 +1455,8 @@ const Employee = () => {
                                                                 <TablecellHeader sx={{ width: 200, borderRight: "2px solid white" }}>ฝ่ายงาน</TablecellHeader>
                                                                 <TablecellHeader sx={{ width: 200, borderRight: "2px solid white" }}>ส่วนงาน</TablecellHeader>
                                                                 <TablecellHeader sx={{ width: 200, borderRight: "2px solid white" }}>ตำแหน่ง</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: 120, borderRight: "2px solid white" }}>ประเภทการจ้าง</TablecellHeader>
-                                                                <TablecellHeader sx={{ width: 100 }}>เงินเดือน</TablecellHeader>
+                                                                <TablecellHeader sx={{ width: 120 }}>ประเภทการจ้าง</TablecellHeader>
+                                                                {/* <TablecellHeader sx={{ width: 100 }}>เงินเดือน</TablecellHeader> */}
                                                             </TableRow>
                                                         </TableHead>
                                                         <TableBody>
@@ -1496,9 +1496,9 @@ const Employee = () => {
                                                                             <TableCell sx={{ textAlign: "center" }}>
                                                                                 <Typography variant="subtitle2" sx={{ fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{row.employmenttype?.includes("-") ? row.employmenttype.split("-")[1] : row.employmenttype}</Typography>
                                                                             </TableCell>
-                                                                            <TableCell sx={{ textAlign: "center" }}>
+                                                                            {/* <TableCell sx={{ textAlign: "center" }}>
                                                                                 <Typography variant="subtitle2" sx={{ marginLeft: 1, lineHeight: 1, whiteSpace: "nowrap", fontWeight: hoveredEmpCode === row.employeecode ? 'bold' : 'normal' }} gutterBottom>{new Intl.NumberFormat("en-US").format(row.salary)}</Typography>
-                                                                            </TableCell>
+                                                                            </TableCell> */}
                                                                         </TableRow>
                                                                     ))}
                                                         </TableBody>
@@ -1850,7 +1850,7 @@ const Employee = () => {
                                                 />
                                             </Grid>
 
-                                            <Grid item size={6}>
+                                            {/* <Grid item size={6}>
                                                 <Typography variant="subtitle2" fontWeight="bold">เงินเดือน</Typography>
                                                 <TextField
                                                     fullWidth
@@ -1859,7 +1859,7 @@ const Employee = () => {
                                                     onChange={(e) => handleDetailChange("salary", e.target.value)}
                                                     disabled={!check}
                                                 />
-                                            </Grid>
+                                            </Grid> */}
                                             <Grid item size={12}>
                                                 <Divider />
                                             </Grid>
@@ -1916,7 +1916,7 @@ const Employee = () => {
                                                         </React.Fragment>
                                                 }
                                             </Grid> */}
-                                            {
+                                            {/* {
                                                 !check && opendetail.workshifthistory !== undefined &&
                                                 <Grid item size={12}>
                                                     <Typography variant="subtitle2" fontWeight="bold">ประวัติการเปลี่ยนกะการทำงาน</Typography>
@@ -2208,7 +2208,7 @@ const Employee = () => {
                                                         }
                                                     </Grid>
                                                 </React.Fragment>
-                                            }
+                                            } */}
                                         </Grid>
                                     </DialogContent>
                                     <DialogActions sx={{ borderTop: `1px solid ${theme.palette.primary.dark}`, display: "flex", alignItems: "center", justifyContent: "center", height: "55px" }}>

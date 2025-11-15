@@ -50,7 +50,7 @@ import ExcelJS from "exceljs";
 dayjs.locale("th");
 
 const AccountDetail = (props) => {
-    const { department, section, position, employee, month, close, accountingPeriod } = props;
+    const { department, section, position, employee, month, close, salaryhistory } = props;
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
@@ -64,15 +64,15 @@ const AccountDetail = (props) => {
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
 
-    const [selectedDateStart, setSelectDateStart] = useState(accountingPeriod ? {
-        day: accountingPeriod.DDF,
-        month: accountingPeriod.MMF,
-        year: accountingPeriod.YYYYF,
+    const [selectedDateStart, setSelectDateStart] = useState(salaryhistory ? {
+        day: salaryhistory.DDF,
+        month: salaryhistory.MMF,
+        year: salaryhistory.YYYYF,
     } : null);
-    const [selectedDateEnd, setSelectDateEnd] = useState(accountingPeriod ? {
-        day: accountingPeriod.DDT,
-        month: accountingPeriod.MMT,
-        year: accountingPeriod.YYYYT,
+    const [selectedDateEnd, setSelectDateEnd] = useState(salaryhistory ? {
+        day: salaryhistory.DDT,
+        month: salaryhistory.MMT,
+        year: salaryhistory.YYYYT,
     } : null);
     const [closeAccount, setCloseAccount] = useState(close);
     const [edit, setEdit] = useState(true);
@@ -95,7 +95,7 @@ const AccountDetail = (props) => {
     console.log("closeAccount :", closeAccount);
 
     useEffect(() => {
-        if (!accountingPeriod) {
+        if (!salaryhistory) {
             setSelectDateStart(null);
             setSelectDateEnd(null);
             setCloseAccount(false);
@@ -103,19 +103,19 @@ const AccountDetail = (props) => {
         }
 
         setSelectDateStart({
-            day: accountingPeriod?.DDF || "",
-            month: accountingPeriod?.MMF || "",
-            year: accountingPeriod?.YYYYF || "",
+            day: salaryhistory?.DDF || "",
+            month: salaryhistory?.MMF || "",
+            year: salaryhistory?.YYYYF || "",
         });
 
         setSelectDateEnd({
-            day: accountingPeriod?.DDT || "",
-            month: accountingPeriod?.MMT || "",
-            year: accountingPeriod?.YYYYT || "",
+            day: salaryhistory?.DDT || "",
+            month: salaryhistory?.MMT || "",
+            year: salaryhistory?.YYYYT || "",
         });
 
         setCloseAccount(close);
-    }, [accountingPeriod, close, month]); // 👈 เพิ่ม month ด้วย
+    }, [salaryhistory, close, month]); // 👈 เพิ่ม month ด้วย
 
     // ทุกครั้งที่ department, section หรือ position เปลี่ยน จะ reset employee
 
@@ -124,6 +124,7 @@ const AccountDetail = (props) => {
     const [positions, setPositions] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [employeeTypes, setEmployeeTypes] = useState([]);
+    const [salary, setSalary] = useState([]);
     const [selectedType, setSelectedType] = useState("all");
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
@@ -137,7 +138,7 @@ const AccountDetail = (props) => {
     const workingDays = daysInMonth - holidayCount;
 
     console.log('จำนวนวันทำงานจริง:', workingDays);
-    console.log("accountingPeriod : ", accountingPeriod);
+    console.log("salaryhistory : ", salaryhistory);
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
 
@@ -267,8 +268,34 @@ const AccountDetail = (props) => {
         };
     };
 
+    const parseDate = (str) => {
+        if (str === "now") return new Date(9999, 11, 31); // ค่ามากสุดแทน now
+
+        const [d, m, y] = str.split("/");
+        return new Date(Number(y), Number(m) - 1, Number(d));
+    };
+
+    const getSalaryByMonth = (salaryhistory, selectedMonth, selectedYear) => {
+        if (!salaryhistory || salaryhistory.length === 0) return 0;
+
+        // วันที่ที่ต้องการตรวจสอบ = วันที่ 1 ของเดือนนั้น
+        const targetDate = new Date(selectedYear, selectedMonth, 1);
+
+        for (const item of salaryhistory) {
+            const startDate = parseDate(item.datestart);
+            const endDate = parseDate(item.dateend);
+
+            if (startDate <= targetDate && targetDate <= endDate) {
+                return Number(item.salary);
+            }
+        }
+
+        // ไม่มีช่วงไหนครอบ → return 0
+        return 0;
+    };
+
     // 3️⃣ สร้าง Rows จาก filteredEmployees
-    const Rows = filteredEmployees.map(emp => {
+    const Rows = salary ? salary : filteredEmployees.map(emp => {
         const docIncome = documentincome.find(doc => doc.employid === emp.ID);
         const docDeduction = documentdeduction.find(doc => doc.employid === emp.ID);
         const attendantCount = emp.attendant?.[year]?.[m + 1]?.filter(item =>
@@ -313,6 +340,8 @@ const AccountDetail = (props) => {
 
         const employeetype = emp.employmenttype ? emp.employmenttype.split("-")[1] : 0
 
+        const salary = getSalaryByMonth(emp.salaryhistory, m, year);
+
         const row = {
             employeecode: emp.employeecode,
             employeetype: emp.employmenttype,
@@ -320,18 +349,21 @@ const AccountDetail = (props) => {
             section: emp.section,
             position: emp.position,
             workshift: emp.workshift,
-            salary: Number(emp.salary),
+            salary: Number(salary),
             employid: emp.ID,
             employname: `${emp.employname} (${emp.nickname})`,
             workday: employeetype !== 0 ? workingDays : 0,
             attendantCount: attendantCount,
             holidayCount: holidayResult.holidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
             holiday: holidayResult.holidayDates, // ✅ เพิ่มจำนวนวันหยุด
+            // leaveCount: leave.length,
             otHours: otHours,
             missingWork: 0,
             totalIncome: 0,
             totalDeduction: 0,
-            total: 0
+            total: 0,
+            sso: 0,
+            totalSalary: 0,
         };
 
         // income flat
@@ -369,10 +401,13 @@ const AccountDetail = (props) => {
             (employeetype !== 0 ? workingDays : 0) -
             (attendantCount + holidayResult.holidayDates.length + Number(totalLeaveDays));
 
-        row.total = (Number(emp.salary) + row.totalIncome) - row.totalDeduction;
+        row.total = (Number(salary) + row.totalIncome) - row.totalDeduction;
+        row.sso = Number(salary >= 15000 ? 15000 : salary) * 0.05;
 
         return row;
     });
+
+    console.log("RowS : ", Rows);
 
     const typeCount = (id) =>
         employees.filter((t) => Number(t.employmenttype?.split("-")[0] ?? 0) === id).length;
@@ -622,6 +657,25 @@ const AccountDetail = (props) => {
             } else {
                 const documentArray = Object.values(OTData);
                 setDocumentOT(documentArray); // default: แสดงทั้งหมด
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId, month]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const salaryRef = ref(firebaseDB, `workgroup/company/${companyId}/salary/${dayjs(month).format("YYYY/M")}/salarylist`);
+
+        const unsubscribe = onValue(salaryRef, (snapshot) => {
+            const salaryData = snapshot.val();
+
+            if (!salaryData) {
+                setSalary([]);
+            } else {
+                const documentArray = Object.values(salaryData);
+                setSalary(documentArray); // default: แสดงทั้งหมด
             }
         });
 
@@ -883,7 +937,7 @@ const AccountDetail = (props) => {
     console.log("selectedDateEnd : ", selectedDateEnd);
 
     const handleSave = () => {
-        const accounttingperiodRef = ref(firebaseDB, `workgroup/company/${companyId}/accountingperiod/${dayjs(month).format("YYYY/M")}`);
+        const accounttingperiodRef = ref(firebaseDB, `workgroup/company/${companyId}/salary/${dayjs(month).format("YYYY/M")}`);
 
         const dateStart = selectedDateStart
             ? dayjs(`${selectedDateStart.year}-${selectedDateStart.month}-${selectedDateStart.day}`, "YYYY-M-D")
@@ -901,6 +955,8 @@ const AccountDetail = (props) => {
             DDT: dateEnd && dateEnd.isValid() ? dateEnd.date() : null,
             MMT: dateEnd && dateEnd.isValid() ? dateEnd.month() + 1 : null,
             YYYYT: dateEnd && dateEnd.isValid() ? dateEnd.year() : null,
+
+            salarylist: Rows,
 
             Closed: "ปิดงวดบัญชี"
         };
@@ -919,7 +975,7 @@ const AccountDetail = (props) => {
     };
 
     const handleUpdate = () => {
-        const accounttingperiodRef = ref(firebaseDB, `workgroup/company/${companyId}/accountingperiod/${dayjs(month).format("YYYY/M")}`);
+        const accounttingperiodRef = ref(firebaseDB, `workgroup/company/${companyId}/salaryhistory/${dayjs(month).format("YYYY/M")}`);
 
         const dateStart = selectedDateStart
             ? dayjs(`${selectedDateStart.year}-${selectedDateStart.month}-${selectedDateStart.day}`, "YYYY-M-D")
@@ -937,6 +993,8 @@ const AccountDetail = (props) => {
             DDT: dateEnd && dateEnd.isValid() ? dateEnd.date() : null,
             MMT: dateEnd && dateEnd.isValid() ? dateEnd.month() + 1 : null,
             YYYYT: dateEnd && dateEnd.isValid() ? dateEnd.year() : null,
+
+            salarylist: Rows,
         };
 
         // ✅ บันทึกเมื่อผ่านเงื่อนไข

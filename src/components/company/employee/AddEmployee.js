@@ -275,17 +275,17 @@ const AddEmployee = () => {
     // ฟังก์ชัน toggle เมื่อกดเลือก
     const handleSelectTax = (tax) => {
         setSelectedTaxes(prev => {
-            const exists = prev.some(item => item.ID === tax.ID);
+            const exists = prev.some(item => item.taxid === tax.ID); // ใช้ taxid ตรวจสอบ
             if (exists) {
-                return prev.filter(item => item.ID !== tax.ID);
+                return prev.filter(item => item.taxid !== tax.ID); // ลบ item เดิม
             }
             return [...prev, {
-                ID: selectedTaxes.length,
+                ID: prev.length, // ใช้ prev.length เพื่อให้ ID ต่อเนื่อง
                 taxid: tax.ID,
                 name: tax.title,
                 amount: tax.amount,
-                date: dayjs(new Date).format("DD/MM/YYYY")
-            }]; // เพิ่มทั้ง object
+                date: dayjs(new Date()).format("DD/MM/YYYY")
+            }];
         });
     };
 
@@ -502,6 +502,14 @@ const AddEmployee = () => {
             } else {
                 setTaxDeduction(taxData);
             }
+
+            setSelectedTaxes([{
+                ID: 0,
+                taxid: taxData[0].ID,
+                name: taxData[0].title,
+                amount: taxData[0].amount,
+                date: dayjs(new Date()).format("DD/MM/YYYY")
+            }]);
         });
 
         return () => unsubscribe();

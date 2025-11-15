@@ -106,7 +106,7 @@ const CalculateSalary = () => {
     const [positions, setPositions] = useState([]);
     const [employees, setEmployees] = useState([]);
     const [closeAccount, setCloseAccount] = useState(false);
-    const [accountingPeriod, setAccountingPeriod] = useState([]);
+    const [salaryhistory, setSalaryhistory] = useState([]);
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
@@ -128,7 +128,7 @@ const CalculateSalary = () => {
             case 'สรุปผลการคำนวณ':
                 return <SalaryDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'ปิดงวดบัญชี':
-                return <AccountDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} close={closeAccount} accountingPeriod={accountingPeriod} />;
+                return <AccountDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} close={closeAccount} salaryhistory={salaryhistory} />;
             default:
                 return null;
         }
@@ -139,12 +139,12 @@ const CalculateSalary = () => {
 
         const accountRef = ref(
             firebaseDB,
-            `workgroup/company/${companyId}/accountingperiod/${dayjs(selectedDate).format("YYYY/M")}`
+            `workgroup/company/${companyId}/salary/${dayjs(selectedDate).format("YYYY/M")}`
         );
 
         const unsubscribe = onValue(accountRef, (snapshot) => {
             const accountData = snapshot.val();
-            setAccountingPeriod(accountData);
+            setSalaryhistory(accountData);
             setCloseAccount(accountData?.Closed === "ปิดงวดบัญชี" ? true : false);
         });
 

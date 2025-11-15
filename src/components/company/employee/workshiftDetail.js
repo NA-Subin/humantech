@@ -34,10 +34,11 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import dayjs from "dayjs";
-import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle, MenuItem } from "@mui/material";
 import { database } from "../../../server/firebase";
 import ThaiAddressSelector from "../../../theme/ThaiAddressSelector";
 import ThaiDateSelector from "../../../theme/ThaiDateSelector";
+import { formatThaiSlash } from "../../../theme/DateTH";
 
 const WorkshiftDetail = (props) => {
     const { menu, data } = props;
@@ -53,6 +54,8 @@ const WorkshiftDetail = (props) => {
     const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
+    const [workshift, setWorkshift] = useState([]);
+    const [workshifts, setWorkshifts] = useState([]);
 
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
@@ -102,6 +105,24 @@ const WorkshiftDetail = (props) => {
         return () => unsubscribe();
     }, [database]);
 
+    useEffect(() => {
+        const optionRef = ref(firebaseDB, `workgroup/company/${companyId}/workshift`);
+
+        onValue(optionRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // แปลง object เป็น array ของ { value, label }
+                const opts = Object.values(data).map((item) => ({
+                    value: `${item.ID}-${item.name}`, // ค่าเวลาบันทึก
+                    label: item.name,                 // แสดงผล
+                }));
+                const workshiftArray = Object.values(data);
+                setWorkshift(opts); // <-- ใช้ใน columns
+                setWorkshifts(workshiftArray);
+            }
+        });
+    }, [firebaseDB, companyId]);
+
     const workshiftRows = [];
 
     // const language = employees.map(emp => ({
@@ -114,18 +135,22 @@ const WorkshiftDetail = (props) => {
         const position = emp.position.split("-")[1];
         const work = emp.workshifthistory || [];
 
-        work.forEach((train, trainIdx) => {
+        work.forEach((w, wIdx) => {
             workshiftRows.push({
                 ID: emp.ID,
                 employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
-                workshift: train.workshift || "",
-                dateStart: train.dateStart || '',
-                dateEnd: train.dateEnd || '',
-                dateS: formatToGregorian(train.dateStart || ''),
-                dateE: formatToGregorian(train.dateEnd || ''),
-                isFirst: trainIdx === 0,
+                workshiftID: wIdx,
+                workshift: w.workshift || "",
+                holiday: w.holiday || "",
+                start: w.start || "",
+                stop: w.stop || "",
+                datestart: parseFromGregorian(w.datestart || ''),
+                dateend: parseFromGregorian(w.dateend || ''),
+                dateS: w.datestart || '',
+                dateE: w.dateend || '',
+                isFirst: wIdx === 0,
                 rowSpan: work.length,
             });
         });
@@ -137,9 +162,13 @@ const WorkshiftDetail = (props) => {
                 employeecode: emp.employeecode,
                 employname: `${emp.employname} (${emp.nickname})`,
                 position,
+                workshiftID: null,
                 workshift: "-",
-                dateEnd: "-",
-                dateStart: "-",
+                holiday: "-",
+                start: "-",
+                stop: "-",
+                dateend: "-",
+                datestart: "-",
                 dateE: "",
                 dateS: "",
                 isFirst: true,
@@ -178,7 +207,7 @@ const WorkshiftDetail = (props) => {
             const key = `${matchedEmp.ID}`;
 
             console.log("1.key : ", key);
-            console.log("dateStart : ", row.dateStart);
+            console.log("datestart : ", row.datestart);
 
             if (!empTrainingMap[key]) {
                 empTrainingMap[key] = [];
@@ -187,8 +216,8 @@ const WorkshiftDetail = (props) => {
             if (row.employname && row.employname !== '-') {
                 empTrainingMap[key].push({
                     workshift: row.workshift,
-                    dateStart: updatedList[idx].dateS ? parseFromGregorian(updatedList[idx].dateS) : null,
-                    dateEnd: updatedList[idx].dateE ? parseFromGregorian(updatedList[idx].dateE) : null,
+                    datestart: updatedList[idx].dateS ? parseFromGregorian(updatedList[idx].dateS) : null,
+                    dateend: updatedList[idx].dateE ? parseFromGregorian(updatedList[idx].dateE) : null,
                 });
             }
         });
@@ -287,40 +316,92 @@ const WorkshiftDetail = (props) => {
             });
     };
 
+    // แปลง ThaiDateSelector object → JS Date
+    const toDate = (thai) => {
+        if (!thai) return null;
+        const { day, month, year } = thai;
+        return new Date(year, month - 1, day);
+    };
+
+    // แปลง JS Date → ThaiDateSelector object
+    const toThaiObj = (date) => {
+        if (!date) return null;
+        return {
+            day: date.getDate(),
+            month: date.getMonth() + 1,
+            year: date.getFullYear(),
+        };
+    };
+
+    const minusOneDay = (thaiObj) => {
+        if (!thaiObj) return null; // กัน NULL !!!
+
+        const d = toDate(thaiObj);
+        d.setDate(d.getDate() - 1);
+        return toThaiObj(d);
+    };
+
+
     const handleDetailChange = (index, field, value) => {
         setOpenDetail(prev => {
-            const updatedList = prev.workshifthistory.map((item, idx) =>
-                idx === index ? { ...item, [field]: value } : item
-            );
+            let history = [...prev.workshifthistory];
+            history[index] = { ...history[index], [field]: value };
 
-            return {
-                ...prev,
-                workshifthistory: updatedList
-            };
+            // ถ้าแก้ datestart ของรายการล่าสุด → ตั้ง dateend ของรายการก่อนหน้า = (datestart - 1 วัน)
+            const lastIndex = history.length - 1;
+
+            if (field === "datestart" && index === lastIndex && lastIndex > 0) {
+                history[lastIndex - 1] = {
+                    ...history[lastIndex - 1],
+                    dateend: minusOneDay(value),
+                };
+            }
+
+            return { ...prev, workshifthistory: history };
         });
     };
 
     const handleAdd = () => {
-        setOpenDetail(prev => ({
-            ...prev,
-            workshifthistory: [
-                ...prev.workshifthistory,
-                {
-                    workshift: "",
-                    dateEnd: null,
-                    dateStart: null,
-                    dateE: "",
-                    dateS: "",
-                }
-            ]
-        }));
+        setOpenDetail(prev => {
+            const history = prev.workshifthistory || [];
+
+            const newItem = {
+                workshift: "",
+                datestart: null,
+                dateend: "now", // ค่าใหม่สุด always now
+                dateE: "",
+                dateS: "",
+            };
+
+            return {
+                ...prev,
+                workshifthistory: [...history, newItem]
+            };
+        });
     };
 
-    const handleRemove = (index) => {
-        setOpenDetail(prev => ({
-            ...prev,
-            workshifthistory: prev.workshifthistory.filter((_, idx) => idx !== index)
-        }));
+    const canEdit = (idx) => {
+        const len = openDetail.workshifthistory.length;
+        if (len === 1) return true;      // ถ้ามีตัวเดียว แก้ไขได้หมด
+        return idx === len - 1;          // ถ้ามีหลายตัว แก้ไขได้เฉพาะอันสุดท้าย
+    };
+
+    const handleRemove = () => {
+        setOpenDetail(prev => {
+            const history = [...prev.workshifthistory];
+            if (history.length <= 1) return prev;
+
+            history.pop(); // ลบรายการสุดท้าย
+
+            // ปรับอันก่อนหน้าให้ dateend = now
+            const lastIndex = history.length - 1;
+            history[lastIndex] = {
+                ...history[lastIndex],
+                dateend: "now",
+            };
+
+            return { ...prev, workshifthistory: history };
+        });
     };
 
     const handleCancel = () => {
@@ -339,22 +420,98 @@ const WorkshiftDetail = (props) => {
         }
 
         // ✅ Process workshifthistory ก่อน save
-        const cleanTraining = openDetail.workshifthistory?.map(item => {
-            return {
-                ...item,
+        const cleanTraining = openDetail.workshifthistory
+            ?.map((item, index) => {
+                // --- START --- //
+                let startObj = item.datestart;
+                let endObj = item.dateend;
 
-                // ถ้ามี dateStart ใช้เลย ถ้าไม่มีให้แปลงจาก dateS
-                dateStart: item.dateStart !== null ? item.dateStart : parseFromGregorian(item.dateS),
+                // ⭐ ตรวจสอบกรณีที่เป็น now
+                const isNowEnd =
+                    endObj === "now" ||
+                    endObj === null ||
+                    endObj === undefined ||
+                    endObj === "";
 
-                // ถ้ามี dateEnd ใช้เลย ถ้าไม่มีให้แปลงจาก dateE
-                dateEnd: item.dateEnd !== null ? item.dateEnd : parseFromGregorian(item.dateE)
-            };
-        }).map(({ dateS, dateE, ...rest }) => rest);
+                // ------------------------
+                // 1) START: ถ้าไม่มี datestart object → parse จาก dateS
+                // ------------------------
+                if (!startObj && item.dateS) {
+                    const [d, m, y] = parseFromGregorian(item.dateS).split("/");
+                    startObj = {
+                        day: Number(d),
+                        month: Number(m),
+                        year: Number(y)
+                    };
+                }
+
+                // ------------------------
+                // 2) END: ถ้าไม่ใช่ now และต้อง parse object ก่อน
+                // ------------------------
+                if (!isNowEnd && !endObj && item.dateE) {
+                    const [d, m, y] = parseFromGregorian(item.dateE).split("/");
+                    endObj = {
+                        day: Number(d),
+                        month: Number(m),
+                        year: Number(y)
+                    };
+                }
+
+                // ------------------------
+                // 3) YEAR Convert (Buddhist → Gregorian)
+                // ------------------------
+                const startYearCE = Number(startObj.year) - 543;
+
+                // หากเป็น now → ไม่ต้องแปลง
+                const endYearCE = isNowEnd ? null : Number(endObj.year) - 543;
+
+                // ------------------------
+                // 4) Format วันที่
+                // ------------------------
+                const datestart = `${String(startObj.day).padStart(2, "0")}/${String(
+                    startObj.month
+                ).padStart(2, "0")}/${startYearCE}`;
+
+                const dateend = isNowEnd
+                    ? "now"
+                    : `${String(endObj.day).padStart(2, "0")}/${String(
+                        endObj.month
+                    ).padStart(2, "0")}/${endYearCE}`;
+
+                // ------------------------
+                // 5) ค่า end ทั้งหมด
+                // ------------------------
+                const DDend = isNowEnd ? "now" : String(endObj.day).padStart(2, "0");
+                const MMend = isNowEnd ? "now" : String(endObj.month).padStart(2, "0");
+                const YYYYend = isNowEnd ? "now" : String(endYearCE);
+
+                return {
+                    ...item,
+                    ID: index,
+
+                    datestart,
+                    dateend,
+
+                    DDstart: String(startObj.day).padStart(2, "0"),
+                    MMstart: String(startObj.month).padStart(2, "0"),
+                    YYYYstart: String(startYearCE),
+
+                    DDend,
+                    MMend,
+                    YYYYend,
+                };
+            })
+            .map(({ dateS, dateE, ...rest }) => rest);
         // 👆 ลบ dateS, dateE ออกจาก object
+
+        const lastworkshift = cleanTraining?.length
+            ? cleanTraining[cleanTraining.length - 1].workshift
+            : "";
 
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${openDetail.ID}`);
 
         update(companiesRef, {
+            workshift: lastworkshift,
             workshifthistory: cleanTraining
         })
             .then(() => {
@@ -396,7 +553,7 @@ const WorkshiftDetail = (props) => {
                             </Paper>
                             :
                             <React.Fragment>
-                                <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลเงินเดือนรายคนให้กดชื่อในตารางได้เลย</Typography>
+                                <Typography variant="subtitle2" fontWeight="bold" color={theme.palette.error.dark} >*กรณีต้องการดูข้อมูลกะการทำงานรายคนให้กดชื่อในตารางได้เลย</Typography>
                                 <TableContainer component={Paper} textAlign="center" sx={{ height: "60vh" }}>
                                     <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1065px" }}>
                                         <TableHead
@@ -410,6 +567,7 @@ const WorkshiftDetail = (props) => {
                                                 <TablecellHeader rowSpan={2} sx={{ width: 50 }}>ลำดับ</TablecellHeader>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 200, position: "sticky", left: 0, zIndex: 2, backgroundColor: theme.palette.primary.dark }}>ชื่อ</TablecellHeader>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 150 }}>ตำแหน่ง</TablecellHeader>
+                                                <TablecellHeader rowSpan={2} sx={{ width: 120 }}>ปรับเปลี่ยนกะการทำงาน</TablecellHeader>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 120 }}>วันที่เริ่มต้น</TablecellHeader>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 120 }}>จนถึงวันที่</TablecellHeader>
                                                 <TablecellHeader rowSpan={2} sx={{ width: 100 }}>กะการทำงาน</TablecellHeader>
@@ -432,10 +590,14 @@ const WorkshiftDetail = (props) => {
                                                                     employeecode: rows[0].employeecode,
                                                                     employname: rows[0].employname,
                                                                     position: rows[0].position,
-                                                                    workshifthistory: rows.map(r => ({
+                                                                    workshifthistory: rows.map((r, index) => ({
+                                                                        workshiftID: index,
                                                                         workshift: r.workshift,
-                                                                        dateEnd: r.dateEnd,
-                                                                        dateStart: r.dateStart,
+                                                                        holiday: r.holiday,
+                                                                        start: r.start,
+                                                                        stop: r.stop,
+                                                                        dateend: r.dateend,
+                                                                        datestart: r.datestart,
                                                                         dateE: r.dateE,
                                                                         dateS: r.dateS,
                                                                     }))
@@ -465,9 +627,10 @@ const WorkshiftDetail = (props) => {
                                                                     </TableCell>
                                                                 </>
                                                             )}
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.dateS}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.dateE}</TableCell>
-                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.workshift}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.workshiftID !== null ? `ปรับครั้งที่ ${row.workshiftID + 1}` : ""}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{formatThaiSlash(row.dateS)}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.dateE === "now" ? "วันนี้" : formatThaiSlash(row.dateE)}</TableCell>
+                                                            <TableCell sx={{ textAlign: "center", fontWeight: hoveredEmpCode === row.ID ? 'bold' : 'normal' }}>{row.workshift ? row.workshift.split("-")[1] : "-"}</TableCell>
                                                         </TableRow>
                                                     ))}
                                         </TableBody>
@@ -497,7 +660,7 @@ const WorkshiftDetail = (props) => {
                                 onClick={() => setEdit(true)}
                                 endIcon={<ManageAccountsIcon fontSize="large" />}
                             >
-                                แก้ไขข้อมูลเงินเดือน
+                                แก้ไขข้อมูลกะการทำงาน
                             </Button>
                     }
                 </Grid>
@@ -550,7 +713,7 @@ const WorkshiftDetail = (props) => {
                     <DialogTitle sx={{ textAlign: "center", fontWeight: "bold" }}>
                         <Grid container spacing={2}>
                             <Grid item size={10}>
-                                <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลเงินเดือน</Typography>
+                                <Typography variant="h6" fontWeight="bold" gutterBottom>จัดการข้อมูลกะการทำงาน</Typography>
                             </Grid>
                             <Grid item size={2} sx={{ textAlign: "right" }}>
                                 <IconButtonError sx={{ marginTop: -2 }} onClick={() => setOpenDetail({})}>
@@ -636,38 +799,65 @@ const WorkshiftDetail = (props) => {
                                         <Grid item size={12}>
                                             <ThaiDateSelector
                                                 label="เริ่มตั้งแต่วันที่"
-                                                value={row.dateStart}
-                                                disabled={!check}
-                                                onChange={(val) => handleDetailChange(idx, "dateStart", val)}
+                                                value={row.datestart}
+                                                disabled={!check || !canEdit(idx)}
+                                                onChange={(val) => canEdit(idx) && handleDetailChange(idx, "datestart", val)}
                                             // onChange={(val) =>
-                                            //     handleTrainingChange(index, "dateStart", val)
+                                            //     handleTrainingChange(index, "datestart", val)
                                             // }
                                             />
                                         </Grid>
+                                        {
+                                            !canEdit(idx) &&
+                                            <Grid item size={12}>
+                                                <ThaiDateSelector
+                                                    label="จนถึง"
+                                                    value={row.dateend}
+                                                    disabled
+                                                // onChange={(val) =>
+                                                //     handleTrainingChange(index, "dateend", val)
+                                                // }
+                                                />
+                                            </Grid>
+                                        }
                                         <Grid item size={12}>
-                                            <ThaiDateSelector
-                                                label="จนถึง"
-                                                value={row.dateEnd}
-                                                disabled={!check}
-                                                onChange={(val) => handleDetailChange(idx, "dateEnd", val)}
-                                            // onChange={(val) =>
-                                            //     handleTrainingChange(index, "dateEnd", val)
-                                            // }
-                                            />
-                                        </Grid>
-                                        <Grid item size={12}>
-                                            <Typography variant="subtitle2" fontWeight="bold" >เงินเดือน</Typography>
-                                            <TextField
+                                            <Typography variant="subtitle2" fontWeight="bold" >กะการทำงาน</Typography>
+                                            {/* <TextField
                                                 fullWidth
                                                 size="small"
-                                                value={row.salary}
-                                                disabled={!check}
-                                                onChange={(e) => handleDetailChange(idx, "salary", e.target.value)}
+                                                value={row.workshift}
+                                                disabled={!check || !canEdit(idx)}
+                                                onChange={(e) => canEdit(idx) && handleDetailChange(idx, "workshift", e.target.value)}
                                                 // onChange={(e) =>
                                                 //     handleTrainingChange(index, "course", e.target.value)
                                                 // }
                                                 placeholder="กรุณากรอกหลักสูตร"
-                                            />
+                                            /> */}
+                                            <TextField
+                                                select
+                                                fullWidth
+                                                size="small"
+                                                value={row.workshift ? row.workshift.split("-")[0] : row.workshift}
+                                                disabled={!check || !canEdit(idx)}
+                                                SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+                                                onChange={(e) => {
+                                                    const id = e.target.value;
+
+                                                    const data = workshifts.find((row) => `${row.ID}` === id);
+                                                    if (!data) return;
+
+                                                    handleDetailChange(idx, "workshift", `${data.ID}-${data.name}`);
+                                                    handleDetailChange(idx, "holiday", data.holiday);
+                                                    handleDetailChange(idx, "start", data.start);
+                                                    handleDetailChange(idx, "stop", data.stop);
+                                                }}
+                                            >
+                                                {workshifts.map((row) => (
+                                                    <MenuItem key={row.ID} value={`${row.ID}`}>
+                                                        {row.name}
+                                                    </MenuItem>
+                                                ))}
+                                            </TextField>
                                         </Grid>
                                         <Grid item size={12}>
                                             <Divider sx={{ marginTop: 1 }} />
@@ -687,7 +877,7 @@ const WorkshiftDetail = (props) => {
                                             color="info"
                                             onClick={handleAdd}
                                         >
-                                            เพิ่มข้อมูลเงินเดือน
+                                            เพิ่มข้อมูลกะการทำงาน
                                         </Button>
                                     </Grid>
                                 </React.Fragment>
@@ -713,10 +903,14 @@ const WorkshiftDetail = (props) => {
                                                     employeecode: rows[0].employeecode,
                                                     employname: rows[0].employname,
                                                     position: rows[0].position,
-                                                    workshifthistory: rows.map(r => ({
+                                                    workshifthistory: rows.map((r, index) => ({
+                                                        workshiftID: index,
                                                         workshift: r.workshift,
-                                                        dateEnd: r.dateEnd,
-                                                        dateStart: r.dateStart,
+                                                        holiday: r.holiday,
+                                                        start: r.start,
+                                                        stop: r.stop,
+                                                        dateend: r.dateend,
+                                                        datestart: r.datestart,
                                                         dateE: r.dateE,
                                                         dateS: r.dateS,
                                                     }))
