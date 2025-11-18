@@ -2,7 +2,7 @@ import React, { useState, useEffect, use } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import '../../../App.css'
-import { getDatabase, ref, push, onValue, set, update } from "firebase/database";
+import { getDatabase, ref, push, onValue, set, update, get } from "firebase/database";
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Grid from '@mui/material/Grid';
@@ -84,6 +84,7 @@ const AccountDetail = (props) => {
     const [documentleave, setDocumentLeave] = useState([]);
     const [documentot, setDocumentOT] = useState([]);
     const [holiday, setHoliday] = useState([]);
+    const [taxes, setTaxes] = useState([]);
 
     const year = month.year();
     const m = month.month();
@@ -145,34 +146,52 @@ const AccountDetail = (props) => {
     const incomeActive = income.filter(row => row.status === 1);
     const deductionActive = deduction.filter(row => row.status === 1);
 
-    // 1️⃣ กรอง employees ตาม props
-    let filteredEmployees = employees.length !== 0 ? employees : [];
+    const [filteredEmployees, setFilteredEmployees] = useState([]);
+    const [employeeDetail, setEmployeeDetail] = useState([]);
 
-    if (department && department !== "all-ทั้งหมด") {
-        filteredEmployees = filteredEmployees.filter(e => e.department === department);
-    }
+    useEffect(() => {
+        let filtered = employees.length ? [...employees] : [];
 
-    if (section && section !== "all-ทั้งหมด") {
-        filteredEmployees = filteredEmployees.filter(e => e.section === section);
-    }
+        // กรองตามเดือน
+        if (month) {
+            const monthNum = Number(dayjs(month).format("MM")); // เช่น 10
+            filtered = filtered.filter(e => Number(dayjs(e.date, "DD/MM/YYYY").format("MM")) <= monthNum);
+        }
 
-    if (position && position !== "all-ทั้งหมด") {
-        filteredEmployees = filteredEmployees.filter(e => e.position === position);
-    }
+        setEmployeeDetail(filtered);
 
-    if (employee && employee !== "all-ทั้งหมด") {
-        const empId = Number(employee.split("-")[0]);
-        filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
-    }
+        // กรองตาม department
+        if (department && department !== "all-ทั้งหมด") {
+            filtered = filtered.filter(e => e.department === department);
+        }
 
-    if (selectedType !== "all") {
-        filteredEmployees = filteredEmployees.filter(emp => {
-            if (selectedType === "all") return true;
+        // กรองตาม section
+        if (section && section !== "all-ทั้งหมด") {
+            filtered = filtered.filter(e => e.section === section);
+        }
 
-            const typeId = emp.employmenttype?.split("-")[0];
-            return Number(typeId || 0) === selectedType;
-        });
-    }
+        // กรองตาม position
+        if (position && position !== "all-ทั้งหมด") {
+            filtered = filtered.filter(e => e.position === position);
+        }
+
+        // กรองตาม employee
+        if (employee && employee !== "all-ทั้งหมด") {
+            const empId = Number(employee.split("-")[0]);
+            filtered = filtered.filter(e => e.ID === empId);
+        }
+
+        if (selectedType !== "all") {
+            filteredEmployees = filteredEmployees.filter(emp => {
+                if (selectedType === "all") return true;
+
+                const typeId = emp.employmenttype?.split("-")[0];
+                return Number(typeId || 0) === selectedType;
+            });
+        }
+
+        setFilteredEmployees(filtered);
+    }, [selectedType, employees, month, department, section, position, employee]);
 
     console.log("filteredEmployees : ", filteredEmployees);
 
@@ -294,8 +313,34 @@ const AccountDetail = (props) => {
         return 0;
     };
 
+    const calculateProgressiveTax = (taxableIncome, taxes) => {
+        let taxTotal = 0;
+
+        for (const bracket of taxes) {
+            const start = Number(bracket.summaryStart);
+            const end = Number(bracket.summaryEnd);
+            const rate = Number(bracket.tax) / 100;
+
+            // กรณีวงเงินสุดท้าย (ไม่มี summaryEnd เช่น summaryEnd = 0)
+            const isLastBracket = end === 0;
+
+            if (taxableIncome > start) {
+                const upperLimit = isLastBracket ? taxableIncome : Math.min(taxableIncome, end);
+                const taxableForBracket = upperLimit - start;
+
+                if (taxableForBracket > 0) {
+                    taxTotal += taxableForBracket * rate;
+                }
+            }
+        }
+
+        return taxTotal;
+    };
+
+    console.log("salary : ", salary);
+
     // 3️⃣ สร้าง Rows จาก filteredEmployees
-    const Rows = salary ? salary : filteredEmployees.map(emp => {
+    const Rows = salary.length > 0 ? salary : filteredEmployees.map(emp => {
         const docIncome = documentincome.find(doc => doc.employid === emp.ID);
         const docDeduction = documentdeduction.find(doc => doc.employid === emp.ID);
         const attendantCount = emp.attendant?.[year]?.[m + 1]?.filter(item =>
@@ -342,7 +387,19 @@ const AccountDetail = (props) => {
 
         const salary = getSalaryByMonth(emp.salaryhistory, m, year);
 
+        const texdeduction = (emp.taxdeduction || []).reduce(
+            (sum, item) => sum + Number(item?.amount ?? 0),
+            0
+        );
+
+        const totalsso = (emp.ssohistory || []).reduce(
+            (sum, item) => sum + Number(item?.price ?? 0),
+            0
+        );
+
         const row = {
+            ID: emp.ID,
+            date: emp.date,
             employeecode: emp.employeecode,
             employeetype: emp.employmenttype,
             department: emp.department,
@@ -364,6 +421,9 @@ const AccountDetail = (props) => {
             total: 0,
             sso: 0,
             totalSalary: 0,
+            totalsso: totalsso,
+            totaltaxdeduction: texdeduction,
+            tax: 0
         };
 
         // income flat
@@ -404,13 +464,21 @@ const AccountDetail = (props) => {
         row.total = (Number(salary) + row.totalIncome) - row.totalDeduction;
         row.sso = Number(salary >= 15000 ? 15000 : salary) * 0.05;
 
+        // คำนวณภาษีก่อนเข้าเงื่อนไข
+        const taxable =
+            (Number(salary) * 12) -
+            texdeduction;
+
+        row.tax = Number(calculateProgressiveTax(taxable, taxes).toFixed(2));
+        row.taxPerMonth = Number((row.tax / 12).toFixed(2));
+
         return row;
     });
 
     console.log("RowS : ", Rows);
 
     const typeCount = (id) =>
-        employees.filter((t) => Number(t.employmenttype?.split("-")[0] ?? 0) === id).length;
+        employeeDetail.filter((t) => Number(t.employmenttype?.split("-")[0] ?? 0) === id).length;
 
     // 4️⃣ กรอง columns ที่มีค่าไม่เป็น 0 อย่างน้อย 1 แถว
     const visibleIncome = incomeActive.filter(inc =>
@@ -581,6 +649,25 @@ const AccountDetail = (props) => {
                 setDeduction([{ ID: 0, name: '' }]);
             } else {
                 setDeduction(deductionData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const taxRef = ref(firebaseDB, `workgroup/company/${companyId}/tax`);
+
+        const unsubscribe = onValue(taxRef, (snapshot) => {
+            const taxData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!taxData) {
+                setTaxes([]);
+            } else {
+                setTaxes(taxData);
             }
         });
 
@@ -936,46 +1023,107 @@ const AccountDetail = (props) => {
     console.log("selectedDateStart : ", selectedDateStart);
     console.log("selectedDateEnd : ", selectedDateEnd);
 
-    const handleSave = () => {
-        const accounttingperiodRef = ref(firebaseDB, `workgroup/company/${companyId}/salary/${dayjs(month).format("YYYY/M")}`);
+    const handleSave = async () => {
+        const hasMissingSalary = Rows.some(row => {
+            const value = row.salary;
+
+            // ไม่มีค่า หรือค่าว่าง
+            if (value === undefined || value === null || value === "") return true;
+
+            // ไม่ใช่ตัวเลข
+            if (isNaN(Number(value))) return true;
+
+            // ❗ salary = 0 → ไม่อนุญาต
+            if (Number(value) === 0) return true;
+
+            return false;
+        });
+
+        console.log("hasMissingSalary : ", hasMissingSalary);
+
+        if (hasMissingSalary) {
+            return ShowError("ไม่สามารถปิดงวดบัญชีได้ เนื่องจากมีพนักงานที่ยังไม่กำหนดเงินเดือน (salary)");
+        }
+
+        const salaryRef = ref(
+            firebaseDB,
+            `workgroup/company/${companyId}/salary/${dayjs(month).format("YYYY/M")}`
+        );
 
         const dateStart = selectedDateStart
-            ? dayjs(`${selectedDateStart.year}-${selectedDateStart.month}-${selectedDateStart.day}`, "YYYY-M-D")
+            ? dayjs(`${selectedDateStart.year - 543}-${selectedDateStart.month}-${selectedDateStart.day}`, "YYYY-M-D")
             : null;
 
         const dateEnd = selectedDateEnd
-            ? dayjs(`${selectedDateEnd.year}-${selectedDateEnd.month}-${selectedDateEnd.day}`, "YYYY-M-D")
+            ? dayjs(`${selectedDateEnd.year - 543}-${selectedDateEnd.month}-${selectedDateEnd.day}`, "YYYY-M-D")
             : null;
 
         const newPeriod = {
-            DDF: dateStart && dateStart.isValid() ? dateStart.date() : null,
-            MMF: dateStart && dateStart.isValid() ? dateStart.month() + 1 : null,
-            YYYYF: dateStart && dateStart.isValid() ? dateStart.year() : null,
+            DDF: dateStart?.isValid() ? dateStart.date() : null,
+            MMF: dateStart?.isValid() ? dateStart.month() + 1 : null,
+            YYYYF: dateStart?.isValid() ? dateStart.year() : null,
 
-            DDT: dateEnd && dateEnd.isValid() ? dateEnd.date() : null,
-            MMT: dateEnd && dateEnd.isValid() ? dateEnd.month() + 1 : null,
-            YYYYT: dateEnd && dateEnd.isValid() ? dateEnd.year() : null,
+            DDT: dateEnd?.isValid() ? dateEnd.date() : null,
+            MMT: dateEnd?.isValid() ? dateEnd.month() + 1 : null,
+            YYYYT: dateEnd?.isValid() ? dateEnd.year() : null,
 
             salarylist: Rows,
-
             Closed: "ปิดงวดบัญชี"
         };
 
-        // ✅ บันทึกเมื่อผ่านเงื่อนไข
-        set(accounttingperiodRef, newPeriod)
-            .then(() => {
-                ShowSuccess("บันทึกข้อมูลสำเร็จ");
-                console.log("บันทึกสำเร็จ");
-                setCloseAccount(true);
-            })
-            .catch((error) => {
-                ShowError("เกิดข้อผิดพลาดในการบันทึก");
-                console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+        try {
+            // -------------------------------------------------------------
+            // 1) บันทึก SSO HISTORY ของแต่ละพนักงาน
+            // -------------------------------------------------------------
+            const saves = Rows.map(async (row) => {
+                const historyRef = ref(
+                    firebaseDB,
+                    `workgroup/company/${companyId}/employee/${row.ID}/ssohistory`
+                );
+
+                // อ่านข้อมูลเก่าเพื่อเอา length
+                const snapshot = await get(historyRef);
+                const oldData = snapshot.val() || {};
+
+                const newId = Object.keys(oldData).length; // <<< ID ใหม่ (running)
+
+                // path ใหม่ เช่น /ssohistory/1, /2, /3
+                const newRecordRef = ref(
+                    firebaseDB,
+                    `workgroup/company/${companyId}/employee/${row.ID}/ssohistory/${newId}`
+                );
+
+                const data = {
+                    ID: newId,
+                    DD: dayjs().format("DD"),
+                    MM: dayjs().format("MM"),
+                    YYYY: dayjs().format("YYYY"),
+                    date: dayjs().format("DD/MM/YYYY"),
+                    price: Number(row.sso ?? 0),
+                };
+
+                return set(newRecordRef, data);
             });
+
+            await Promise.all(saves); // รอให้ทุกพนักงานบันทึกครบ
+
+            // -------------------------------------------------------------
+            // 2) บันทึก salary period
+            // -------------------------------------------------------------
+            await set(salaryRef, newPeriod);
+
+            ShowSuccess("บันทึกข้อมูลสำเร็จ");
+            console.log("บันทึกสำเร็จ");
+            setCloseAccount(true);
+
+        } catch (error) {
+            ShowError("เกิดข้อผิดพลาดในการบันทึก");
+            console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
+        }
     };
 
     const handleUpdate = () => {
-        const accounttingperiodRef = ref(firebaseDB, `workgroup/company/${companyId}/salaryhistory/${dayjs(month).format("YYYY/M")}`);
+        const accounttingperiodRef = ref(firebaseDB, `workgroup/company/${companyId}/salary/${dayjs(month).format("YYYY/M")}`);
 
         const dateStart = selectedDateStart
             ? dayjs(`${selectedDateStart.year}-${selectedDateStart.month}-${selectedDateStart.day}`, "YYYY-M-D")

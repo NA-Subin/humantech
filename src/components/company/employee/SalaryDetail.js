@@ -48,12 +48,20 @@ const SalaryDetail = (props) => {
     const companyId = companyName?.split(":")[0];
     const [check, setCheck] = useState(false);
 
+    const thaiMonths = [
+        "", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
+        "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
+    ];
+
     const [edit, setEdit] = useState("");
     const [openDetail, setOpenDetail] = useState("");
     const [thailand, setThailand] = useState([]);
     const [hoveredEmpCode, setHoveredEmpCode] = useState(null);
     const [allEmployees, setAllEmployees] = useState([]);
     const [employees, setEmployees] = useState([]); // จะถูกกรองจาก allEmployees
+    const [SalaryDetail, setSalaryDetail] = useState([]);
+
+    console.log("salary detail : ", SalaryDetail);
 
     //const [personal, setPersonal] = useState([]); // จะถูกกรองจาก allEmployees
 
@@ -210,6 +218,23 @@ const SalaryDetail = (props) => {
         setEmployees(merged);
     };
 
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const salaryRef = ref(firebaseDB, `workgroup/company/${companyId}/`);
+
+        const unsubscribe = onValue(salaryRef, (snapshot) => {
+            const salaryData = snapshot.val();
+
+            if (!salaryData) {
+                setSalaryDetail([]);
+            } else {
+                setSalaryDetail(salaryData.salary); // default: แสดงทั้งหมด
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
 
     console.log("salaryRows : ", salaryRows);
 
@@ -388,6 +413,29 @@ const SalaryDetail = (props) => {
         }, { onlyOnce: true }); // เพิ่มเพื่อไม่ให้ subscribe ถาวร
     };
 
+    const getLatestClosedPeriod = (SalaryDetail) => {
+        if (!SalaryDetail) return null;
+
+        // แปลงปีเป็นตัวเลข
+        const years = Object.keys(SalaryDetail).map(y => Number(y));
+        if (!years.length) return null;
+
+        // หา "ปีล่าสุด"
+        const latestYear = Math.max(...years);
+
+        // หาเดือนล่าสุดในปีล่าสุด
+        const months = Object.keys(SalaryDetail[latestYear]).map(m => Number(m));
+        if (!months.length) return null;
+
+        const latestMonth = Math.max(...months);
+
+        return {
+            year: latestYear,
+            month: latestMonth,
+            detail: SalaryDetail[latestYear][latestMonth]
+        };
+    };
+
     const handleUpdate = () => {
         if (openDetail?.ID === undefined || openDetail?.ID === null) {
             return ShowError("ไม่พบข้อมูลพนักงาน");
@@ -478,9 +526,34 @@ const SalaryDetail = (props) => {
             .map(({ dateS, dateE, ...rest }) => rest);
         // 👆 ลบ dateS, dateE ออกจาก object
 
-        const lastSalary = cleanTraining?.length
-            ? cleanTraining[cleanTraining.length - 1].salary
-            : "";
+        // const lastSalary = cleanTraining?.length
+        //     ? cleanTraining[cleanTraining.length - 1].salary
+        //     : "";
+
+        if (!cleanTraining?.length) return ShowError("ไม่มีข้อมูลเงินเดือนให้บันทึก");
+
+        // เอา lastSalaryRecord จาก cleanTraining
+        const lastSalaryRecord = cleanTraining[cleanTraining.length - 1];
+        const lastSalary = lastSalaryRecord?.salary;
+
+        const startYearBE = Number(lastSalaryRecord?.YYYYstart); // พ.ศ.
+        const startMonth = Number(lastSalaryRecord?.MMstart);
+
+        const lastDetailData = getLatestClosedPeriod(SalaryDetail);
+        const lastDetail = lastDetailData?.detail;
+        const closedYear = lastDetailData?.year;
+        const closedMonth = lastDetailData?.month;
+
+        if (lastDetail) {
+            if (
+                startYearBE < closedYear ||
+                (startYearBE === closedYear && startMonth <= closedMonth)
+            ) {
+                return ShowError(
+                    `ไม่สามารถบันทึกได้ วันที่เริ่มเงินเดือนต้องมากกว่าเดือน${thaiMonths[lastDetail.MMF]} เนื่องจากมีการปิดงวดบัญชีเดือนนี้แล้ว`
+                );
+            }
+        }
 
         const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${openDetail.ID}`);
 

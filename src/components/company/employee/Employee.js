@@ -1240,6 +1240,7 @@ const Employee = () => {
         }
 
         update(companiesRef, {
+            date: opendetail?.date ? opendetail?.date : dayjs(new Date).format("DD/MM/YYYY"),
             employeecode: opendetail?.employeecode,
             employname: opendetail?.employname,
             nickname: opendetail?.nickname,

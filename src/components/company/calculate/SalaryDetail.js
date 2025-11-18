@@ -107,25 +107,42 @@ const SalaryDetail = (props) => {
     const incomeActive = income.filter(row => row.status === 1);
     const deductionActive = deduction.filter(row => row.status === 1);
 
-    // 1️⃣ กรอง employees ตาม props
-    let filteredEmployees = employees.length !== 0 ? employees : [];
+    const [filteredEmployees, setFilteredEmployees] = useState([]);
 
-    if (department && department !== "all-ทั้งหมด") {
-        filteredEmployees = filteredEmployees.filter(e => e.department === department);
-    }
+    useEffect(() => {
+        let filtered = employees.length ? [...employees] : [];
 
-    if (section && section !== "all-ทั้งหมด") {
-        filteredEmployees = filteredEmployees.filter(e => e.section === section);
-    }
+        // กรองตามเดือน
+        if (month) {
+            const monthNum = Number(dayjs(month).format("MM")); // เช่น 10
+            filtered = filtered.filter(e => Number(dayjs(e.date, "DD/MM/YYYY").format("MM")) <= monthNum);
+        }
 
-    if (position && position !== "all-ทั้งหมด") {
-        filteredEmployees = filteredEmployees.filter(e => e.position === position);
-    }
+        // กรองตาม department
+        if (department && department !== "all-ทั้งหมด") {
+            filtered = filtered.filter(e => e.department === department);
+        }
 
-    if (employee && employee !== "all-ทั้งหมด") {
-        const empId = Number(employee.split("-")[0]);
-        filteredEmployees = filteredEmployees.filter(e => e.ID === empId);
-    }
+        // กรองตาม section
+        if (section && section !== "all-ทั้งหมด") {
+            filtered = filtered.filter(e => e.section === section);
+        }
+
+        // กรองตาม position
+        if (position && position !== "all-ทั้งหมด") {
+            filtered = filtered.filter(e => e.position === position);
+        }
+
+        // กรองตาม employee
+        if (employee && employee !== "all-ทั้งหมด") {
+            const empId = Number(employee.split("-")[0]);
+            filtered = filtered.filter(e => e.ID === empId);
+        }
+
+        setFilteredEmployees(filtered);
+    }, [employees, month, department, section, position, employee]);
+
+    console.log("filteredEmployees : ", filteredEmployees);
 
     const dayNameMap = {
         Sunday: "อาทิตย์",

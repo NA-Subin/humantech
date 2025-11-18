@@ -902,6 +902,7 @@ const AddEmployee = () => {
 
             await set(child(employeeRef, String(nextIndex)), {
                 ID: nextIndex,
+                date: dayjs(new Date).format("DD/MM/YYYY"),
                 employeecode: employeeCode,
                 username: employeeCode,
                 password: "1234567",
