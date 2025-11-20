@@ -43,6 +43,7 @@ import dayjs from "dayjs";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { formatThaiShort } from "../../../theme/DateTH";
+import InsertLeave from "./InsertLeave";
 
 const ReportLeave = () => {
     const { firebaseDB, domainKey } = useFirebase();
@@ -337,6 +338,9 @@ const ReportLeave = () => {
                         <Typography variant="h5" fontWeight="bold" gutterBottom>เอกสารขอลา (Documents requesting Leave)</Typography>
                     </Grid>
                     <Grid item size={12} sx={{ display: "flex", alignItems: "center", justifyContent: "right" }}>
+                        {/* <Box sx={{ marginTop: -10, marginRight: 2 }}>
+                            <InsertLeave />
+                        </Box> */}
                         <Paper sx={{ width: "20%", marginTop: -10 }}>
                             <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
                                 <DatePicker

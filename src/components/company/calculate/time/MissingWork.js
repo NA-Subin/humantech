@@ -52,10 +52,27 @@ const MissingWorkDetail = (props) => {
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
+
     const [empID, setEmployID] = useState("");
+    const [check, setCheck] = useState(false);
     const [empDate, setEmployDate] = useState("");
     const [checkin, setCheckin] = useState("");
     const [checkout, setCheckout] = useState("");
+
+    const [editingRow, setEditingRow] = useState({
+        empID: null,
+        date: null,
+        checkin: "",
+        checkout: ""
+    });
+
+    const formatTime = (timeStr) => {
+        if (!timeStr) return "";
+        const parts = timeStr.split(":"); // ["HH", "MM"]
+        if (parts.length === 2) return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}:00`;
+        if (parts.length === 3) return timeStr; // ถ้ามีแล้ว :ss
+        return "";
+    }
 
     const result = Array.isArray(dateArray) ?
         dateArray.map((item) => {
@@ -63,11 +80,17 @@ const MissingWorkDetail = (props) => {
 
             const newDateHistory = dateHistory.map((d) => {
                 // หาวันที่ตรงกับ datein หรือ dateout
-                const found = attendant.find((a) => {
-                    const datein = a.DDI && a.MMI ? `${a.DDI}/${a.MMI}/2025` : null;
-                    const dateout = a.DDO && a.MMO ? `${a.DDO}/${a.MMO}/2025` : null;
-                    return d.date === datein || d.date === dateout;
-                });
+                const dayKey = Number(d.DD || d.date.split("/")[0]); // แปลงเป็น number 1–31
+
+                const record = attendant?.[dayKey];
+
+                const found = record
+                    ? {
+                        ...record,
+                        datein: `${record.DDI}/${record.MMI}/${record.YYYYI}`,
+                        dateout: `${record.DDO}/${record.MMO}/${record.YYYYO}`,
+                    }
+                    : null;
 
                 let message = "ขาดงาน";
                 let datein = "";
@@ -77,12 +100,12 @@ const MissingWorkDetail = (props) => {
 
                 if (found) {
                     if (found.DDI && found.MMI) {
-                        datein = `${found.DDI}/${found.MMI}/2025`;
+                        datein = `${found.DDI}/${found.MMI}/${found.YYYYI}`;
                         checkin = found.checkin || ""; // เวลาเข้า
                     }
 
                     if (found.DDO && found.MMO) {
-                        dateout = `${found.DDO}/${found.MMO}/2025`;
+                        dateout = `${found.DDO}/${found.MMO}/${found.YYYYO}`;
                         checkout = found.checkout || ""; // เวลาออก
                     }
 
@@ -115,88 +138,332 @@ const MissingWorkDetail = (props) => {
 
     console.log("result : ", result);
 
-    const handleUpdateTime = (empID, empdate) => {
+    const handleUpdateTime = (empID, newdate) => {
+        const emp = result.find(item => item.employeeID === empID);
+        console.log("emp : ", emp);
+        if (!emp) return;
+
+        const found = emp.dateHistory.find(d => {
+            const dDate = dayjs(d.date, ["D/M/YYYY", "DD/MM/YYYY"]).format("DD/MM/YYYY");
+            const newDateFormatted = dayjs(newdate, ["D/M/YYYY", "DD/MM/YYYY"]).format("DD/MM/YYYY");
+            return dDate === newDateFormatted;
+        });
+
+        console.log("found : ", found);
+        if (!found) return;
+
+        setCheckin(formatTime(found.start));
+        setCheckout(formatTime(found.stop));
+        setCheck(true);
         setEmployID(empID);
-        setEmployDate(empdate);
+        setEmployDate(newdate);
     }
 
+    const current = dayjs();
+    const yearStr = current.year().toString();
+    const monthStr = (current.month() + 1).toString();
+    const totalDays = current.daysInMonth();
+
+    // สร้าง default day map แบบเต็ม field
+    const monthDaysMap = {};
+    for (let i = 1; i <= totalDays; i++) {
+        const dateStr = dayjs(`${i}/${monthStr}/${yearStr}`, "D/M/YYYY").format("DD/MM/YYYY");
+        monthDaysMap[i] = {
+            date: dateStr,
+            message: "ขาดงาน",      // default message เหมือนวันทำงาน
+            start: "",
+            stop: "",
+            workshift: "",
+            checkin: "",
+            checkout: "",
+            DDI: "",
+            MMI: "",
+            YYYYI: "",
+            datein: "",
+            datecodeI: "",
+            DDO: "",
+            MMO: "",
+            YYYYO: "",
+            dateout: "",
+            datecodeO: "",
+            status: 0,
+            unixin: "",
+            unixout: ""
+        };
+    }
+
+    // รวมผลลัพธ์จาก dateArray
+    const merged = Array.isArray(dateArray)
+        ? dateArray.map((item) => {
+
+            const { dateHistory = [] } = item;
+
+            if (!dateHistory.length) return { ...item, dateHistory: [] };
+
+            // เอาปี/เดือนจาก dateHistory แรก
+            const firstDate = dayjs(dateHistory[0].date, "DD/MM/YYYY");
+            const yearStr = firstDate.year().toString();
+            const monthStr = (firstDate.month() + 1).toString();
+            const totalDays = firstDate.daysInMonth();
+
+            // สร้าง default day map ของเดือนนั้น
+            const monthDaysMap = {};
+            for (let i = 1; i <= totalDays; i++) {
+                const dateStr = dayjs(`${i}/${monthStr}/${yearStr}`, "D/M/YYYY").format("DD/MM/YYYY");
+                monthDaysMap[i] = {
+                    date: dateStr,
+                    message: "วันหยุด", // ค่า default วันหยุด
+                    start: "",
+                    stop: "",
+                    workshift: "",
+                    checkin: "",
+                    checkout: "",
+                    DDI: "",
+                    MMI: "",
+                    YYYYI: "",
+                    datein: "",
+                    datecodeI: "",
+                    DDO: "",
+                    MMO: "",
+                    YYYYO: "",
+                    dateout: "",
+                    datecodeO: "",
+                    status: 0,
+                    unixin: "",
+                    unixout: ""
+                };
+            }
+
+            // map ของวันที่จาก dateHistory
+            const dateHistoryMap = {};
+            dateHistory.forEach((d) => {
+                const dayNum = Number(d.DD || dayjs(d.date, "DD/MM/YYYY").date());
+                dateHistoryMap[dayNum] = d;
+            });
+
+            // รวม monthDaysMap กับ dateHistoryMap
+            const finalDays = Object.keys(monthDaysMap).map(dayKey => {
+                const day = Number(dayKey);
+
+                if (dateHistoryMap[day]) {
+                    return {
+                        ...monthDaysMap[day],
+                        ...dateHistoryMap[day],
+                        message: dateHistoryMap[day].message || "ขาดงาน",
+                        date: monthDaysMap[day].date
+                    };
+                }
+
+                // ไม่มีข้อมูล → วันหยุด
+                return monthDaysMap[day];
+            });
+
+            return {
+                ...item,
+                dateHistory: finalDays
+            };
+        })
+        : [];
+
+    console.log("merged : ", merged);
+    console.log("checkin : ", checkin);
+    console.log("checkout : ", checkout);
+
+    const updateInvalidMessage = (
+        dateHistory,       // ← array ของวันในเดือน
+        dayIndex,          // index 0–30
+        checkin,
+        checkout,
+        newdate,
+        dateOutObj
+    ) => {
+
+        // วันที่จริง (1–31)
+        const day = dayIndex + 1;
+        const dateObj = dayjs(`${day}/${monthStr}/${yearStr}`, "D/M/YYYY");
+
+        // หา object ของวันนั้น
+        const target = dateHistory[dayIndex];
+        if (!target) return dateHistory; // safety
+
+        // อัปเดตข้อมูล
+        const updated = {
+            ...target,
+
+            // วันที่เข้า
+            DDI: checkin ? String(day).padStart(2, "0") : "",
+            MMI: checkin ? String(monthStr).padStart(2, "0") : "",
+            YYYYI: checkin ? yearStr : "",
+            datein: checkin ? dateObj.format("DD/MM/YYYY") : "",
+            datecodeI: checkin ? dateObj.format("YYYY.MMDD") : "",
+
+            // วันที่ออก
+            DDO: checkout ? dateOutObj.format("DD") : "",
+            MMO: checkout ? dateOutObj.format("MM") : "",
+            YYYYO: checkout ? dateOutObj.format("YYYY") : "",
+            dateout: checkout ? dateOutObj.format("DD/MM/YYYY") : "",
+            datecodeO: checkout ? dateOutObj.format("YYYY.MMDD") : "",
+
+            // เวลา
+            checkin: checkin || "",
+            checkout: checkout || "",
+
+            // สถานะ
+            status: (!checkin || !checkout) ? 1 : 2,
+
+            // unix time
+            unixin: checkin
+                ? dayjs(`${newdate.date} ${checkin}`, "DD/MM/YYYY HH:mm:ss").valueOf()
+                : "",
+
+            unixout: checkout
+                ? dayjs(`${dateOutObj.format("DD/MM/YYYY")} ${checkout}`, "DD/MM/YYYY HH:mm:ss").valueOf()
+                : "",
+        };
+
+        // ใส่ message ใหม่ตามเงื่อนไขของคุณ
+        if (updated.checkin && updated.checkout) {
+            updated.message = "ลงเวลาเข้าออกครบ";
+        } else if (updated.checkin && !updated.checkout) {
+            updated.message = "ลงเวลาไม่ครบ (ไม่มีเวลาออก)";
+        } else if (!updated.checkin && updated.checkout) {
+            updated.message = "ลงเวลาไม่ครบ (ไม่มีเวลาเข้า)";
+        } else {
+            updated.message = "ขาดงาน";
+        }
+
+        // set กลับเข้า array
+        dateHistory[dayIndex] = updated;
+
+        return dateHistory; // ส่งตัวใหม่กลับ
+    };
+
+    // const handleUpdateTime = (empID, newdate) => {
+    //     const emp = result.find(item => item.employeeID === empID);
+    //     if (!emp) return;
+
+    //     const found = emp.dateHistory.find(d => {
+    //         const dDate = dayjs(d.date, ["D/M/YYYY", "DD/MM/YYYY"]).format("DD/MM/YYYY");
+    //         const newDateFormatted = dayjs(newdate.date, ["D/M/YYYY", "DD/MM/YYYY"]);
+    //         return dDate === newDateFormatted;
+    //     });
+
+    //     if (!found) return;
+
+    //     const dayIndex = Number(found.date.split("/")[0]) - 1;
+
+    //     setCheckin(formatTime(found.start));
+    //     setCheckout(formatTime(found.stop));
+    //     setCheck(true);
+    //     setEmployID(empID);
+    //     setEmployDate(newdate);
+
+    //     const checkin = formatTime(found.start);
+    //     const checkout = formatTime(found.stop);
+
+    //     const dateOutObj = dayjs(newdate.dateout, ["D/M/YYYY", "DD/MM/YYYY"]);
+
+    //     updateInvalidMessage(dayIndex, checkin, checkout, newdate, dateOutObj);
+    // };
+
     const handleCancel = () => {
+        setCheck(false);
         setEmployID("");
         setEmployDate("");
         setCheckin("");
         setCheckout("");
     }
 
-    const handleSave = async (empID, newdate) => {
-        console.log("new Date : ", newdate);
-        const dateObj = dayjs(newdate.date, "DD/MM/YYYY");
+    const handleSave = async (empID) => {
+        if (!empDate) return;
+
+        const dateObj = dayjs(empDate, "DD/MM/YYYY");
         const year = dateObj.year();
         const m = dateObj.month(); // 0-based
-        const day = dateObj.date();
 
-        console.log("new Year : ", year);
-        console.log("new Month : ", m);
-        console.log("new Date : ", day);
-        console.log("newdate.checkin: ", newdate.checkin);
-        console.log("newdate.checkout: ", newdate.checkout);
+        const sourceDateHistory = merged
+            .find(e => e.employeeID === empID)
+            ?.dateHistory || [];
 
-        const checkinTime = dayjs(checkin, "HH:mm:ss");
-        const checkoutTime = dayjs(checkout, "HH:mm:ss");
+        const newDateHistory = sourceDateHistory.map(d => {
+            if (d.date === empDate) {
+                const day = dateObj.date();
+                const checkinTime = dayjs(checkin, "HH:mm:ss");
+                const checkoutTime = dayjs(checkout, "HH:mm:ss");
+                const isNextDay = checkoutTime.isBefore(checkinTime);
+                const dateOutObj = isNextDay ? dateObj.add(1, "day") : dateObj;
 
-        const isNextDay = checkoutTime.isBefore(checkinTime);
-        const dateOutObj = isNextDay ? dateObj.add(1, "day") : dateObj;
+                return {
+                    ...d,
+                    DDI: checkin ? String(day).padStart(2, "0") : "",
+                    MMI: checkin ? String(m + 1).padStart(2, "0") : "",
+                    YYYYI: checkin ? year.toString() : "",
+                    datein: checkin ? dateObj.format("DD/MM/YYYY") : "",
+                    datecodeI: checkin ? dateObj.format("YYYY.MMDD") : "",
 
-        const attendantRef = ref(firebaseDB, `workgroup/company/${companyId}/employee/${empID}/attendant/${year}/${m + 1}`);
-        const atendantSnapshot = await get(attendantRef);
-        const data = atendantSnapshot.val() || {};
-        const index = Object.keys(data).length;
+                    DDO: checkout ? String(dateOutObj.date()).padStart(2, "0") : "",
+                    MMO: checkout ? String(dateOutObj.month() + 1).padStart(2, "0") : "",
+                    YYYYO: checkout ? dateOutObj.year().toString() : "",
+                    dateout: checkout ? dateOutObj.format("DD/MM/YYYY") : "",
+                    datecodeO: checkout ? dateOutObj.format("YYYY.MMDD") : "",
 
-        const invalidMessages = {
-            ID: index,
-            DDI: checkin !== "" ? String(day).padStart(2, "0") : "",
-            MMI: checkin !== "" ? String(m + 1).padStart(2, "0") : "",
-            YYYYI: checkin !== "" ? year.toString() : "",
-            datein: checkin !== "" ? dateObj.format("DD/MM/YYYY") : "",
-            datecodeI: checkin !== "" ? dateObj.format("YYYY.MMDD") : "",
+                    checkin: checkin ?? "",
+                    checkout: checkout ?? "",
+                    status: (checkin === "" || checkout === "") ? 1 : 2,
 
-            DDO: checkout !== "" ? String(dateOutObj.date()).padStart(2, "0") : "",
-            MMO: checkout !== "" ? String(dateOutObj.month() + 1).padStart(2, "0") : "",
-            YYYYO: checkout !== "" ? dateOutObj.year().toString() : "",
-            dateout: checkout !== "" ? dateOutObj.format("DD/MM/YYYY") : "",
-            datecodeO: checkout !== "" ? dateOutObj.format("YYYY.MMDD") : "",
+                    unixin: checkin
+                        ? dayjs(`${empDate} ${checkin}`, "DD/MM/YYYY HH:mm:ss").valueOf()
+                        : "",
 
-            checkin: checkin ?? "",
-            checkout: checkout ?? "",
+                    unixout: checkout
+                        ? dayjs(`${dateOutObj.format("DD/MM/YYYY")} ${checkout}`, "DD/MM/YYYY HH:mm:ss").valueOf()
+                        : "",
 
-            status: (checkin === "" || checkout === "") ? 1 : 2,
+                    message: "เข้างานเรียบร้อย",
+                };
+            }
+            return d;
+        });
 
-            unixin: checkin === ""
-                ? ""
-                : dayjs(`${newdate.date} ${checkin}`, "DD/MM/YYYY HH:mm:ss").valueOf(),
+        // --- Firebase path ---
+        const attendantRef = ref(firebaseDB,
+            `workgroup/company/${companyId}/employee/${empID}/attendant/${year}/${m + 1}`
+        );
 
-            unixout: checkout === ""
-                ? ""
-                : dayjs(`${dateOutObj.format("DD/MM/YYYY")} ${checkout}`, "DD/MM/YYYY HH:mm:ss").valueOf(),
-        };
-
-
-        console.log("invalidMessages : ", invalidMessages);
-        console.log("index : ", index.toString());
+        // เช็คว่ามี attendant ของเดือนนี้อยู่แล้วหรือไม่
+        const snapshot = await get(attendantRef);
+        const exists = snapshot.exists();
 
         try {
-            await set(child(attendantRef, index.toString()), invalidMessages);
+            if (!exists) {
+                // ------------- ไม่มี attendant → UPDATE ทั้งเดือน -------------
+                const monthObject = newDateHistory.reduce((acc, item, index) => {
+                    acc[index] = item;
+                    return acc;
+                }, {});
+
+                await update(attendantRef, monthObject);
+            } else {
+                // ------------- มี attendant → UPDATE เฉพาะวัน -------------
+                const dayIndex = newDateHistory.findIndex(d => d.date === empDate);
+
+                await update(attendantRef, {
+                    [dayIndex]: newDateHistory[dayIndex]
+                });
+            }
+
             ShowSuccess("เพิ่มเวลาสำเร็จ");
+
             setEmployID("");
             setEmployDate("");
             setCheckin("");
             setCheckout("");
+
         } catch (error) {
             ShowError("เกิดข้อผิดพลาดในการบันทึก");
             console.error("เกิดข้อผิดพลาดในการบันทึก:", error);
         }
     };
-
-
 
     // const handleSave = () => {
     //     const companiesRef = ref(firebaseDB, `workgroup/company/${companyId}/leave`);
@@ -298,12 +565,12 @@ const MissingWorkDetail = (props) => {
                             </TableHead>
                             <TableBody>
                                 {
-                                    result.length === 0 ?
+                                    merged.length === 0 ?
                                         <TableRow sx={{ height: "60vh" }}>
                                             <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                         </TableRow>
                                         :
-                                        result.map((emp, index) => (
+                                        merged.map((emp, index) => (
                                             <React.Fragment>
                                                 {
                                                     emp.dateHistory
@@ -331,7 +598,7 @@ const MissingWorkDetail = (props) => {
                                                     </TableRow>
                                                 }
                                                 {
-                                                    emp.dateHistory
+                                                    (emp.attendant ?? emp.dateHistory)
                                                         .filter(date => date.message === "ขาดงาน")
                                                         .map((date, index) => (
                                                             <TableRow>
@@ -345,7 +612,8 @@ const MissingWorkDetail = (props) => {
                                                                 <TableCell sx={{ textAlign: "center" }}>{`${date.start} - ${date.stop}`}</TableCell>
                                                                 <TableCell sx={{ textAlign: "center" }}>
                                                                     {
-                                                                        empID === emp.employeeID && empDate === formatThaiShort(dayjs(date.date, "DD/MM/YYYY")) ?
+                                                                        empID === emp.employeeID &&
+                                                                            empDate === dayjs(date.date, "DD/MM/YYYY").format("DD/MM/YYYY") ?
                                                                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                                                                 <Grid container spacing={1}>
                                                                                     <Grid item size={5}>
@@ -517,7 +785,7 @@ const MissingWorkDetail = (props) => {
                                                                                                 `เข้า ${date.checkin} - ออก ${date.checkout}`
                                                                                 }
                                                                                 <Tooltip title="เพิ่มเวลา" placement="right">
-                                                                                    <IconButton onClick={() => handleUpdateTime(emp.employeeID, formatThaiShort(dayjs(date.date, "DD/MM/YYYY")), date.checkin, date.checkout)}>
+                                                                                    <IconButton onClick={() => handleUpdateTime(emp.employeeID, date.date)}>
                                                                                         <AddAlarmIcon color="warning" />
                                                                                     </IconButton>
                                                                                 </Tooltip>

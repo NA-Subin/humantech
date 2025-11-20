@@ -53,11 +53,22 @@ const LeaveEarly = (props) => {
 
         const newDateHistory = dateHistory.map((d) => {
             // หาวันที่ตรงกับ datein หรือ dateout
-            const found = attendant.find((a) => {
-                const datein = a.DDI && a.MMI ? `${a.DDI}/${a.MMI}/2025` : null;
-                const dateout = a.DDO && a.MMO ? `${a.DDO}/${a.MMO}/2025` : null;
-                return d.date === datein || d.date === dateout;
-            });
+            const dayKey = Number(d.DD || d.date.split("/")[0]); // แปลงเป็น number 1–31
+
+            const record = attendant?.[dayKey];
+
+            const found = record
+                ? {
+                    ...record,
+                    datein: `${record.DDI}/${record.MMI}/${record.YYYYI}`,
+                    dateout: `${record.DDO}/${record.MMO}/${record.YYYYO}`,
+                }
+                : null;
+            // const found = attendant.find((a) => {
+            //     const datein = a.DDI && a.MMI ? `${a.DDI}/${a.MMI}/2025` : null;
+            //     const dateout = a.DDO && a.MMO ? `${a.DDO}/${a.MMO}/2025` : null;
+            //     return d.date === datein || d.date === dateout;
+            // });
 
             let message = "ขาดงาน";
             let datein = "";

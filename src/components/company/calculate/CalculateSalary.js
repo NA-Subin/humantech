@@ -107,6 +107,7 @@ const CalculateSalary = () => {
     const [employees, setEmployees] = useState([]);
     const [closeAccount, setCloseAccount] = useState(false);
     const [salaryhistory, setSalaryhistory] = useState([]);
+    const [holiday, setHoliday] = useState([]);
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
@@ -126,7 +127,7 @@ const CalculateSalary = () => {
             // case 'ตรวจสอบเงินเดือน':
             //     return <Salary data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'สรุปผลการคำนวณ':
-                return <SalaryDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
+                return <SalaryDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} companyholiday={holiday} />;
             case 'ปิดงวดบัญชี':
                 return <AccountDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} close={closeAccount} salaryhistory={salaryhistory} />;
             default:
@@ -227,6 +228,24 @@ const CalculateSalary = () => {
         return () => unsubscribe();
     }, [firebaseDB, companyId]);
 
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const holidayRef = ref(firebaseDB, `workgroup/company/${companyId}/holiday`);
+
+        const unsubscribe = onValue(holidayRef, (snapshot) => {
+            const holidayData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!holidayData) {
+                setHoliday([]);
+            } else {
+                setHoliday(holidayData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
 
     useEffect(() => {
         if (!firebaseDB) return;

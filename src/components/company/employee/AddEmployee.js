@@ -84,6 +84,7 @@ const AddEmployee = () => {
 
     const [employeeImage, setEmployeeImage] = React.useState(null);
     const [file, setFile] = React.useState(false);
+    const [dateworkshift, setDateworkshift] = React.useState(null);
 
     const [citizencode, setCitizencode] = React.useState("");
     const [prefix, setPrefix] = React.useState("");
@@ -365,17 +366,43 @@ const AddEmployee = () => {
         },
     ];
 
+    const formatDMY = (date) => {
+        const DD = String(date.day).padStart(2, "0");
+        const MM = String(date.month).padStart(2, "0");
+        const YYYY = String(Number(date.year) - 543);
+
+        return `${DD}/${MM}/${YYYY}`;
+    };
+
+    console.log("date : ", dateworkshift ? formatDMY(dateworkshift) : dayjs(new Date).format("DD/MM/YYYY"));
+
     const workshiftName = `${workshift.ID}-${workshift.name}`
     const workshifthistory = {
+        ID: 0,
         start: workshift.start,
         stop: workshift.stop,
         holiday: workshift.holiday,
-        DDstart: dayjs(new Date).format("DD"),
+        DDstart: dateworkshift ? String(dateworkshift.day).padStart(2, "0") : dayjs(new Date).format("DD"),
         DDend: "now",
-        MMstart: dayjs(new Date).format("MM"),
+        MMstart: dateworkshift ? String(dateworkshift.month).padStart(2, "0") : dayjs(new Date).format("MM"),
         MMend: "now",
-        YYYYstart: dayjs(new Date).format("YY"),
+        YYYYstart: dateworkshift ? String(Number(dateworkshift.year) - 543).padStart(2, "0") : dayjs(new Date).format("YYYY"),
         YYYYend: "now",
+        datestart: dateworkshift ? formatDMY(dateworkshift) : dayjs(new Date).format("DD/MM/YYYY"),
+        dateend: "now"
+    }
+
+    const salaryhistory = {
+        ID: 0,
+        DDstart: dateworkshift ? String(dateworkshift.day).padStart(2, "0") : dayjs(new Date).format("DD"),
+        DDend: "now",
+        MMstart: dateworkshift ? String(dateworkshift.month).padStart(2, "0") : dayjs(new Date).format("MM"),
+        MMend: "now",
+        YYYYstart: dateworkshift ? String(Number(dateworkshift.year) - 543).padStart(2, "0") : dayjs(new Date).format("YYYY"),
+        YYYYend: "now",
+        datestart: dateworkshift ? formatDMY(dateworkshift) : dayjs(new Date).format("DD/MM/YYYY"),
+        dateend: "now",
+        salary: salary
     }
 
     console.log("workshiftName : ", workshiftName);
@@ -902,7 +929,7 @@ const AddEmployee = () => {
 
             await set(child(employeeRef, String(nextIndex)), {
                 ID: nextIndex,
-                date: dayjs(new Date).format("DD/MM/YYYY"),
+                date: dateworkshift ? formatDMY(dateworkshift) : dayjs(new Date).format("DD"),
                 employeecode: employeeCode,
                 username: employeeCode,
                 password: "1234567",
@@ -915,6 +942,7 @@ const AddEmployee = () => {
                 position: `${checkPosition.ID}-${checkPosition.positionname}`,
                 employname: `${name} ${lastName}`,
                 salary: salary,
+                salaryhistory: salaryhistory,
                 personal: personal,
                 educationList: educationList,
                 internship: Internship,
@@ -1039,6 +1067,23 @@ const AddEmployee = () => {
                 <>
                     <Grid container spacing={2} marginTop={2}>
                         <Grid item size={6}>
+                            <Typography variant="subtitle2" fontWeight="bold" >ประเภทการจ้าง</Typography>
+                            <TextField
+                                select
+                                fullWidth
+                                size="small"
+                                value={type}
+                                SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
+                                onChange={(e) => setType(e.target.value)}
+                            >
+                                {
+                                    employeetype.map((row) => (
+                                        <MenuItem value={row}>{row.name}</MenuItem>
+                                    ))
+                                }
+                            </TextField>
+                        </Grid>
+                        <Grid item size={6}>
                             <Typography variant="subtitle2" fontWeight="bold" >กะการทำงาน</Typography>
                             <TextField
                                 select
@@ -1055,22 +1100,12 @@ const AddEmployee = () => {
                                 }
                             </TextField>
                         </Grid>
-                        <Grid item size={6}>
-                            <Typography variant="subtitle2" fontWeight="bold" >ประเภทการจ้าง</Typography>
-                            <TextField
-                                select
-                                fullWidth
-                                size="small"
-                                value={type}
-                                SelectProps={{ MenuProps: { PaperProps: { style: { maxHeight: 150 } } } }}
-                                onChange={(e) => setType(e.target.value)}
-                            >
-                                {
-                                    employeetype.map((row) => (
-                                        <MenuItem value={row}>{row.name}</MenuItem>
-                                    ))
-                                }
-                            </TextField>
+                        <Grid item size={12}>
+                            <ThaiDateSelector
+                                label="วันที่เริ่มต้นกะการทำงาน"
+                                value={dateworkshift}
+                                onChange={(val) => setDateworkshift(val)}
+                            />
                         </Grid>
                         <Grid item size={12}>
                             <Typography variant="subtitle2" fontWeight="bold" >เงินเดือน</Typography>

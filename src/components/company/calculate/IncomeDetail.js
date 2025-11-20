@@ -1,4 +1,4 @@
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use, useMemo } from "react";
 import '../../../App.css'
 import { getDatabase, ref, push, onValue, set } from "firebase/database";
 import Box from '@mui/material/Box';
@@ -70,30 +70,35 @@ const IncomeDetail = (props) => {
 
     const incomeActive = income.filter(row => row.status === 1);
 
-    const IncomesRows = [];
+    const IncomesRows = useMemo(() => {
+        // กรองตามเดือน
+        const filtered = employees.filter(emp => {
+            if (!month) return true;
 
-    employees.forEach((emp) => {
-        const position = emp.position.split("-")[1];
-
-        // หา document ที่ employid ตรงกับ emp.ID
-        const matchedDoc = document.find(doc => doc.employid === emp.ID);
-
-        // base row
-        const row = {
-            employid: emp.ID,
-            employname: `${emp.employname} (${emp.nickname})`,
-            position,
-        };
-
-        // ใส่ income0, income1, income2 ...
-        incomeActive.forEach((inc) => {
-            const docIncome = matchedDoc?.income.find(item => item.ID === inc.ID);
-            row[`income${inc.ID}`] = docIncome?.income || 0;
+            const monthNum = Number(dayjs(month).format("MM"));
+            const empMonth = Number(dayjs(emp.date, "DD/MM/YYYY").format("MM"));
+            return empMonth <= monthNum;
         });
 
-        IncomesRows.push(row);
-    });
+        // สร้าง rows พร้อม income
+        return filtered.map(emp => {
+            const position = emp.position.split("-")[1];
+            const matchedDoc = document.find(doc => doc.employid === emp.ID);
 
+            const row = {
+                employid: emp.ID,
+                employname: `${emp.employname} (${emp.nickname})`,
+                position,
+            };
+
+            incomeActive.forEach((inc) => {
+                const docIncome = matchedDoc?.income.find(item => item.ID === inc.ID);
+                row[`income${inc.ID}`] = docIncome?.income || 0;
+            });
+
+            return row;
+        });
+    }, [employees, month, document, incomeActive]);
 
     // employees.forEach((emp, index) => {
     //     const position = emp.position.split("-")[1];

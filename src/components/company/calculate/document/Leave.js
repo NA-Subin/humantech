@@ -117,52 +117,78 @@ const LeaveDetail = (props) => {
         return () => unsubscribe();
     }, [firebaseDB, companyId, year, m, dateArray]);
 
-    const handleApprove = (newID, employ) => {
-        console.log("employee name : ", employ.ID);
+    const handleApprove = (newID, employ, newdate, leave) => {
+
         ShowConfirm(
             "อนุมัติเอกสาร",
             "คุณต้องการอนุมัติเอกสารนี้หรือไม่?",
             async () => {
+                const dateObj = dayjs(newdate, "DD/MM/YYYY");
+                const year = dateObj.year();
+                const m = dateObj.month(); // 0-based
+                const dayIndex = dateObj.date() - 1; // 0-based สำหรับ Firebase
                 try {
+                    // documentleave
                     const leaveRef = ref(
                         firebaseDB,
                         `workgroup/company/${companyId}/documentleave/${year}/${m + 1}/${newID}`
                     );
-
-                    // ✅ ดึงข้อมูลทั้งหมดจาก documentleave
                     const snapshot = await get(leaveRef);
-                    if (snapshot.exists()) {
-                        const leaveData = snapshot.val();
-
-                        // ✅ เพิ่มข้อมูลอนุมัติ
-                        const updatedData = {
-                            ...leaveData,
-                            status: "อนุมัติ",
-                            approveBy: "HR",
-                            approveDate: dayjs().format("DD/MM/YYYY"),
-                            approveTime: dayjs().format("HH:mm:ss"),
-                        };
-
-                        // ✅ อัปเดตสถานะใน documentleave เดิม
-                        await update(leaveRef, {
-                            status: "อนุมัติ",
-                            approveBy: "HR",
-                            approveDate: updatedData.approveDate,
-                            approveTime: updatedData.approveTime,
-                        });
-
-                        // ✅ บันทึกไปที่ emploeaveapprove ของพนักงาน
-                        const approveRef = ref(
-                            firebaseDB,
-                            `workgroup/company/${companyId}/employee/${employ?.ID}/empleaveapprove/${year}/${m + 1}/${newID}`
-                        );
-
-                        await set(approveRef, updatedData);
-
-                        console.log("✅ อนุมัติและบันทึกข้อมูลเรียบร้อย");
-                    } else {
+                    if (!snapshot.exists()) {
                         console.error("❌ ไม่พบข้อมูลเอกสารที่ต้องการอนุมัติ");
+                        return;
                     }
+                    const leaveData = snapshot.val();
+
+                    const approveDate = dayjs().format("DD/MM/YYYY");
+                    const approveTime = dayjs().format("HH:mm:ss");
+
+                    // update documentleave
+                    await update(leaveRef, {
+                        status: "อนุมัติ",
+                        approveBy: "HR",
+                        approveDate,
+                        approveTime
+                    });
+
+                    // update emploeaveapprove
+                    const approveRef = ref(
+                        firebaseDB,
+                        `workgroup/company/${companyId}/employee/${employ.ID}/empleaveapprove/${year}/${m + 1}/${newID}`
+                    );
+                    await set(approveRef, {
+                        ...leaveData,
+                        status: "อนุมัติ",
+                        approveBy: "HR",
+                        approveDate,
+                        approveTime
+                    });
+
+                    // update attendant วันเดียว
+                    const attendantsRef = ref(
+                        firebaseDB,
+                        `workgroup/company/${companyId}/employee/${employ.ID}/attendant/${year}/${m + 1}/${dayIndex}`
+                    );
+                    await set(attendantsRef, {
+                        DDI: dateObj.format("DD"),
+                        MMI: dateObj.format("MM"),
+                        YYYYI: dateObj.format("YYYY"),
+                        datein: dateObj.format("DD/MM/YYYY"),
+                        datecodeI: dateObj.format("YYYY.MMDD"),
+                        DDO: dateObj.format("DD"),
+                        MMO: dateObj.format("MM"),
+                        YYYYO: dateObj.format("YYYY"),
+                        dateout: dateObj.format("DD/MM/YYYY"),
+                        datecodeO: dateObj.format("YYYY.MMDD"),
+                        checkin: "",
+                        checkout: "",
+                        status: 2,
+                        unixin: dayjs(`${newdate} 00:00:00`, "DD/MM/YYYY HH:mm:ss").valueOf(),
+                        unixout: dayjs(`${newdate} 23:59:59`, "DD/MM/YYYY HH:mm:ss").valueOf(),
+                        message: leave
+                    });
+
+                    console.log("✅ อนุมัติและบันทึกข้อมูลเรียบร้อย");
                 } catch (error) {
                     console.error("❌ เกิดข้อผิดพลาด:", error);
                 }
@@ -291,7 +317,7 @@ const LeaveDetail = (props) => {
                                                                                 </IconButton>
                                                                             </Tooltip>
                                                                             <Tooltip title="อนุมัติ" placement="top">
-                                                                                <IconButton size="small" onClick={() => handleApprove(date.ID, emp)} >
+                                                                                <IconButton size="small" onClick={() => handleApprove(date.ID, emp, date.datestart, date.leave)} >
                                                                                     <InsertDriveFileIcon sx={{ color: theme.palette.primary.main, fontSize: "28px" }} />
                                                                                     <DoneIcon sx={{ color: "white", fontSize: "16px", fontWeight: "bold", marginLeft: -3, marginTop: 1 }} />
                                                                                 </IconButton>

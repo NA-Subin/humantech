@@ -263,7 +263,7 @@ const EditTimeDetail = (props) => {
         const month = (dayjs().month() + 1) || ""; // ใช้เลขเดือนตรงกับ key
         //setDateArray(generateFilteredDates(workshift));
 
-        const attendantList = emp.attendant?.[year]?.[month] || [];
+        const attendantList = Object.values(emp.attendant?.[year]?.[month] || {});
 
         attendantList.forEach((entry, idx) => {
             attendantRows.push({

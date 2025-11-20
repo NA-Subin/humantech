@@ -40,7 +40,7 @@ import SelectEmployeeGroup from "../../../theme/SearchEmployee";
 import dayjs from "dayjs";
 
 const SalaryDetail = (props) => {
-    const { department, section, position, employee, month } = props;
+    const { department, section, position, employee, month, companyholiday } = props;
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const companyName = searchParams.get("company");
@@ -86,6 +86,7 @@ const SalaryDetail = (props) => {
 
     const year = month.year();
     const m = month.month();
+    const day = month.day();
     const daysInMonth = month.daysInMonth();
 
     console.log("Month : ", m);
@@ -95,6 +96,8 @@ const SalaryDetail = (props) => {
     const holidaysInMonth = holiday.filter(h =>
         parseInt(h.YYYY) === year && parseInt(h.MM) === m + 1
     );
+
+    console.log("holidaysInMonth : ", holidaysInMonth);
     const holidayCount = holidaysInMonth.length;
 
     const workingDays = daysInMonth - holidayCount;
@@ -200,16 +203,20 @@ const SalaryDetail = (props) => {
             let current = dayjs().year(startYear).month(startMonth).date(startDay);
             const end = dayjs().year(endYear).month(endMonth).date(endDay);
 
+            console.log("current : ", current.format("dddd"));
+            console.log("dayNameMap : ", dayNameMap);
+            console.log("dayNameMap : ", dayNameMap[current.format("dddd")]);
+
             while (current.isSameOrBefore(end, "day")) {
                 const currentDateStr = current.format("DD/MM/YYYY");
-                const dayName = dayNameMap[current.format("dddd")];
+                const dayNameEng = current.locale('en').format('dddd'); // ใช้ key ภาษาอังกฤษ
+                const dayNameTH = dayNameMap[dayNameEng];               // แปลงเป็นไทย
 
-                // ✅ ใช้ holiday ของช่วงนั้นเท่านั้น
-                if (holidays.includes(dayName)) {
+                if (holidays.includes(dayNameTH)) {
                     if (current.year() === filterYear && current.month() === filterMonth) {
                         allHolidayDates.push({
                             date: currentDateStr,
-                            dayName,
+                            dayName: dayNameTH,
                             workshift: history.workshift || null,
                             periodID: history.ID,
                         });
@@ -223,6 +230,8 @@ const SalaryDetail = (props) => {
         allHolidayDates.sort((a, b) =>
             dayjs(a.date, "DD/MM/YYYY").unix() - dayjs(b.date, "DD/MM/YYYY").unix()
         );
+
+        console.log("allHolidayDates : ", allHolidayDates);
 
         return {
             employeeID,
@@ -271,9 +280,11 @@ const SalaryDetail = (props) => {
     }).map(emp => {
         const docIncome = documentincome.find(doc => doc.employid === emp.ID);
         const docDeduction = documentdeduction.find(doc => doc.employid === emp.ID);
-        const attendantCount = emp.attendant?.[year]?.[m + 1]?.filter(item =>
-            Number(item.status) === 2
-        ).length ?? 0;
+        const attendantObj = emp.attendant?.[year]?.[m + 1];
+
+        const attendantCount = attendantObj
+            ? Object.values(attendantObj).filter(item => Number(item.status) === 2).length
+            : 0;
 
         const leave = documentleave.filter((doc) => doc.empid === emp.ID);
 
@@ -311,6 +322,15 @@ const SalaryDetail = (props) => {
             m
         );
 
+        // แปลง company holidays เป็น Set ของ string "DD/MM/YYYY"
+        const companyHolidaySet = new Set(holidaysInMonth.map(h => h.date));
+
+        // กรอง holidayResult ให้ตัดวันซ้ำกับ company holidays
+        const filteredHolidayDates = holidayResult.holidayDates.filter(h => !companyHolidaySet.has(h.date));
+
+        console.log("holidayResult.holidayDates : ", holidayResult.holidayDates);
+        console.log("filteredHolidayDates : ", filteredHolidayDates);
+
         const employeetype = emp.employmenttype ? emp.employmenttype.split("-")[1] : 0
 
         const salary = getSalaryByMonth(emp.salaryhistory, m, year);
@@ -327,8 +347,9 @@ const SalaryDetail = (props) => {
             employname: `${emp.employname} (${emp.nickname})`,
             workday: employeetype !== 0 ? workingDays : 0,
             attendantCount: attendantCount,
-            holidayCount: holidayResult.holidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
-            holiday: holidayResult.holidayDates, // ✅ เพิ่มจำนวนวันหยุด
+            holidayCount: filteredHolidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
+            holiday: filteredHolidayDates, // ✅ เพิ่มจำนวนวันหยุด
+            companyholidays: holidaysInMonth.length,
             // leaveCount: leave.length,
             otHours: otHours,
             missingWork: 0,
@@ -370,8 +391,12 @@ const SalaryDetail = (props) => {
 
         // คำนวณ missingWork
         row.missingWork =
-            (employeetype !== 0 ? workingDays : 0) -
-            (attendantCount + holidayResult.holidayDates.length + Number(totalLeaveDays));
+            (employeetype !== 0 ? daysInMonth : 0) -
+            (attendantCount + filteredHolidayDates.length + Number(totalLeaveDays) + holidaysInMonth.length);
+
+        row.workday =
+            (employeetype !== 0 ? daysInMonth : 0) -
+            (filteredHolidayDates.length + holidaysInMonth.length);
 
         row.total = (Number(salary) + row.totalIncome) - row.totalDeduction;
         row.sso = Number(salary >= 15000 ? 15000 : salary) * 0.05;
@@ -840,6 +865,7 @@ const SalaryDetail = (props) => {
                                         <TablecellHeader sx={{ width: 200 }}>ชื่อ</TablecellHeader>
                                         <TablecellHeader sx={{ width: 100 }}>มาทำงาน</TablecellHeader>
                                         <TablecellHeader sx={{ width: 100 }}>วันหยุดตามกะ</TablecellHeader>
+                                        <TablecellHeader sx={{ width: 100 }}>วันหยุดบริษัท</TablecellHeader>
                                         {/* <TablecellHeader sx={{ width: 100 }}>ลางาน</TablecellHeader> */}
                                         {visibleLeave.map(inc => (
                                             <TablecellHeader key={inc.leaveid} sx={{ width: 150 }}>{inc.leave}</TablecellHeader>
@@ -888,7 +914,7 @@ const SalaryDetail = (props) => {
                                                             ฝ่ายงาน: {dept.split("-")[1]}
                                                         </TableCell>
                                                         <TableCell
-                                                            colSpan={(visibleIncome.length !== 0 && visibleDeduction.length !== 0 ? 10 : visibleIncome.length === 0 && visibleDeduction.length === 0 ? 8 : 9) + visibleIncome.length + visibleDeduction.length}
+                                                            colSpan={(visibleIncome.length !== 0 && visibleDeduction.length !== 0 ? 11 : visibleIncome.length === 0 && visibleDeduction.length === 0 ? 9 : 10) + visibleIncome.length + visibleDeduction.length}
                                                             sx={{
                                                                 fontWeight: "bold",
                                                                 backgroundColor: "#b2dfdb",
@@ -914,7 +940,7 @@ const SalaryDetail = (props) => {
                                                                         ส่วนงาน: {sec.split("-")[1]}
                                                                     </TableCell>
                                                                     <TableCell
-                                                                        colSpan={(visibleIncome.length !== 0 && visibleDeduction.length !== 0 ? 10 : visibleIncome.length === 0 && visibleDeduction.length === 0 ? 8 : 9) + visibleIncome.length + visibleDeduction.length}
+                                                                        colSpan={(visibleIncome.length !== 0 && visibleDeduction.length !== 0 ? 11 : visibleIncome.length === 0 && visibleDeduction.length === 0 ? 9 : 10) + visibleIncome.length + visibleDeduction.length}
                                                                         sx={{
                                                                             fontWeight: "bold",
                                                                             background: "#cee8e7ff",
@@ -939,7 +965,7 @@ const SalaryDetail = (props) => {
                                                                             ตำแหน่ง: {pos.split("-")[1]}
                                                                         </TableCell>
                                                                         <TableCell
-                                                                            colSpan={(visibleIncome.length !== 0 && visibleDeduction.length !== 0 ? 10 : visibleIncome.length === 0 && visibleDeduction.length === 0 ? 8 : 9) + visibleIncome.length + visibleDeduction.length}
+                                                                            colSpan={(visibleIncome.length !== 0 && visibleDeduction.length !== 0 ? 11 : visibleIncome.length === 0 && visibleDeduction.length === 0 ? 9 : 10) + visibleIncome.length + visibleDeduction.length}
                                                                             sx={{
                                                                                 fontWeight: "bold",
                                                                                 background: "#e5f4f3ff",
@@ -956,6 +982,7 @@ const SalaryDetail = (props) => {
                                                                                 <TableCell sx={{ textAlign: "center", position: "sticky", left: 0, backgroundColor: "white" }}>{row.employname}</TableCell>
                                                                                 <TableCell sx={{ textAlign: "center" }}>{row.attendantCount !== 0 ? `${row.attendantCount} วัน` : "-"}</TableCell>
                                                                                 <TableCell sx={{ textAlign: "center" }}>{row.holidayCount !== 0 ? `${row.holidayCount} วัน` : "-"}</TableCell>
+                                                                                <TableCell sx={{ textAlign: "center" }}>{row.companyholidays !== 0 ? `${row.companyholidays} วัน` : "-"}</TableCell>
                                                                                 {visibleLeave.map(ded => (
                                                                                     <TableCell key={ded.leaveid} sx={{ textAlign: "center" }}>
                                                                                         {row[`leave${ded.leaveid}`]

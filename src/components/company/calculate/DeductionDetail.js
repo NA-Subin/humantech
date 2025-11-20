@@ -1,4 +1,4 @@
-import React, { useState, useEffect, use } from "react";
+import React, { useState, useEffect, use, useMemo } from "react";
 import '../../../App.css'
 import { getDatabase, ref, push, onValue, set } from "firebase/database";
 import Box from '@mui/material/Box';
@@ -70,29 +70,35 @@ const DeductionDetail = (props) => {
 
     const deductionActive = deduction.filter(row => row.status === 1);
 
-    let deductionRows = [];
+    const deductionRows = useMemo(() => {
+        // กรองตามเดือน
+        const filtered = employees.filter(emp => {
+            if (!month) return true;
 
-    employees.forEach((emp) => {
-        const position = emp.position.split("-")[1];
-
-        // หา document ที่ employid ตรงกับ emp.ID
-        const matchedDoc = document.find(doc => doc.employid === emp.ID);
-
-        // base row
-        const row = {
-            employid: emp.ID,
-            employname: `${emp.employname} (${emp.nickname})`,
-            position,
-        };
-
-        // ใส่ income0, income1, income2 ...
-        deductionActive.forEach((inc) => {
-            const docDeduction = matchedDoc?.deduction.find(item => item.ID === inc.ID);
-            row[`deduction${inc.ID}`] = docDeduction?.deduction || 0;
+            const monthNum = Number(dayjs(month).format("MM"));
+            const empMonth = Number(dayjs(emp.date, "DD/MM/YYYY").format("MM"));
+            return empMonth <= monthNum;
         });
 
-        deductionRows.push(row);
-    });
+        // สร้าง rows พร้อม income
+        return filtered.map(emp => {
+            const position = emp.position.split("-")[1];
+            const matchedDoc = document.find(doc => doc.employid === emp.ID);
+
+            const row = {
+                employid: emp.ID,
+                employname: `${emp.employname} (${emp.nickname})`,
+                position,
+            };
+
+            deductionActive.forEach((inc) => {
+                const docDeduction = matchedDoc?.deduction.find(item => item.ID === inc.ID);
+                row[`deduction${inc.ID}`] = docDeduction?.deduction || 0;
+            });
+
+            return row;
+        });
+    }, [employees, month, document, deductionActive]);
 
     // if (!document || document.length === 0) {
     //     // กรณี document ว่าง
