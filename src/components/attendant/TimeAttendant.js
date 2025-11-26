@@ -49,9 +49,11 @@ export default function TimeAttendant({ date }) {
     const { firebaseDB, domainKey } = useFirebase();
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const domain = searchParams.get("domain");
-    const companyName = searchParams.get("company");
+    const domain = localStorage.getItem("domain");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const domain = searchParams.get("domain");
+    // const companyName = searchParams.get("company");
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const companyId = companyName?.split(":")[0];

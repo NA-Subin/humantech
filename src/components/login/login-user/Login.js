@@ -121,7 +121,8 @@ const DomainLogin = () => {
             // } else {
             //     navigate(`/?domain=${encodeURIComponent(domainKey)}&page=dashboard`);
             // }
-            navigate(`/?domain=${encodeURIComponent(domainKey)}&page=dashboard`);
+            // navigate(`/?domain=${encodeURIComponent(domainKey)}&page=dashboard`);
+            navigate(`/${domainKey}/dashboard`);
 
             setTimeout(() => {
                 window.location.reload();
@@ -165,7 +166,7 @@ const DomainLogin = () => {
                                             startAdornment: (
                                                 <InputAdornment position="start">
                                                     <Typography sx={{ fontSize: '16px', fontWeight: 'bold' }}>
-                                                        https://happysoftth.humantech.asia/?domain=
+                                                        https://happysoftth.humantech.asia/
                                                     </Typography>
                                                 </InputAdornment>
                                             ),

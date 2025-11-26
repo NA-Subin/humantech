@@ -10,8 +10,10 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 const Dashboard = () => {
     const { firebaseDB, domainKey } = useFirebase();
     // const { domain } = useParams();
-    const [searchParams] = useSearchParams();
-    const domain = searchParams.get("domain");
+    // const [searchParams] = useSearchParams();
+    // const domain = searchParams.get("domain");
+    const domainData = JSON.parse(localStorage.getItem("domainData"));
+    const domain = domainData?.domainKey;
     const [companyName, setCompanyName] = useState("");
     const [open, setOpen] = useState(false);
     const [userName, setUserName] = useState("");

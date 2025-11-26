@@ -38,9 +38,11 @@ export default function UpdateEmployee({ item, index, leave, date }) {
     const { firebaseDB, domainKey } = useFirebase();
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const domain = searchParams.get("domain");
-    const companyName = searchParams.get("company");
+    // const [searchParams] = useSearchParams();
+    // const domain = searchParams.get("domain");
+    const domain = localStorage.getItem("domain");
+    const companyName = localStorage.getItem("company");
+    // const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
     const [open, setOpen] = useState(null);
     const [employees, setEmployees] = useState([]);

@@ -75,8 +75,9 @@ import none from "../../../img/none.png";
 
 const AddEmployee = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const [searchParams] = useSearchParams();
-    const companyName = searchParams.get("company");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const companyName = searchParams.get("company");
     const [open, setOpen] = React.useState(false);
     const [salary, setSalary] = React.useState("")
 

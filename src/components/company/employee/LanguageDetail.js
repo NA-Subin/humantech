@@ -39,8 +39,9 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material
 const LanguageDetail = (props) => {
     const { menu, data } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const [searchParams] = useSearchParams();
-    const companyName = searchParams.get("company");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
 
     const [edit, setEdit] = useState("");

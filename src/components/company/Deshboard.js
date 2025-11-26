@@ -40,7 +40,8 @@ export default function CompanyDeshboard() {
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
     const domain = searchParams.get("domain");
-    const companyName = searchParams.get("company");
+    // const companyName = searchParams.get("company");
+    const companyName = localStorage.getItem("company");
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const companyId = companyName?.split(":")[0];

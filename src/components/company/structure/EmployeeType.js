@@ -39,8 +39,9 @@ import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetal
 
 const EmployeeTypeDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const [searchParams] = useSearchParams();
-    const companyName = searchParams.get("company");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
     const [editEmployeetype, setEditEmployeetype] = useState(false);
     const [editDepartment, setEditDepartment] = useState(false);

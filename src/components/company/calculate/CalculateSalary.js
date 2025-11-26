@@ -52,8 +52,9 @@ import Salary from "./Salary";
 
 const CalculateSalary = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const [searchParams] = useSearchParams();
-    const companyName = searchParams.get("company");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);

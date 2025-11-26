@@ -51,9 +51,11 @@ export default function DashboardAttendant() {
     const { t } = useTranslation();
     const { firebaseDB, domainKey } = useFirebase();
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
-    const domain = searchParams.get("domain");
-    const companyName = searchParams.get("company");
+    const domain = localStorage.getItem("domain");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const domain = searchParams.get("domain");
+    // const companyName = searchParams.get("company");
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const companyId = companyName?.split(":")[0];
@@ -441,9 +443,27 @@ export default function DashboardAttendant() {
                                         />
                                     </LocalizationProvider>
                                 </Paper>
-                                <Button onClick={() => navigate(`/?domain=${domain}&page=dashboard`)} variant="contained" size="large" color="error" endIcon={<KeyboardReturnIcon />}>
+                                <Button
+                                    onClick={() => {
+                                        // ลบค่า group / page ออกจาก localStorage
+                                        localStorage.removeItem("company");
+                                        localStorage.removeItem("group");
+                                        localStorage.removeItem("page");
+
+                                        // กลับไปหน้า dashboard ของ domain
+                                        navigate(`/${domain}/dashboard`);
+                                    }}
+                                    variant="contained"
+                                    size="large"
+                                    color="error"
+                                    endIcon={<KeyboardReturnIcon />}
+                                >
                                     {t("back")}
                                 </Button>
+
+                                {/* <Button onClick={() => navigate(`/?domain=${domain}&page=dashboard`)} variant="contained" size="large" color="error" endIcon={<KeyboardReturnIcon />}>
+                                    {t("back")}
+                                </Button> */}
                             </Box>
                         </Grid>
                     </Grid>

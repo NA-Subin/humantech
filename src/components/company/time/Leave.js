@@ -39,8 +39,9 @@ import { useFirebase } from "../../../server/ProjectFirebaseContext";
 
 const LeaveDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const [searchParams] = useSearchParams();
-    const companyName = searchParams.get("company");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
     const [editLeave, setEditLeave] = useState(false);
     const [companies, setCompanies] = useState([]);

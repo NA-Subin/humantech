@@ -24,8 +24,9 @@ import { ShowConfirm } from '../../../sweetalert/sweetalert';
 
 export default function InsertLoan() {
     const { firebaseDB, domainKey } = useFirebase();
-    const [searchParams] = useSearchParams();
-    const companyName = searchParams.get("company");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const companyName = searchParams.get("company");
     const [open, setOpen] = React.useState(false);
     const [title, setTitle] = React.useState("");
     const [text, setText] = React.useState("");

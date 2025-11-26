@@ -52,13 +52,15 @@ dayjs.locale("th");
 const AccountDetail = (props) => {
     const { department, section, position, employee, month, close, salaryhistory } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const [searchParams] = useSearchParams();
-    const companyName = searchParams.get("company");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
     const [editLeave, setEditLeave] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const [leave, setLeave] = useState([{ ID: 0, name: '' }]);
+    const [dateArrayMap, setDateArrayMap] = useState({});
     const columns = [
         { label: "ประเภทการลา", key: "name", type: "text" },
         { label: "จำนวนวัน", key: "max", type: "text" }
@@ -149,6 +151,108 @@ const AccountDetail = (props) => {
     const [filteredEmployees, setFilteredEmployees] = useState([]);
     const [employeeDetail, setEmployeeDetail] = useState([]);
 
+    const dayNameMap = {
+        Sunday: "อาทิตย์",
+        Monday: "จันทร์",
+        Tuesday: "อังคาร",
+        Wednesday: "พุธ",
+        Thursday: "พฤหัสบดี",
+        Friday: "ศุกร์",
+        Saturday: "เสาร์",
+    };
+
+    const generateFilteredDatesFromHistories = (
+        employeeID,
+        attendant,
+        employeecode,
+        nickname,
+        employname,
+        department,
+        section,
+        position,
+        workshifthistories,
+        filterYear,
+        filterMonth,
+        holidaysInMonth = []
+    ) => {
+        if (!Array.isArray(workshifthistories)) return {
+            employeeID,
+            attendant,
+            nickname,
+            employeecode,
+            department,
+            section,
+            position,
+            employname,
+            dateHistory: []
+        };
+
+        const parseYear = (y) => y === "now" ? dayjs().year() : parseInt(y) > 2500 ? parseInt(y) - 543 : parseInt(y);
+        const parseMonth = (m) => m === "now" ? dayjs().month() : parseInt(m) - 1;
+        const parseDay = (d) => d === "now" ? dayjs().date() : parseInt(d);
+
+        // ➜ เลื่อนไป "เดือนถัดไป"
+        const nextMonthObj = dayjs()
+            .year(filterYear)
+            .month(filterMonth)
+            .date(1)
+            .add(1, "month");
+
+        const nextMonth = nextMonthObj.month();   // เดือน (0-11)
+        const nextYear = nextMonthObj.year();     // ปี ค.ศ.
+
+        const allDates = [];
+
+        workshifthistories.forEach((history) => {
+            const startYear = parseYear(history.YYYYstart);
+            const startMonth = parseMonth(history.MMstart);
+            const startDay = parseDay(history.DDstart);
+
+            const endYear = parseYear(history.YYYYend);
+            const endMonth = parseMonth(history.MMend);
+            const endDay = parseDay(history.DDend);
+
+            let current = dayjs().year(startYear).month(startMonth).date(startDay);
+            const end = dayjs().year(endYear).month(endMonth).date(endDay);
+
+            while (current.isSameOrBefore(end, "day")) {
+                const currentDateStr = current.format("DD/MM/YYYY");
+
+                // ⭐ ไม่สร้าง message / ไม่ต้องกรองวันหยุด
+                // ไม่ใช้: shift holiday / global holiday / message ใดๆทั้งสิ้น
+
+                // ⭐ กรองเฉพาะ "เดือนหน้า"
+                if (current.year() === nextYear && current.month() === nextMonth) {
+                    allDates.push({
+                        date: currentDateStr,
+                        workshift: history.workshift || null,
+                        start: history.start || null,
+                        stop: history.stop || null
+                        // ❌ ไม่ใส่ message แล้ว
+                    });
+                }
+
+                current = current.add(1, "day");
+            }
+        });
+
+        allDates.sort((a, b) =>
+            dayjs(a.date, "DD/MM/YYYY").unix() - dayjs(b.date, "DD/MM/YYYY").unix()
+        );
+
+        return {
+            employeeID,
+            attendant,
+            employeecode,
+            nickname,
+            employname,
+            department,
+            section,
+            position,
+            dateHistory: allDates
+        };
+    };
+
     useEffect(() => {
         let filtered = employees.length ? [...employees] : [];
 
@@ -182,7 +286,7 @@ const AccountDetail = (props) => {
         }
 
         if (selectedType !== "all") {
-            filteredEmployees = filteredEmployees.filter(emp => {
+            filtered = filtered.filter(emp => {
                 if (selectedType === "all") return true;
 
                 const typeId = emp.employmenttype?.split("-")[0];
@@ -190,20 +294,30 @@ const AccountDetail = (props) => {
             });
         }
 
+        const mapped = filtered.map(e =>
+            generateFilteredDatesFromHistories(
+                e.ID,
+                e.attendant?.[year]?.[m + 2],
+                e.employeecode,
+                e.nickname,
+                e.employname,
+                e.department,
+                e.section,
+                e.position,
+                e.workshifthistory,
+                year,
+                m,
+                holidaysInMonth
+            )
+        );
+
+        console.log("Mapped Employee Dates (filtered):", mapped);
+        setDateArrayMap(mapped);
+
         setFilteredEmployees(filtered);
     }, [selectedType, employees, month, department, section, position, employee]);
 
     console.log("filteredEmployees : ", filteredEmployees);
-
-    const dayNameMap = {
-        Sunday: "อาทิตย์",
-        Monday: "จันทร์",
-        Tuesday: "อังคาร",
-        Wednesday: "พุธ",
-        Thursday: "พฤหัสบดี",
-        Friday: "ศุกร์",
-        Saturday: "เสาร์",
-    };
 
     const generateHolidayDatesFromHistories = (
         employeeID,
@@ -1023,97 +1137,175 @@ const AccountDetail = (props) => {
     console.log("selectedDateStart : ", selectedDateStart);
     console.log("selectedDateEnd : ", selectedDateEnd);
 
-    const handleSave = async () => {
-        const hasMissingSalary = Rows.some(row => {
-            const value = row.salary;
+    const buildDateHistory = (item) => {
+        const { dateHistory = [], attendant = [] } = item;
 
-            // ไม่มีค่า หรือค่าว่าง
-            if (value === undefined || value === null || value === "") return true;
+        const firstSource = dateHistory[0] || attendant[0];
+        if (!firstSource) return [{ id: 0 }];
 
-            // ไม่ใช่ตัวเลข
-            if (isNaN(Number(value))) return true;
+        const firstDate = dayjs(firstSource.date, "DD/MM/YYYY");
+        const year = firstDate.year();
+        const month = firstDate.month() + 1;
+        const totalDays = firstDate.daysInMonth();
 
-            // ❗ salary = 0 → ไม่อนุญาต
-            if (Number(value) === 0) return true;
-
-            return false;
+        // สร้างค่า default ของทั้งเดือน
+        const defaultDay = (dateStr) => ({
+            DDI: "", DDO: "", ID: "", MMI: "", MMO: "",
+            YYYYI: "", YYYYO: "",
+            checkin: "", checkout: "",
+            datecodeI: "", datecodeO: "",
+            datein: "", dateout: "",
+            shift: "", status: "",
+            unixin: "", unixout: "",
+            date: dateStr
         });
 
-        console.log("hasMissingSalary : ", hasMissingSalary);
+        // normalize 0 → ""
+        const normalize = (obj) =>
+            Object.fromEntries(
+                Object.entries(obj).map(([k, v]) => [k, v === 0 ? "" : v])
+            );
+
+        // map dateHistory
+        const historyMap = {};
+        dateHistory.forEach((d) => {
+            const day = Number(d.DD || dayjs(d.date, "DD/MM/YYYY").date());
+            historyMap[day] = normalize(d);
+        });
+
+        // map attendant
+        const attendantMap = {};
+        attendant.forEach((a) => {
+            const day = Number(a.DDI);
+            if (!isNaN(day)) attendantMap[day] = normalize(a);
+        });
+
+        // สร้าง finalDays[]
+        const finalDays = [];
+        finalDays[0] = { id: 0 };
+
+        for (let day = 1; day <= totalDays; day++) {
+            const dateStr = dayjs(`${day}/${month}/${year}`, "D/M/YYYY").format("DD/MM/YYYY");
+            let base = defaultDay(dateStr);
+
+            const mergeOnly = (source) => {
+                Object.keys(source).forEach((key) => {
+                    if (base[key] !== undefined) base[key] = source[key];
+                });
+            };
+
+            if (historyMap[day]) mergeOnly(historyMap[day]);
+            if (attendantMap[day]) mergeOnly(attendantMap[day]);
+
+            base.id = day;
+            finalDays[day] = base;
+        }
+
+        return finalDays;
+    };
+
+    const handleSave = async () => {
+        // -------------------------------------------------------------
+        // 1) สร้าง merged แบบใหม่ (refactor)
+        // -------------------------------------------------------------
+        const merged = Array.isArray(dateArrayMap)
+            ? dateArrayMap.map((item) => ({
+                ...item,
+                dateHistory: buildDateHistory(item)
+            }))
+            : [];
+
+        // -------------------------------------------------------------
+        // 2) ตรวจ salary ครบหรือไม่
+        // -------------------------------------------------------------
+        const hasMissingSalary = Rows.some((row) => {
+            const v = row.salary;
+            return !v || isNaN(Number(v)) || Number(v) === 0;
+        });
 
         if (hasMissingSalary) {
             return ShowError("ไม่สามารถปิดงวดบัญชีได้ เนื่องจากมีพนักงานที่ยังไม่กำหนดเงินเดือน (salary)");
         }
 
-        const salaryRef = ref(
-            firebaseDB,
-            `workgroup/company/${companyId}/salary/${dayjs(month).format("YYYY/M")}`
-        );
+        // -------------------------------------------------------------
+        // 3) salary period
+        // -------------------------------------------------------------
+        const salaryPath = `workgroup/company/${companyId}/salary/${dayjs(month).format("YYYY/M")}`;
+        const salaryRef = ref(firebaseDB, salaryPath);
 
-        const dateStart = selectedDateStart
-            ? dayjs(`${selectedDateStart.year - 543}-${selectedDateStart.month}-${selectedDateStart.day}`, "YYYY-M-D")
-            : null;
+        const toDateObj = (date) =>
+            date
+                ? dayjs(`${date.year - 543}-${date.month}-${date.day}`, "YYYY-M-D")
+                : null;
 
-        const dateEnd = selectedDateEnd
-            ? dayjs(`${selectedDateEnd.year - 543}-${selectedDateEnd.month}-${selectedDateEnd.day}`, "YYYY-M-D")
-            : null;
+        const start = toDateObj(selectedDateStart);
+        const end = toDateObj(selectedDateEnd);
 
         const newPeriod = {
-            DDF: dateStart?.isValid() ? dateStart.date() : null,
-            MMF: dateStart?.isValid() ? dateStart.month() + 1 : null,
-            YYYYF: dateStart?.isValid() ? dateStart.year() : null,
+            DDF: start?.date() ?? null,
+            MMF: start?.month() + 1 ?? null,
+            YYYYF: start?.year() ?? null,
 
-            DDT: dateEnd?.isValid() ? dateEnd.date() : null,
-            MMT: dateEnd?.isValid() ? dateEnd.month() + 1 : null,
-            YYYYT: dateEnd?.isValid() ? dateEnd.year() : null,
+            DDT: end?.date() ?? null,
+            MMT: end?.month() + 1 ?? null,
+            YYYYT: end?.year() ?? null,
 
             salarylist: Rows,
-            Closed: "ปิดงวดบัญชี"
+            Closed: "ปิดงวดบัญชี",
         };
 
         try {
             // -------------------------------------------------------------
-            // 1) บันทึก SSO HISTORY ของแต่ละพนักงาน
+            // 4) บันทึก SSO History ของแต่ละพนักงาน
             // -------------------------------------------------------------
-            const saves = Rows.map(async (row) => {
-                const historyRef = ref(
-                    firebaseDB,
-                    `workgroup/company/${companyId}/employee/${row.ID}/ssohistory`
-                );
+            const saveSSO = Rows.map(async (row) => {
+                const base = `workgroup/company/${companyId}/employee/${row.ID}/ssohistory`;
+                const historyRef = ref(firebaseDB, base);
 
-                // อ่านข้อมูลเก่าเพื่อเอา length
-                const snapshot = await get(historyRef);
-                const oldData = snapshot.val() || {};
+                const old = (await get(historyRef)).val() || {};
+                const newID = Object.keys(old).length;
 
-                const newId = Object.keys(oldData).length; // <<< ID ใหม่ (running)
+                const recordRef = ref(firebaseDB, `${base}/${newID}`);
 
-                // path ใหม่ เช่น /ssohistory/1, /2, /3
-                const newRecordRef = ref(
-                    firebaseDB,
-                    `workgroup/company/${companyId}/employee/${row.ID}/ssohistory/${newId}`
-                );
-
-                const data = {
-                    ID: newId,
+                return set(recordRef, {
+                    ID: newID,
                     DD: dayjs().format("DD"),
                     MM: dayjs().format("MM"),
                     YYYY: dayjs().format("YYYY"),
                     date: dayjs().format("DD/MM/YYYY"),
                     price: Number(row.sso ?? 0),
-                };
-
-                return set(newRecordRef, data);
+                });
             });
 
-            await Promise.all(saves); // รอให้ทุกพนักงานบันทึกครบ
+            await Promise.all(saveSSO);
 
             // -------------------------------------------------------------
-            // 2) บันทึก salary period
+            // 5) บันทึก salary period
             // -------------------------------------------------------------
             await set(salaryRef, newPeriod);
 
+            // -------------------------------------------------------------
+            // 6) อัปเดต attendant ของแต่ละ employee
+            // -------------------------------------------------------------
+            const updates = {};
+
+            const nextMonth = dayjs(month).add(1, "month");
+            const yearStr = nextMonth.format("YYYY");
+            const monthStr = nextMonth.format("M");
+
+            merged.forEach(({ employeeID, dateHistory, year, month }) => {
+                if (!year || !month) return; // ป้องกัน error
+
+                const path = `workgroup/company/${companyId}/employee/${employeeID}/attendant/${yearStr}/${monthStr}`;
+                updates[path] = dateHistory;
+            });
+
+            await update(ref(firebaseDB), updates);
+
+            // -------------------------------------------------------------
+            // 7) Success
+            // -------------------------------------------------------------
             ShowSuccess("บันทึกข้อมูลสำเร็จ");
-            console.log("บันทึกสำเร็จ");
             setCloseAccount(true);
 
         } catch (error) {

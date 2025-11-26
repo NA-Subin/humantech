@@ -255,9 +255,11 @@ export default function SideBarCompany() {
     const navigate = useNavigate();
     const { firebaseDB, domainKey } = useFirebase();
     //const { domain, companyName } = useParams();
-    const [searchParams] = useSearchParams();
-    const domain = searchParams.get("domain");
-    const companyName = searchParams.get("company");
+    // const [searchParams] = useSearchParams();
+    // const domain = searchParams.get("domain");
+    // const companyName = searchParams.get("company");
+    const domain = localStorage.getItem("domain");
+    const companyName = localStorage.getItem("company");
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
     const companyId = companyName?.split(":")[0];
@@ -608,7 +610,15 @@ export default function SideBarCompany() {
                             <MenuItem onClick={handleClickOpenPhone}><PhoneIphoneRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนเบอร์โทรศัพท์</MenuItem><Divider />
                             <MenuItem onClick={handleClickOpenCoordinates}><BusinessIcon sx={{ marginRight: 2 }} /> เพิ่มพิกัดของบริษัท</MenuItem><Divider />
                             <MenuItem ><SettingsIcon sx={{ marginRight: 2 }} /> ตั้งค่าบริษัท</MenuItem><Divider />
-                            <MenuItem onClick={() => navigate(`/?domain=${domain}&page=dashboard`)}><KeyboardReturnRoundedIcon sx={{ marginRight: 2 }} /> กลับสู่หน้าเลือกบริษัท</MenuItem><Divider />
+                            <MenuItem
+                                // onClick={() => navigate(`/?domain=${domain}&page=dashboard`)}
+                                onClick={() => {
+                                    localStorage.removeItem("company");
+                                    localStorage.removeItem("group");
+                                    localStorage.removeItem("page");
+                                    navigate(`/${domain}/dashboard`)
+                                }}
+                            ><KeyboardReturnRoundedIcon sx={{ marginRight: 2 }} /> กลับสู่หน้าเลือกบริษัท</MenuItem><Divider />
                         </Menu>
                         {/* <Button size="large" color="inherit">
                             <IconButton size="large" aria-label="เลือกภาษา" color="inherit">
@@ -1006,8 +1016,14 @@ export default function SideBarCompany() {
                         const button = (
                             <ListItemButton
                                 component={Link}
-                                to={`/?domain=${domain}&company=${companyName}&page=dashboard`}
-                                onClick={() => setSelectedMenu(text)}
+                                to={`/${domain}/${companyName}/dashboard`}
+                                onClick={() => {
+                                    // ลบค่า group และ page ออกก่อนกลับไปหน้า dashboard
+                                    localStorage.removeItem("group");
+                                    localStorage.removeItem("page");
+
+                                    setSelectedMenu(text);
+                                }}
                                 sx={{
                                     minHeight: 32,
                                     height: 30,
@@ -1153,8 +1169,43 @@ export default function SideBarCompany() {
                                 const isSelected = selectedMenu === text;
                                 const button = (
                                     <ListItemButton
+                                        // component={Link}
+                                        // onClick={() => {
+                                        //     const operation = getOperationByIndex(index);
+
+                                        //     setSelectedMenu(text);
+                                        //     localStorage.setItem("group", "operation");
+                                        //     localStorage.setItem("page", operation);
+                                        // }}
+                                        // to={`/${domain}/${companyId}/operation/${getOperationByIndex(index)}`}
                                         component={Link}
-                                        onClick={() => setSelectedMenu(text)}
+                                        onClick={() => {
+                                            let page;
+                                            switch (index) {
+                                                case 0: page = "level"; break;
+                                                case 1: page = "department"; break;
+                                                case 2: page = "section"; break;
+                                                case 3: page = "position"; break;
+                                                default: page = "employee-type"; break;
+                                            }
+
+                                            // set selected menu
+                                            setSelectedMenu(text);
+
+                                            // บันทึก group/page ลง localStorage
+                                            localStorage.setItem("group", "operation");
+                                            localStorage.setItem("page", page);
+                                        }}
+                                        to={`/${domain}/${companyName}/operation/${(() => {
+                                            switch (index) {
+                                                case 0: return "level";
+                                                case 1: return "department";
+                                                case 2: return "section";
+                                                case 3: return "position";
+                                                default: return "employee-type";
+                                            }
+                                        })()}`}
+                                        // onClick={() => setSelectedMenu(text)}
                                         // to={
                                         //     index === 0
                                         //         ? `/${domain}/${companyName}/level`
@@ -1165,18 +1216,18 @@ export default function SideBarCompany() {
                                         //                 : `/${domain}/${companyName}/position`
 
                                         // }
-                                        to={
-                                            index === 0
-                                                ? `/?domain=${domain}&company=${companyName}&operation=level`
-                                                : index === 1
-                                                    ? `/?domain=${domain}&company=${companyName}&operation=department`
-                                                    : index === 2
-                                                        ? `/?domain=${domain}&company=${companyName}&operation=section`
-                                                        : index === 3
-                                                            ? `/?domain=${domain}&company=${companyName}&operation=position`
-                                                            : `/?domain=${domain}&company=${companyName}&operation=employee-type`
+                                        // to={
+                                        //     index === 0
+                                        //         ? `/?domain=${domain}&company=${companyName}&operation=level`
+                                        //         : index === 1
+                                        //             ? `/?domain=${domain}&company=${companyName}&operation=department`
+                                        //             : index === 2
+                                        //                 ? `/?domain=${domain}&company=${companyName}&operation=section`
+                                        //                 : index === 3
+                                        //                     ? `/?domain=${domain}&company=${companyName}&operation=position`
+                                        //                     : `/?domain=${domain}&company=${companyName}&operation=employee-type`
 
-                                        }
+                                        // }
                                         sx={{
                                             height: 30,
                                             px: open ? 2 : 1,
@@ -1344,6 +1395,33 @@ export default function SideBarCompany() {
                                     const button = (
                                         <ListItemButton
                                             component={Link}
+                                            onClick={() => {
+                                                let page;
+                                                switch (index) {
+                                                    case 0: page = "social-security"; break;
+                                                    case 1: page = "tax"; break;
+                                                    case 2: page = "taxdeduction"; break;
+                                                    case 3: page = "income"; break;
+                                                    default: page = "deductions"; break;
+                                                }
+
+                                                // set selected menu
+                                                setSelectedMenu(text);
+
+                                                // บันทึก group/page ลง localStorage
+                                                localStorage.setItem("group", "salary");
+                                                localStorage.setItem("page", page);
+                                            }}
+                                            to={`/${domain}/${companyName}/salary/${(() => {
+                                                switch (index) {
+                                                    case 0: return "social-security";
+                                                    case 1: return "tax";
+                                                    case 2: return "taxdeduction";
+                                                    case 3: return "income";
+                                                    default: return "deductions";
+                                                }
+                                            })()}`}
+                                            // component={Link}
                                             // to={
                                             //     index === 0
                                             //         ? `/${domain}/${companyName}/social-security`
@@ -1351,18 +1429,18 @@ export default function SideBarCompany() {
                                             //             ? `/${domain}/${companyName}/tax`
                                             //             : `/${domain}/${companyName}/deduction`
                                             // }
-                                            to={
-                                                index === 0
-                                                    ? `/?domain=${domain}&company=${companyName}&salary=social-security`
-                                                    : index === 1
-                                                        ? `/?domain=${domain}&company=${companyName}&salary=tax`
-                                                        : index === 2
-                                                            ? `/?domain=${domain}&company=${companyName}&salary=taxdeduction`
-                                                            : index === 3
-                                                                ? `/?domain=${domain}&company=${companyName}&salary=income`
-                                                                : `/?domain=${domain}&company=${companyName}&salary=deductions`
-                                            }
-                                            onClick={() => setSelectedMenu(text)}
+                                            // to={
+                                            //     index === 0
+                                            //         ? `/?domain=${domain}&company=${companyName}&salary=social-security`
+                                            //         : index === 1
+                                            //             ? `/?domain=${domain}&company=${companyName}&salary=tax`
+                                            //             : index === 2
+                                            //                 ? `/?domain=${domain}&company=${companyName}&salary=taxdeduction`
+                                            //                 : index === 3
+                                            //                     ? `/?domain=${domain}&company=${companyName}&salary=income`
+                                            //                     : `/?domain=${domain}&company=${companyName}&salary=deductions`
+                                            // }
+                                            // onClick={() => setSelectedMenu(text)}
                                             sx={{
                                                 height: 30,
                                                 paddingY: 0.5,
@@ -1519,6 +1597,31 @@ export default function SideBarCompany() {
                                 const button = (
                                     <ListItemButton
                                         component={Link}
+                                        onClick={() => {
+                                            let page;
+                                            switch (index) {
+                                                case 0: page = "leave"; break;
+                                                case 1: page = "ot"; break;
+                                                case 2: page = "workshift"; break;
+                                                default: page = "dayoff"; break;
+                                            }
+
+                                            // set selected menu
+                                            setSelectedMenu(text);
+
+                                            // บันทึก group/page ลง localStorage
+                                            localStorage.setItem("group", "time");
+                                            localStorage.setItem("page", page);
+                                        }}
+                                        to={`/${domain}/${companyName}/time/${(() => {
+                                            switch (index) {
+                                                case 0: return "leave";
+                                                case 1: return "ot";
+                                                case 2: return "workshift";
+                                                default: return "dayoff";
+                                            }
+                                        })()}`}
+                                        // component={Link}
                                         // to={
                                         //     index === 0
                                         //         ? `/${domain}/${companyName}/leave`
@@ -1526,16 +1629,16 @@ export default function SideBarCompany() {
                                         //             ? `/${domain}/${companyName}/workshift`
                                         //             : `/${domain}/${companyName}/dayoff`
                                         // }
-                                        to={
-                                            index === 0
-                                                ? `/?domain=${domain}&company=${companyName}&time=leave`
-                                                : index === 1
-                                                    ? `/?domain=${domain}&company=${companyName}&time=ot`
-                                                    : index === 2
-                                                        ? `/?domain=${domain}&company=${companyName}&time=workshift`
-                                                        : `/?domain=${domain}&company=${companyName}&time=dayoff`
-                                        }
-                                        onClick={() => setSelectedMenu(text)}
+                                        // to={
+                                        //     index === 0
+                                        //         ? `/?domain=${domain}&company=${companyName}&time=leave`
+                                        //         : index === 1
+                                        //             ? `/?domain=${domain}&company=${companyName}&time=ot`
+                                        //             : index === 2
+                                        //                 ? `/?domain=${domain}&company=${companyName}&time=workshift`
+                                        //                 : `/?domain=${domain}&company=${companyName}&time=dayoff`
+                                        // }
+                                        // onClick={() => setSelectedMenu(text)}
                                         sx={{
                                             height: 30,
                                             paddingY: 0.5,
@@ -1750,17 +1853,38 @@ export default function SideBarCompany() {
                                 const button = (
                                     <ListItemButton
                                         component={Link}
-                                        onClick={() => setSelectedMenu(text)}
+                                        onClick={() => {
+                                            let page;
+                                            switch (index) {
+                                                case 0: page = "employee"; break;
+                                                default: page = "calculate"; break;
+                                            }
+
+                                            // set selected menu
+                                            setSelectedMenu(text);
+
+                                            // บันทึก group/page ลง localStorage
+                                            localStorage.setItem("group", "employee");
+                                            localStorage.setItem("page", page);
+                                        }}
+                                        to={`/${domain}/${companyName}/employee/${(() => {
+                                            switch (index) {
+                                                case 0: return "employee";
+                                                default: return "calculate";
+                                            }
+                                        })()}`}
+                                        // component={Link}
+                                        // onClick={() => setSelectedMenu(text)}
                                         // to={
                                         //     index === 0
                                         //         ? `/${domain}/${companyName}/employee`
                                         //         : `/${domain}/${companyName}/employee`
                                         // }
-                                        to={
-                                            index === 0
-                                                ? `/?domain=${domain}&company=${companyName}&employee=employee`
-                                                : `/?domain=${domain}&company=${companyName}&employee=calculate`
-                                        }
+                                        // to={
+                                        //     index === 0
+                                        //         ? `/?domain=${domain}&company=${companyName}&employee=employee`
+                                        //         : `/?domain=${domain}&company=${companyName}&employee=calculate`
+                                        // }
                                         sx={{
                                             minHeight: 32,
                                             px: open ? 2 : 1,
@@ -1917,20 +2041,45 @@ export default function SideBarCompany() {
                                 const button = (
                                     <ListItemButton
                                         component={Link}
-                                        onClick={() => setSelectedMenu(text)}
+                                        onClick={() => {
+                                            let page;
+                                            switch (index) {
+                                                case 0: page = "leave"; break;
+                                                case 1: page = "ot"; break;
+                                                case 2: page = "time"; break;
+                                                default: page = "loan"; break;
+                                            }
+
+                                            // set selected menu
+                                            setSelectedMenu(text);
+
+                                            // บันทึก group/page ลง localStorage
+                                            localStorage.setItem("group", "report");
+                                            localStorage.setItem("page", page);
+                                        }}
+                                        to={`/${domain}/${companyName}/report/${(() => {
+                                            switch (index) {
+                                                case 0: return "leave";
+                                                case 1: return "ot";
+                                                case 2: return "time";
+                                                default: return "loan";
+                                            }
+                                        })()}`}
+                                        // component={Link}
+                                        // onClick={() => setSelectedMenu(text)}
                                         // to={
                                         //     index === 0
                                         //         ? `/${domain}/${companyName}/employee`
                                         //         : `/${domain}/${companyName}/employee
                                         // }
-                                        to={
-                                            index === 0 ? `/?domain=${domain}&company=${companyName}&report=leave`
-                                                : index === 1 ? `/?domain=${domain}&company=${companyName}&report=ot`
-                                                    : index === 2 ? `/?domain=${domain}&company=${companyName}&report=time`
-                                                        // : index === 3 ? `/?domain=${domain}&company=${companyName}&report=working-outside`
-                                                        // : index === 4 ? `/?domain=${domain}&company=${companyName}&report=work-certificate`
-                                                        : `/?domain=${domain}&company=${companyName}&report=report-loan`
-                                        }
+                                        // to={
+                                        //     index === 0 ? `/?domain=${domain}&company=${companyName}&report=leave`
+                                        //         : index === 1 ? `/?domain=${domain}&company=${companyName}&report=ot`
+                                        //             : index === 2 ? `/?domain=${domain}&company=${companyName}&report=time`
+                                        //                 // : index === 3 ? `/?domain=${domain}&company=${companyName}&report=working-outside`
+                                        //                 // : index === 4 ? `/?domain=${domain}&company=${companyName}&report=work-certificate`
+                                        //                 : `/?domain=${domain}&company=${companyName}&report=report-loan`
+                                        // }
                                         sx={{
                                             minHeight: 32,
                                             px: open ? 2 : 1,

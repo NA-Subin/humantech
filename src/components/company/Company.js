@@ -38,8 +38,10 @@ import FullBlogEditor from "../attendant/TestBlogs";
 const Company = () => {
     const { firebaseDB, domainKey } = useFirebase();
     //const { domain } = useParams();
-    const [searchParams] = useSearchParams();
-    const domain = searchParams.get("domain");
+    // const [searchParams] = useSearchParams();
+    // const domain = searchParams.get("domain");
+    const domainData = JSON.parse(localStorage.getItem("domainData"));
+    const domain = domainData?.domainKey;
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -47,6 +49,11 @@ const Company = () => {
             "ออกจากระบบ",
             "คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?",
             () => {
+                localStorage.removeItem("domain");
+                localStorage.removeItem("company");
+                localStorage.removeItem("group");
+                localStorage.removeItem("page");
+
                 logout(navigate);
             },
             () => {
@@ -54,7 +61,7 @@ const Company = () => {
             }
         );
     };
-    
+
     const [show, setShow] = useState(1);
     const [showMenu, setshowMenu] = useState(1);
     const [page, setPage] = React.useState(0);
@@ -122,7 +129,7 @@ const Company = () => {
                     <Grid item size={12} textAlign="right">
                         <Box p={2}>
                             <Grid container spacing={5} marginBottom={2}>
-                                <Grid item size={{  xs: 12, sm: 6, md: 4, lg: 3 }} sx={{ p: 5 }} >
+                                <Grid item size={{ xs: 12, sm: 6, md: 4, lg: 3 }} sx={{ p: 5 }} >
                                     <Typography variant="subtitle2" color="error" sx={{ textAlign: "center", marginBottom: -0.5, marginTop: 3 }} fontWeight="bold" gutterBottom>*เพิ่มบริษัทกดตรงนี้*</Typography>
                                     <Card sx={{ height: '25vh', borderRadius: 5 }} elevation={6}>
                                         <InsertCompany />
@@ -130,7 +137,7 @@ const Company = () => {
                                 </Grid>
                                 {
                                     companies.map((row) => (
-                                        <Grid item size={{  xs: 12, sm: 6, md: 4, lg: 3 }} key={row.id}>
+                                        <Grid item size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={row.id}>
                                             <Box sx={{ position: "relative", display: "inline-block", width: "100%", textAlign: "left" }}>
                                                 {/* Icon เป็น background */}
                                                 <BusinessIcon
@@ -179,14 +186,30 @@ const Company = () => {
                                                             borderRadius: 2,
                                                         }}
                                                         size="large"
-                                                        onClick={
-                                                            () =>
-                                                                //navigate(`/${domain}/${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}`)
-                                                                workgroup === "attendant" ?
-                                                                    navigate(`/?domain=${domain}&company=${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}&page=attendant`)
-                                                                    :
-                                                                    navigate(`/?domain=${domain}&company=${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}&page=`)
-                                                        }
+                                                        onClick={() => {
+                                                            const company = `${row.companyid}:${row.companyserial}`;
+
+                                                            // บันทึก company + group
+                                                            localStorage.setItem("company", company);
+
+                                                            if (workgroup === "attendant") {
+                                                                localStorage.setItem("group", "attendant");   // ✅ ใช้แค่ group
+                                                                navigate(`/${domain}/${row.companyserial}/attendant`);
+                                                            } else {
+                                                                localStorage.setItem("group", "dashboard");   // ✅ dashboard ก็แค่ group
+                                                                navigate(`/${domain}/${row.companyserial}/dashboard`);
+                                                            }
+                                                        }}
+
+                                                    // onClick={
+                                                    //     () => {
+                                                    //         //navigate(`/${domain}/${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}`)
+                                                    //         localStorage.setItem("companyCode", `${row.companyid}:${row.companyserial}`);
+                                                    //         workgroup === "attendant" ?
+                                                    //             navigate(`/?domain=${domain}&company=${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}&page=attendant`)
+                                                    //             :
+                                                    //             navigate(`/?domain=${domain}&company=${encodeURIComponent(`${row.companyid}:${row.companyserial}`)}&page=`)
+                                                    //     }}
                                                     >จัดการบริษัท</Button>
                                                 </Box>
                                             </Box>

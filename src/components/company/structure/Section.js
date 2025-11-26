@@ -39,8 +39,9 @@ import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetal
 
 const SectionDetail = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const [searchParams] = useSearchParams();
-    const companyName = searchParams.get("company");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
     const [editLavel, setEditLavel] = useState(false);
     const [editDepartment, setEditDepartment] = useState(false);

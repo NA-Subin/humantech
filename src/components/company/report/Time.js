@@ -46,8 +46,9 @@ import { formatThaiShort } from "../../../theme/DateTH";
 
 const ReportTime = () => {
     const { firebaseDB, domainKey } = useFirebase();
-    const [searchParams] = useSearchParams();
-    const companyName = searchParams.get("company");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
     const [editIncomepleteTime, setIncompleteTime] = useState(false);
     const [companies, setCompanies] = useState([]);

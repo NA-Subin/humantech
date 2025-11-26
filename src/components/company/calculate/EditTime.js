@@ -55,8 +55,9 @@ const EditTimeDetail = (props) => {
     const { department, section, position, employee, month, onReturn } = props;
     console.log("Search : ", department, section, position, employee);
     const { firebaseDB, domainKey } = useFirebase();
-    const [searchParams] = useSearchParams();
-    const companyName = searchParams.get("company");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
@@ -163,18 +164,24 @@ const EditTimeDetail = (props) => {
                 const currentDateStr = current.format("DD/MM/YYYY");
                 const dayName = dayNameMap[current.format("dddd")]; // ex: "Sunday" → "อาทิตย์"
 
-                const isNotInShiftHoliday = !holidays.includes(dayName);
-                const isNotInGlobalHoliday = !holidayDatesSet.has(currentDateStr);
+                const isShiftHoliday = holidays.includes(dayName);           // วันหยุดตามกะงาน
+                const isGlobalHoliday = holidayDatesSet.has(currentDateStr); // วันหยุดบริษัท
 
-                if (isNotInShiftHoliday && isNotInGlobalHoliday) {
-                    if (current.year() === filterYear && current.month() === filterMonth) {
-                        allDates.push({
-                            date: currentDateStr,
-                            workshift: history.workshift || null,
-                            start: history.start || null,
-                            stop: history.stop || null,
-                        });
-                    }
+                // สร้าง message
+                let messages = [];
+                if (isShiftHoliday) messages.push("กะงาน");
+                if (isGlobalHoliday) messages.push("บริษัท");
+
+                const message = messages.length > 0 ? `วันหยุด(${messages.join(", ")})` : "ขาดงาน";
+
+                if (current.year() === filterYear && current.month() === filterMonth) {
+                    allDates.push({
+                        date: currentDateStr,
+                        workshift: history.workshift || null,
+                        start: history.start || null,
+                        stop: history.stop || null,
+                        message
+                    });
                 }
 
                 current = current.add(1, 'day');

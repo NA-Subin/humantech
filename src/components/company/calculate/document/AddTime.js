@@ -47,8 +47,9 @@ dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.fo
 const AddTimeDetail = (props) => {
     const { dateArray, month } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const [searchParams] = useSearchParams();
-    const companyName = searchParams.get("company");
+    const companyName = localStorage.getItem("company");
+    // const [searchParams] = useSearchParams();
+    // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
     const [editIncomepleteTime, setIncompleteTime] = useState(false);
     const [companies, setCompanies] = useState([]);
