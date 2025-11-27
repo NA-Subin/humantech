@@ -1023,9 +1023,11 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                                 component={Link}
                                 to={`/${domain}/${company}/dashboard`}
                                 onClick={() => {
-                                    // ลบค่า group และ page ออกก่อนกลับไปหน้า dashboard
-                                    localStorage.removeItem("group");
-                                    localStorage.removeItem("page");
+                                    setTabState(prev => ({
+                                        ...prev,
+                                        group: "dashboard",
+                                        page: null
+                                    }));
 
                                     setSelectedMenu(text);
                                 }}
@@ -2060,7 +2062,7 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                                             // navigate ไปหน้าที่ต้องการ
                                             navigate(`/${domain}/${company}/report/${page}`);
                                         }}
-                                        
+
                                         // component={Link}
                                         // onClick={() => setSelectedMenu(text)}
                                         // to={
