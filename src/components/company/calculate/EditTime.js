@@ -52,10 +52,10 @@ dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.fo
 dayjs.extend(isSameOrBefore);
 
 const EditTimeDetail = (props) => {
-    const { department, section, position, employee, month, onReturn } = props;
+    const { companyName, department, section, position, employee, month, onReturn } = props;
     console.log("Search : ", department, section, position, employee);
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
@@ -446,10 +446,10 @@ const EditTimeDetail = (props) => {
                         </Typography>
                     </Grid> */}
                     {
-                        day === 1 ? <MissingWorkDetail dateArray={dateArrayMap} month={month} />
-                            : day === 2 ? <IncomepleteTime dateArray={dateArrayMap} month={month} />
-                                : day === 3 ? <LateDetail dateArray={dateArrayMap} month={month} />
-                                    : day === 4 ? <LeaveEarly dateArray={dateArrayMap} month={month} />
+                        day === 1 ? <MissingWorkDetail companyName={companyName} dateArray={dateArrayMap} month={month} />
+                            : day === 2 ? <IncomepleteTime companyName={companyName} dateArray={dateArrayMap} month={month} />
+                                : day === 3 ? <LateDetail companyName={companyName} dateArray={dateArrayMap} month={month} />
+                                    : day === 4 ? <LeaveEarly companyName={companyName} dateArray={dateArrayMap} month={month} />
                                         // : day === 5 ? <OTDetail dateArray={dateArrayMap} month={month} />
                                         //     : day === 6 ? <LeaveDetail dateArray={dateArrayMap} month={month} />
                                         //         : day === 7 ? <DayOffDetail dateArray={dateArrayMap} month={month} />

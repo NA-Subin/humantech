@@ -46,19 +46,20 @@ import { LanguageContext } from '../../LanguageContext';
 import 'dayjs/locale/th';
 import 'dayjs/locale/en';
 
-export default function DashboardAttendant() {
+export default function DashboardAttendant({ tabState, setTabState, tabId }) {
+    const { domain, company } = tabState;
     const { language, changeLanguage } = React.useContext(LanguageContext);
     const { t } = useTranslation();
     const { firebaseDB, domainKey } = useFirebase();
     const navigate = useNavigate();
-    const domain = localStorage.getItem("domain");
-    const companyName = localStorage.getItem("company");
+    // const domain = localStorage.getItem("domain");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const domain = searchParams.get("domain");
     // const companyName = searchParams.get("company");
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const companyId = companyName?.split(":")[0];
+    const companyId = company?.split(":")[0];
     const [openNews, setOpenNews] = useState(true);
     const [openNotify, setOpenNotify] = useState(false);
     const [openEmployee, setOpenEmployee] = useState(false);
@@ -445,12 +446,13 @@ export default function DashboardAttendant() {
                                 </Paper>
                                 <Button
                                     onClick={() => {
-                                        // ลบค่า group / page ออกจาก localStorage
-                                        localStorage.removeItem("company");
-                                        localStorage.removeItem("group");
-                                        localStorage.removeItem("page");
+                                        setTabState(prev => ({
+                                            ...prev,
+                                            company: null,
+                                            group: "dashboard",
+                                            page: null
+                                        }));
 
-                                        // กลับไปหน้า dashboard ของ domain
                                         navigate(`/${domain}/dashboard`);
                                     }}
                                     variant="contained"
@@ -468,7 +470,7 @@ export default function DashboardAttendant() {
                         </Grid>
                     </Grid>
                     {/* </Item> */}
-                    <TimeAttendant date={dateApprove} language={language} />
+                    <TimeAttendant companyName={company} date={dateApprove} language={language} />
                 </Grid>
             </Grid>
         </Container>

@@ -45,9 +45,9 @@ import { formatThaiShort } from "../../../../theme/DateTH";
 dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.format("dddd")
 
 const OTDetail = (props) => {
-    const { dateArray, month } = props;
+    const { companyName, dateArray, month } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
@@ -216,7 +216,7 @@ const OTDetail = (props) => {
                         <TableBody>
                             {
                                 docOT.length === 0 ?
-                                    <TableRow  sx={{ height: "60vh" }}>
+                                    <TableRow sx={{ height: "60vh" }}>
                                         <TablecellNoData colSpan={5}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
                                     </TableRow>
                                     :

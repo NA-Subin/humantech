@@ -91,91 +91,91 @@ const AdminProtectedRouteWrapper = ({ children }) => {
 };
 
 // --- Company Routes (เหมือนเดิม) ---
-function CompanyRoutes({ group, page }) {
-    if (!group || group === "dashboard") return <CompanyDeshboard />;
+function CompanyRoutes({ group, page, tabState, setTabState }) {
+    if (!group || group === "dashboard") return <CompanyDeshboard tabState={tabState} setTabState={setTabState} />;
 
     switch (group) {
         case "operation":
             switch (page) {
                 case "level":
-                    return <LevelDetail />;
+                    return <LevelDetail tabState={tabState} setTabState={setTabState} />;
                 case "department":
-                    return <DepartmentDetail />;
+                    return <DepartmentDetail tabState={tabState} setTabState={setTabState} />;
                 case "section":
-                    return <SectionDetail />;
+                    return <SectionDetail tabState={tabState} setTabState={setTabState} />;
                 case "position":
-                    return <PositionDetail />;
+                    return <PositionDetail tabState={tabState} setTabState={setTabState} />;
                 case "employee-type":
-                    return <EmployeeTypeDetail />;
+                    return <EmployeeTypeDetail tabState={tabState} setTabState={setTabState} />;
                 case "social-security":
-                    return <SSODetail />;
+                    return <SSODetail tabState={tabState} setTabState={setTabState} />;
                 default:
-                    return <CompanyDeshboard />;
+                    return <CompanyDeshboard tabState={tabState} setTabState={setTabState} />;
             }
         case "salary":
             switch (page) {
                 case "social-security":
-                    return <SSODetail />;
+                    return <SSODetail tabState={tabState} setTabState={setTabState} />;
                 case "calculate":
-                    return <CalculateSalary />;
+                    return <CalculateSalary tabState={tabState} setTabState={setTabState} />;
                 case "tax":
-                    return <TaxDetail />;
+                    return <TaxDetail tabState={tabState} setTabState={setTabState} />;
                 case "taxdeduction":
-                    return <TaxDeductionDetail />;
+                    return <TaxDeductionDetail tabState={tabState} setTabState={setTabState} />;
                 case "income":
-                    return <IncomeDetail />;
+                    return <IncomeDetail tabState={tabState} setTabState={setTabState} />;
                 case "deductions":
-                    return <DeductionsDetail />;
+                    return <DeductionsDetail tabState={tabState} setTabState={setTabState} />;
                 default:
-                    return <CompanyDeshboard />;
+                    return <CompanyDeshboard tabState={tabState} setTabState={setTabState} />;
             }
         case "time":
             switch (page) {
                 case "leave":
-                    return <LeaveDetail />;
+                    return <LeaveDetail tabState={tabState} setTabState={setTabState} />;
                 case "ot":
-                    return <OTDetail />;
+                    return <OTDetail tabState={tabState} setTabState={setTabState} />;
                 case "workshift":
-                    return <WorkShiftDetail />;
+                    return <WorkShiftDetail tabState={tabState} setTabState={setTabState} />;
                 case "dayoff":
-                    return <HolidayDetail />;
+                    return <HolidayDetail tabState={tabState} setTabState={setTabState} />;
                 default:
-                    return <CompanyDeshboard />;
+                    return <CompanyDeshboard tabState={tabState} setTabState={setTabState} />;
             }
         case "employee":
             switch (page) {
                 case "employee":
-                    return <Employee />;
+                    return <Employee tabState={tabState} setTabState={setTabState} />;
                 case "calculate":
-                    return <CalculateSalary />;
+                    return <CalculateSalary tabState={tabState} setTabState={setTabState} />;
                 default:
-                    return <CompanyDeshboard />;
+                    return <CompanyDeshboard tabState={tabState} setTabState={setTabState} />;
             }
         case "report":
             switch (page) {
                 case "leave":
-                    return <ReportLeave />;
+                    return <ReportLeave tabState={tabState} setTabState={setTabState} />;
                 case "ot":
-                    return <ReportOT />;
+                    return <ReportOT tabState={tabState} setTabState={setTabState} />;
                 case "time":
-                    return <ReportTime />;
+                    return <ReportTime tabState={tabState} setTabState={setTabState} />;
                 case "loan":
-                    return <ReportLoan />;
+                    return <ReportLoan tabState={tabState} setTabState={setTabState} />;
                 case "working-outside":
-                    return <ReportWorkingOutside />;
+                    return <ReportWorkingOutside tabState={tabState} setTabState={setTabState} />;
                 case "work-certificate":
-                    return <ReportWorkCertificat />;
+                    return <ReportWorkCertificat tabState={tabState} setTabState={setTabState} />;
                 case "salary-certificate":
-                    return <ReportSalaryCertificate />;
+                    return <ReportSalaryCertificate tabState={tabState} setTabState={setTabState} />;
                 default:
-                    return <CompanyDeshboard />;
+                    return <CompanyDeshboard tabState={tabState} setTabState={setTabState} />;
             }
         case "attendant":
-            return <DashboardAttendant />;
+            return <DashboardAttendant tabState={tabState} setTabState={setTabState} />;
         case "print":
-            return <PrintDocument />;
+            return <PrintDocument tabState={tabState} setTabState={setTabState} />;
         default:
-            return <CompanyDeshboard />;
+            return <CompanyDeshboard tabState={tabState} setTabState={setTabState} />;
     }
 }
 
@@ -194,85 +194,139 @@ function MainEntry() {
         });
     }, []);
 
-    // ค่าใน localStorage / cookie
-    const cookie = loadEncryptedCookie();
-    const storedDomain = cookie?.domainKey || localStorage.getItem("domainKey") || pathDomain;
-    const storedCompany = localStorage.getItem("company") || pathCompany;
-    const storedGroup = localStorage.getItem("group") || pathGroup;
-    const storedPage = localStorage.getItem("page") || pathPage;
-
-    const domain = storedDomain;
-    const companyId = storedCompany;
-
-    // === group/page logic ===
-    let group = storedGroup || "dashboard";
-    let page = storedPage || "dashboard";
-
-    // สำหรับ dashboard และ attendant ใช้แค่ group
-    if (group === "dashboard" || group === "attendant") {
-        page = null;
+    // ===============================
+    // --- สร้าง tabId แยกแต่ละแท็บ ---
+    // ===============================
+    if (!sessionStorage.getItem("tabId")) {
+        sessionStorage.setItem("tabId", crypto.randomUUID());
     }
+    const tabId = sessionStorage.getItem("tabId");
 
     // ===============================
-    //     REDIRECT LOGIC 
+    // --- โหลด state ของแท็บนี้จาก tabsState object ---
+    // ===============================
+    const cookie = loadEncryptedCookie();
+    const allTabsState = JSON.parse(localStorage.getItem("tabsState") || "{}");
+    const initialTabState = allTabsState[tabId] || {};
+
+    const [tabState, setTabState] = useState({
+        domain: initialTabState.domain || cookie?.domainKey || pathDomain,
+        company: initialTabState.company || pathCompany,
+        group: initialTabState.group || pathGroup || "dashboard",
+        page: initialTabState.page || pathPage || "dashboard"
+    });
+
+    const { domain, company: companyId, group, page } = tabState;
+    const effectivePage = group === "dashboard" || group === "attendant" ? null : page;
+
+    // ===============================
+    // --- บันทึก state ของแท็บนี้ลง tabsState ---
+    // ===============================
+    useEffect(() => {
+        const allTabsState = JSON.parse(localStorage.getItem("tabsState") || "{}");
+        allTabsState[tabId] = tabState;
+        localStorage.setItem("tabsState", JSON.stringify(allTabsState));
+    }, [tabState, tabId]);
+
+    // ===============================
+    // Redirect logic
     // ===============================
     useEffect(() => {
         if (!domain) return;
 
         let redirectPath;
-        if (!companyId) {
-            redirectPath = `/${domain}/dashboard`;
-        } else if (group === "dashboard" || group === "attendant") {
-            redirectPath = `/${domain}/${companyId}/${group}`;
-        } else {
-            redirectPath = `/${domain}/${companyId}/${group}/${page}`;
-        }
+        if (!companyId) redirectPath = `/${domain}/dashboard`;
+        else if (group === "dashboard" || group === "attendant") redirectPath = `/${domain}/${companyId}/${group}`;
+        else redirectPath = `/${domain}/${companyId}/${group}/${page}`;
 
-        const currentPath = `/${pathDomain || ""}/${pathCompany || ""}/${pathGroup || ""}${pathPage ? `/${pathPage}` : ""}`;
-
+        const currentPath = window.location.pathname;
         if (currentPath !== redirectPath) {
             navigate(redirectPath, { replace: true });
         }
-    }, [domain, companyId, group, page, pathDomain, pathCompany, pathGroup, pathPage, navigate]);
+    }, [domain, companyId, group, page, navigate]);
 
+    // ===============================
+    // Title
+    // ===============================
+    useEffect(() => {
+        if (!companyId && !group && !page) {
+            document.title = domain || "My System";
+            return;
+        }
+
+        const groupMap = {
+            OPERATION: "โครงสร้างองค์กร",
+            SALARY: "เงินเดือนและภาษี",
+            TIME: "เวลาทำงาน",
+            EMPLOYEE: "โครงสร้างพนักงาน",
+            REPORT: "เอกสารและการอนุมัติ",
+            DASHBOARD: "Dashboard",
+            ATTENDANT: "บันทึกเวลา"
+        };
+
+        const pageMap = {
+            LEVEL: "ระดับงาน",
+            DEPARTMENT: "แผนก",
+            SECTION: "ฝ่าย",
+            POSITION: "ตำแหน่งงาน",
+            "EMPLOYEE-TYPE": "ประเภทพนักงาน",
+            "SOCIAL-SECURITY": "ประกันสังคม",
+            CALCULATE: "คำนวณเงินเดือน",
+            TAX: "ภาษีเงินได้",
+            TAXDEDUCTION: "ลดหย่อนภาษี",
+            INCOME: "รายได้",
+            DEDUCTIONS: "หักค่าใช้จ่าย",
+            LEAVE: "ลางาน",
+            OT: "ทำงานล่วงเวลา",
+            WORKSHIFT: "กะงาน",
+            DAYOFF: "วันหยุดประจำปี",
+            EMPLOYEE: "พนักงาน",
+            LOAN: "เงินกู้",
+            TIME: "บันทึกเวลา",
+            "WORKING-OUTSIDE": "ทำงานนอกสถานที่",
+            "WORK-CERTIFICATE": "หนังสือรับรองการทำงาน",
+            "SALARY-CERTIFICATE": "หนังสือรับรองเงินเดือน"
+        };
+
+        const companyName = companyId?.split(":")[1] || "";
+        const groupTitle = groupMap[group?.toUpperCase()] || group || "";
+        const pageTitle = pageMap[page?.toUpperCase()] || page || "";
+        document.title = [companyName, groupTitle, pageTitle].filter(Boolean).join(" - ");
+    }, [domain, companyId, group, page]);
+
+    // ===============================
     // ถ้า domain ไม่มี → login
+    // ===============================
     if (!domain) return <Navigate to="/login" replace />;
 
+    // ===============================
     // หา groupType สำหรับ sidebar
+    // ===============================
     const groupType = domainData.find(item => item.domainKey === domain)?.grouptype;
 
     // ===============================
-    //   RENDER CASES
+    // RENDER CASES
     // ===============================
-
-    // CASE 1: ยังไม่มี companyCode → แสดงหน้าเลือกบริษัท
-    if (!companyId) {
-        return <Company domain={domain} />;
-    }
-
-    // CASE 2: dashboard / attendant → ใช้แค่ group
+    if (!companyId) return <Company tabState={tabState} setTabState={setTabState} tabId={tabId} />;
     if (group === "dashboard" || group === "attendant") {
         return (
             <Box sx={{ display: "flex", backgroundColor: theme.palette.primary.light }}>
-                {groupType !== "attendant" && <SideBarCompany domain={domain} company={companyId} />}
+                {groupType !== "attendant" && <SideBarCompany tabState={tabState} setTabState={setTabState} />}
                 <Box sx={{ flexGrow: 1 }}>
-                    {group === "dashboard" ? <CompanyDeshboard /> : <DashboardAttendant />}
+                    {group === "dashboard" ? <CompanyDeshboard tabState={tabState} setTabState={setTabState} /> : <DashboardAttendant tabState={tabState} setTabState={setTabState} />}
                 </Box>
             </Box>
         );
     }
-
-    // CASE 3: group อื่น → ใช้ group + page
     return (
         <Box sx={{ display: "flex", backgroundColor: theme.palette.primary.light }}>
-            {groupType !== "attendant" && <SideBarCompany domain={domain} company={companyId} />}
+            {groupType !== "attendant" && <SideBarCompany tabState={tabState} setTabState={setTabState} />}
             <Box sx={{ flexGrow: 1 }}>
-                <CompanyRoutes group={group} page={page} />
+                <CompanyRoutes group={group} page={effectivePage} tabState={tabState} setTabState={setTabState} />
             </Box>
         </Box>
     );
 }
-
 
 // --- App Router ---
 export default function AppRouter() {

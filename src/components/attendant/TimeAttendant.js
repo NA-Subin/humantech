@@ -45,12 +45,12 @@ import Caluculate from './Calculate';
 import { useTranslation } from 'react-i18next';
 import { ShowConfirm, ShowError, ShowSuccess } from '../../sweetalert/sweetalert';
 
-export default function TimeAttendant({ date }) {
+export default function TimeAttendant({ companyName, date }) {
     const { firebaseDB, domainKey } = useFirebase();
     const { t } = useTranslation();
     const navigate = useNavigate();
     const domain = localStorage.getItem("domain");
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const domain = searchParams.get("domain");
     // const companyName = searchParams.get("company");
@@ -659,12 +659,12 @@ export default function TimeAttendant({ date }) {
 
                 {
                     openSalary &&
-                    <Caluculate attendant={Object.values(grouped)} />
+                    <Caluculate companyName={companyName} attendant={Object.values(grouped)} />
                 }
 
                 {
                     openEmployee &&
-                    <EmployeeDetail date={date} />
+                    <EmployeeDetail companyName={companyName} date={date} />
                 }
             </Box>
         </React.Fragment>

@@ -36,15 +36,16 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { BarChart } from '@mui/x-charts';
 
-export default function CompanyDeshboard() {
+export default function CompanyDeshboard({ tabState, setTabState, tabId }) {
+    const { domain, company } = tabState;
     const { firebaseDB, domainKey } = useFirebase();
     const [searchParams] = useSearchParams();
-    const domain = searchParams.get("domain");
+    // const domain = searchParams.get("domain");
     // const companyName = searchParams.get("company");
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const companyId = companyName?.split(":")[0];
+    const companyId = company?.split(":")[0];
     const [openNews, setOpenNews] = useState(true);
     const [openNotify, setOpenNotify] = useState(false);
     const [openEmployee, setOpenEmployee] = useState(false);

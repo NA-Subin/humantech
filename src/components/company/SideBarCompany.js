@@ -251,18 +251,19 @@ const Transition = React.forwardRef(function Transition(props, ref) {
     return <Slide direction="up" ref={ref} {...props} />;
 });
 
-export default function SideBarCompany() {
+export default function SideBarCompany({ tabState, setTabState, tabId }) {
+    const { domain, company } = tabState;
     const navigate = useNavigate();
     const { firebaseDB, domainKey } = useFirebase();
     //const { domain, companyName } = useParams();
     // const [searchParams] = useSearchParams();
     // const domain = searchParams.get("domain");
     // const companyName = searchParams.get("company");
-    const domain = localStorage.getItem("domain");
-    const companyName = localStorage.getItem("company");
+    // const domain = localStorage.getItem("domain");
+    // const companyName = localStorage.getItem("company");
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const companyId = companyName?.split(":")[0];
+    const companyId = company?.split(":")[0];
     const [openData, setOpenData] = useState(false);
     const [openEmployee, setOpenEmployee] = useState(false);
     const [openAddress, setOpenAddress] = useState({});
@@ -613,10 +614,14 @@ export default function SideBarCompany() {
                             <MenuItem
                                 // onClick={() => navigate(`/?domain=${domain}&page=dashboard`)}
                                 onClick={() => {
-                                    localStorage.removeItem("company");
-                                    localStorage.removeItem("group");
-                                    localStorage.removeItem("page");
-                                    navigate(`/${domain}/dashboard`)
+                                    setTabState(prev => ({
+                                        ...prev,
+                                        company: null,
+                                        group: "dashboard",
+                                        page: null
+                                    }));
+
+                                    navigate(`/${domain}/dashboard`);
                                 }}
                             ><KeyboardReturnRoundedIcon sx={{ marginRight: 2 }} /> กลับสู่หน้าเลือกบริษัท</MenuItem><Divider />
                         </Menu>
@@ -949,7 +954,7 @@ export default function SideBarCompany() {
             </AppBar>
             <Drawer variant="permanent" open={open}>
                 <DrawerHeader sx={{ backgroundColor: theme.palette.primary.light, display: "flex", justifyContent: "center", alignItems: "center", position: "sticky", top: 0, zIndex: 5 }}>
-                    <IconButton color="primary" sx={{ display: "block", marginBottom: -1, marginTop: -1, marginRight: -2.5 }} onClick={() => navigate(`?domain=${domain}&company=${companyName}&page=dashboard`)}>
+                    <IconButton color="primary" sx={{ display: "block", marginBottom: -1, marginTop: -1, marginRight: -2.5 }} onClick={() => navigate(`?domain=${domain}&company=${company}&page=dashboard`)}>
                         <Box
                             sx={{
                                 textAlign: "center",
@@ -1016,7 +1021,7 @@ export default function SideBarCompany() {
                         const button = (
                             <ListItemButton
                                 component={Link}
-                                to={`/${domain}/${companyName}/dashboard`}
+                                to={`/${domain}/${company}/dashboard`}
                                 onClick={() => {
                                     // ลบค่า group และ page ออกก่อนกลับไปหน้า dashboard
                                     localStorage.removeItem("group");
@@ -1169,15 +1174,6 @@ export default function SideBarCompany() {
                                 const isSelected = selectedMenu === text;
                                 const button = (
                                     <ListItemButton
-                                        // component={Link}
-                                        // onClick={() => {
-                                        //     const operation = getOperationByIndex(index);
-
-                                        //     setSelectedMenu(text);
-                                        //     localStorage.setItem("group", "operation");
-                                        //     localStorage.setItem("page", operation);
-                                        // }}
-                                        // to={`/${domain}/${companyId}/operation/${getOperationByIndex(index)}`}
                                         component={Link}
                                         onClick={() => {
                                             let page;
@@ -1192,19 +1188,25 @@ export default function SideBarCompany() {
                                             // set selected menu
                                             setSelectedMenu(text);
 
-                                            // บันทึก group/page ลง localStorage
-                                            localStorage.setItem("group", "operation");
-                                            localStorage.setItem("page", page);
+                                            // อัปเดต tabState ของแท็บนี้
+                                            setTabState(prev => ({
+                                                ...prev,
+                                                group: "operation",
+                                                page: page
+                                            }));
+
+                                            // navigate ไปหน้าที่ต้องการ
+                                            navigate(`/${domain}/${company}/operation/${page}`);
                                         }}
-                                        to={`/${domain}/${companyName}/operation/${(() => {
-                                            switch (index) {
-                                                case 0: return "level";
-                                                case 1: return "department";
-                                                case 2: return "section";
-                                                case 3: return "position";
-                                                default: return "employee-type";
-                                            }
-                                        })()}`}
+                                        // component={Link}
+                                        // onClick={() => {
+                                        //     const operation = getOperationByIndex(index);
+
+                                        //     setSelectedMenu(text);
+                                        //     localStorage.setItem("group", "operation");
+                                        //     localStorage.setItem("page", operation);
+                                        // }}
+                                        // to={`/${domain}/${companyId}/operation/${getOperationByIndex(index)}`}
                                         // onClick={() => setSelectedMenu(text)}
                                         // to={
                                         //     index === 0
@@ -1408,19 +1410,16 @@ export default function SideBarCompany() {
                                                 // set selected menu
                                                 setSelectedMenu(text);
 
-                                                // บันทึก group/page ลง localStorage
-                                                localStorage.setItem("group", "salary");
-                                                localStorage.setItem("page", page);
+                                                // อัปเดต tabState ของแท็บนี้
+                                                setTabState(prev => ({
+                                                    ...prev,
+                                                    group: "salary",
+                                                    page: page
+                                                }));
+
+                                                // navigate ไปหน้าที่ต้องการ
+                                                navigate(`/${domain}/${company}/salary/${page}`);
                                             }}
-                                            to={`/${domain}/${companyName}/salary/${(() => {
-                                                switch (index) {
-                                                    case 0: return "social-security";
-                                                    case 1: return "tax";
-                                                    case 2: return "taxdeduction";
-                                                    case 3: return "income";
-                                                    default: return "deductions";
-                                                }
-                                            })()}`}
                                             // component={Link}
                                             // to={
                                             //     index === 0
@@ -1609,18 +1608,16 @@ export default function SideBarCompany() {
                                             // set selected menu
                                             setSelectedMenu(text);
 
-                                            // บันทึก group/page ลง localStorage
-                                            localStorage.setItem("group", "time");
-                                            localStorage.setItem("page", page);
+                                            // อัปเดต tabState ของแท็บนี้
+                                            setTabState(prev => ({
+                                                ...prev,
+                                                group: "time",
+                                                page: page
+                                            }));
+
+                                            // navigate ไปหน้าที่ต้องการ
+                                            navigate(`/${domain}/${company}/time/${page}`);
                                         }}
-                                        to={`/${domain}/${companyName}/time/${(() => {
-                                            switch (index) {
-                                                case 0: return "leave";
-                                                case 1: return "ot";
-                                                case 2: return "workshift";
-                                                default: return "dayoff";
-                                            }
-                                        })()}`}
                                         // component={Link}
                                         // to={
                                         //     index === 0
@@ -1863,16 +1860,16 @@ export default function SideBarCompany() {
                                             // set selected menu
                                             setSelectedMenu(text);
 
-                                            // บันทึก group/page ลง localStorage
-                                            localStorage.setItem("group", "employee");
-                                            localStorage.setItem("page", page);
+                                            // อัปเดต tabState ของแท็บนี้
+                                            setTabState(prev => ({
+                                                ...prev,
+                                                group: "employee",
+                                                page: page
+                                            }));
+
+                                            // navigate ไปหน้าที่ต้องการ
+                                            navigate(`/${domain}/${company}/employee/${page}`);
                                         }}
-                                        to={`/${domain}/${companyName}/employee/${(() => {
-                                            switch (index) {
-                                                case 0: return "employee";
-                                                default: return "calculate";
-                                            }
-                                        })()}`}
                                         // component={Link}
                                         // onClick={() => setSelectedMenu(text)}
                                         // to={
@@ -2053,18 +2050,17 @@ export default function SideBarCompany() {
                                             // set selected menu
                                             setSelectedMenu(text);
 
-                                            // บันทึก group/page ลง localStorage
-                                            localStorage.setItem("group", "report");
-                                            localStorage.setItem("page", page);
+                                            // อัปเดต tabState ของแท็บนี้
+                                            setTabState(prev => ({
+                                                ...prev,
+                                                group: "report",
+                                                page: page
+                                            }));
+
+                                            // navigate ไปหน้าที่ต้องการ
+                                            navigate(`/${domain}/${company}/report/${page}`);
                                         }}
-                                        to={`/${domain}/${companyName}/report/${(() => {
-                                            switch (index) {
-                                                case 0: return "leave";
-                                                case 1: return "ot";
-                                                case 2: return "time";
-                                                default: return "loan";
-                                            }
-                                        })()}`}
+                                        
                                         // component={Link}
                                         // onClick={() => setSelectedMenu(text)}
                                         // to={

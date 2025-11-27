@@ -47,9 +47,9 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.format("dddd")
 
 const IncomepleteTime = (props) => {
-    const { dateArray } = props;
+    const { companyName, dateArray } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];

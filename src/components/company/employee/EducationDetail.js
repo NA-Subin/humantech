@@ -36,10 +36,10 @@ import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetal
 import { Dialog, DialogActions, DialogContent, DialogTitle, MenuItem } from "@mui/material";
 
 const EducationDetail = (props) => {
-    const { menu, data } = props;
+    const { menu, data, companyName } = props;
     let count = 0;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];

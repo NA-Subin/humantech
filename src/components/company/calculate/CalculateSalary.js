@@ -50,9 +50,10 @@ import dayjs from "dayjs";
 import "dayjs/locale/th";
 import Salary from "./Salary";
 
-const CalculateSalary = () => {
+function CalculateSalary({ tabState, setTabState, tabId }) {
+    const { domain, company } = tabState;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
@@ -111,26 +112,26 @@ const CalculateSalary = () => {
     const [holiday, setHoliday] = useState([]);
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
-    const companyId = companyName?.split(":")[0];
+    const companyId = company?.split(":")[0];
 
     const renderComponentByMenu = (menu, data) => {
         const key = menu.split("-")[1];
 
         switch (key) {
             case 'แก้ไขเวลา':
-                return <EditTimeDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} onReturn={handleChildData} />;
+                return <EditTimeDetail companyName={company} data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} onReturn={handleChildData} />;
             case 'ยื่นเอกสาร':
-                return <DocumentDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} onReturn={handleChildData} />;
+                return <DocumentDetail companyName={company} data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} onReturn={handleChildData} />;
             case 'รายได้':
-                return <IncomeDetail data={key} month={selectedDate} />;
+                return <IncomeDetail companyName={company} data={key} month={selectedDate} />;
             case 'รายจ่าย':
-                return <DeductionDetails data={key} month={selectedDate} />;
+                return <DeductionDetails companyName={company} data={key} month={selectedDate} />;
             // case 'ตรวจสอบเงินเดือน':
-            //     return <Salary data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
+            //     return <Salary companyName={company} data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} />;
             case 'สรุปผลการคำนวณ':
-                return <SalaryDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} companyholiday={holiday} />;
+                return <SalaryDetail companyName={company} data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} companyholiday={holiday} />;
             case 'ปิดงวดบัญชี':
-                return <AccountDetail data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} close={closeAccount} salaryhistory={salaryhistory} />;
+                return <AccountDetail companyName={company} data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} close={closeAccount} salaryhistory={salaryhistory} />;
             default:
                 return null;
         }

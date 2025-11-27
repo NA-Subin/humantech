@@ -47,9 +47,9 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.format("dddd")
 
 const MissingWorkDetail = (props) => {
-    const { dateArray } = props;
+    const { companyName, dateArray } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
@@ -140,27 +140,6 @@ const MissingWorkDetail = (props) => {
         [];
 
     console.log("result : ", result);
-
-    const handleUpdateTime = (empID, newdate) => {
-        const emp = result.find(item => item.employeeID === empID);
-        console.log("emp : ", emp);
-        if (!emp) return;
-
-        const found = emp.dateHistory.find(d => {
-            const dDate = dayjs(d.date, ["D/M/YYYY", "DD/MM/YYYY"]).format("DD/MM/YYYY");
-            const newDateFormatted = dayjs(newdate, ["D/M/YYYY", "DD/MM/YYYY"]).format("DD/MM/YYYY");
-            return dDate === newDateFormatted;
-        });
-
-        console.log("found : ", found);
-        if (!found) return;
-
-        setCheckin(formatTime(found.start));
-        setCheckout(formatTime(found.stop));
-        setCheck(true);
-        setEmployID(empID);
-        setEmployDate(newdate);
-    }
 
     const current = dayjs();
     const yearStr = current.year().toString();
@@ -255,9 +234,14 @@ const MissingWorkDetail = (props) => {
             });
 
             // map attendant (ใช้ DDI เป็นหลัก)
+            const source = (Array.isArray(attendant) && attendant.length > 0)
+                ? attendant
+                : (Array.isArray(dateHistory) ? dateHistory : []);
+
             const attendantMap = {};
-            attendant.forEach(a => {
-                const dayNum = Number(a.DDI); // วันที่เข้า
+
+            source.forEach(a => {
+                const dayNum = Number(a.DDI);
                 if (!isNaN(dayNum)) {
                     attendantMap[dayNum] = normalize(a);
                 }
@@ -306,6 +290,27 @@ const MissingWorkDetail = (props) => {
     console.log("merged : ", merged);
     console.log("checkin : ", checkin);
     console.log("checkout : ", checkout);
+
+    const handleUpdateTime = (empID, newdate) => {
+        const emp = merged.find(item => item.employeeID === empID);
+        console.log("emp : ", emp);
+        if (!emp) return;
+
+        const found = emp.dateHistory.find(d => {
+            const dDate = dayjs(d.date, ["D/M/YYYY", "DD/MM/YYYY"]).format("DD/MM/YYYY");
+            const newDateFormatted = dayjs(newdate, ["D/M/YYYY", "DD/MM/YYYY"]).format("DD/MM/YYYY");
+            return dDate === newDateFormatted;
+        });
+
+        console.log("found : ", found);
+        if (!found) return;
+
+        setCheckin(formatTime(found.start));
+        setCheckout(formatTime(found.stop));
+        setCheck(true);
+        setEmployID(empID);
+        setEmployDate(newdate);
+    }
 
     const updateInvalidMessage = (
         dateHistory,       // ← array ของวันในเดือน

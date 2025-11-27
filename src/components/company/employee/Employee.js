@@ -62,12 +62,13 @@ import WorkshiftDetail from "./WorkshiftDetail";
 
 dayjs.extend(customParseFormat);
 
-const Employee = () => {
+function Employee({ tabState, setTabState, tabId }) {
+    const { domain, company } = tabState;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
-    const companyId = companyName?.split(":")[0];
+    const companyId = company?.split(":")[0];
     const [check, setCheck] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState([]);
@@ -482,21 +483,21 @@ const Employee = () => {
 
         switch (key) {
             case 'ข้อมูลทั่วไป':
-                return <PersonalDetail data={key} />;
+                return <PersonalDetail data={key} companyName={company} />;
             case 'เงินเดือน':
-                return <SalaryDetail data={key} />;
+                return <SalaryDetail data={key} companyName={company} />;
             case 'กะการทำงาน':
-                return <WorkshiftDetail data={key} />;
+                return <WorkshiftDetail data={key} companyName={company} />;
             case 'การศึกษา':
-                return <EducationDetail data={key} />;
+                return <EducationDetail data={key} companyName={company} />;
             case 'การทำงาน/ฝึกงาน':
-                return <InternshipDetail data={key} />;
+                return <InternshipDetail data={key} companyName={company} />;
             case 'การฝึกอบรม':
-                return <TrainingDetail data={key} />;
+                return <TrainingDetail data={key} companyName={company} />;
             case 'ภาษา':
-                return <LanguageDetail data={key} />;
+                return <LanguageDetail data={key} companyName={company} />;
             case 'อื่นๆ':
-                return <OtherDetail data={key} />;
+                return <OtherDetail data={key} companyName={company} />;
             default:
                 return null;
         }
@@ -1419,7 +1420,7 @@ const Employee = () => {
                                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>จัดการตำแหน่งพนักงาน</Typography>
                                 </Grid>
                                 <Grid item size={2} sx={{ textAlign: "right" }}>
-                                    <AddEmployee />
+                                    <AddEmployee companyName={company} />
                                 </Grid>
                             </Grid>
                             <Divider sx={{ marginBottom: 2, border: `1px solid ${theme.palette.primary.dark}`, opacity: 0.5 }} />

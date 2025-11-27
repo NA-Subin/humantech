@@ -41,9 +41,9 @@ import dayjs from "dayjs";
 dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.format("dddd")
 
 const DayOffDetail = (props) => {
-    const { department, section, position, employee, dateArray } = props;
+    const { companyName, department, section, position, employee, dateArray } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
@@ -252,45 +252,45 @@ const DayOffDetail = (props) => {
                     //         />
                     //     </Paper>
                     //     :
-                        <TableContainer component={Paper} textAlign="center">
-                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
-                                <TableHead>
-                                    <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
-                                        <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
-                                        <TablecellHeader>ชื่อ</TablecellHeader>
-                                        <TablecellHeader>ตำแหน่ง</TablecellHeader>
-                                        <TablecellHeader>วันที่</TablecellHeader>
-                                        <TablecellHeader>กะการทำงาน</TablecellHeader>
-                                        <TablecellHeader>เวลาทำงาน</TablecellHeader>
-                                        <TablecellHeader>มาเช้า/สาย/พักไว/พักเกิน/กลับก่อน/กลับช้า</TablecellHeader>
-                                        <TablecellHeader>โอที</TablecellHeader>
-                                        <TablecellHeader>ลา</TablecellHeader>
-                                        <TablecellHeader>หมายเหตุ</TablecellHeader>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {
-                                        attendantRows.length === 0 ?
-                                            <TableRow sx={{ height: "60vh" }}>
-                                                <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
-                                            </TableRow>
-                                            :
-                                            attendantRows
-                                                .map((emp, index) => (
-                                                    <TableRow key={emp.ID ?? index}>
-                                                        <TableCell align="center">{index + 1}</TableCell>
-                                                        <TableCell align="center">{emp.employname}</TableCell>
-                                                        <TableCell align="center">{emp.position}</TableCell>
-                                                        <TableCell align="center">{`${emp.datein} - ${emp.dateout}`}</TableCell>
-                                                        <TableCell align="center">{emp.workshift}</TableCell>
-                                                        <TableCell align="center">{`${emp.checkin} - ${emp.checkout}`}</TableCell>
-                                                        <TableCell align="center">{emp.socialSecurity}</TableCell>
-                                                    </TableRow>
-                                                ))}
-                                </TableBody>
+                    <TableContainer component={Paper} textAlign="center">
+                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "2000px" }}>
+                            <TableHead>
+                                <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
+                                    <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
+                                    <TablecellHeader>ชื่อ</TablecellHeader>
+                                    <TablecellHeader>ตำแหน่ง</TablecellHeader>
+                                    <TablecellHeader>วันที่</TablecellHeader>
+                                    <TablecellHeader>กะการทำงาน</TablecellHeader>
+                                    <TablecellHeader>เวลาทำงาน</TablecellHeader>
+                                    <TablecellHeader>มาเช้า/สาย/พักไว/พักเกิน/กลับก่อน/กลับช้า</TablecellHeader>
+                                    <TablecellHeader>โอที</TablecellHeader>
+                                    <TablecellHeader>ลา</TablecellHeader>
+                                    <TablecellHeader>หมายเหตุ</TablecellHeader>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {
+                                    attendantRows.length === 0 ?
+                                        <TableRow sx={{ height: "60vh" }}>
+                                            <TablecellNoData colSpan={6}><FolderOffRoundedIcon /><br />ไม่มีข้อมูล</TablecellNoData>
+                                        </TableRow>
+                                        :
+                                        attendantRows
+                                            .map((emp, index) => (
+                                                <TableRow key={emp.ID ?? index}>
+                                                    <TableCell align="center">{index + 1}</TableCell>
+                                                    <TableCell align="center">{emp.employname}</TableCell>
+                                                    <TableCell align="center">{emp.position}</TableCell>
+                                                    <TableCell align="center">{`${emp.datein} - ${emp.dateout}`}</TableCell>
+                                                    <TableCell align="center">{emp.workshift}</TableCell>
+                                                    <TableCell align="center">{`${emp.checkin} - ${emp.checkout}`}</TableCell>
+                                                    <TableCell align="center">{emp.socialSecurity}</TableCell>
+                                                </TableRow>
+                                            ))}
+                            </TableBody>
 
-                            </Table>
-                        </TableContainer>
+                        </Table>
+                    </TableContainer>
                 }
             </Grid>
             {/* {

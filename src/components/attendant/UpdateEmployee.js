@@ -34,14 +34,14 @@ import { useRef } from 'react';
 import { ShowError, ShowSuccess } from '../../sweetalert/sweetalert';
 import { useTranslation } from 'react-i18next';
 
-export default function UpdateEmployee({ item, index, leave, date }) {
+export default function UpdateEmployee({ companyName, item, index, leave, date }) {
     const { firebaseDB, domainKey } = useFirebase();
     const { t } = useTranslation();
     const navigate = useNavigate();
     // const [searchParams] = useSearchParams();
     // const domain = searchParams.get("domain");
     const domain = localStorage.getItem("domain");
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];
     const [open, setOpen] = useState(null);

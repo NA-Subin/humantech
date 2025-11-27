@@ -36,9 +36,9 @@ import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetal
 import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 
 const OtherDetail = (props) => {
-    const { menu, data } = props;
+    const { menu, data, companyName } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     const companyId = companyName?.split(":")[0];

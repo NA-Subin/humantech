@@ -37,9 +37,10 @@ import TableExcel from "../../../theme/TableExcel";
 import { ShowError, ShowSuccess, ShowWarning } from "../../../sweetalert/sweetalert";
 import { useFirebase } from "../../../server/ProjectFirebaseContext";
 
-const WorkShiftDetail = () => {
+function WorkShiftDetail({ tabState, setTabState, tabId }) {
+    const { domain, company } = tabState;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
@@ -160,7 +161,7 @@ const WorkShiftDetail = () => {
 
     console.log("workshift : ", workshift);
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
-    const companyId = companyName?.split(":")[0];
+    const companyId = company?.split(":")[0];
 
     useEffect(() => {
         if (!firebaseDB) return;

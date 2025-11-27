@@ -40,9 +40,9 @@ import SelectEmployeeGroup from "../../../theme/SearchEmployee";
 import dayjs from "dayjs";
 
 const DeductionDetail = (props) => {
-    const { month } = props;
+    const { companyName, month } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     //const { companyName } = useParams();

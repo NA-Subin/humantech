@@ -45,9 +45,10 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { formatThaiFull, formatThaiShort } from "../../../theme/DateTH";
 import InsertLoan from "./InsertLoan";
 
-const ReportLoan = () => {
+function ReportLoan({ tabState, setTabState, tabId }) {
+    const { domain, company } = tabState;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
@@ -148,7 +149,7 @@ const ReportLoan = () => {
     }
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
-    const companyId = companyName?.split(":")[0];
+    const companyId = company?.split(":")[0];
 
     useEffect(() => {
         if (!firebaseDB || !companyId) return;
@@ -374,7 +375,7 @@ const ReportLoan = () => {
                     </Grid>
                     <Grid item size={12} sx={{ display: "flex", alignItems: "center", justifyContent: "right" }}>
                         <Box sx={{ marginTop: -10, marginRight: 2 }}>
-                            <InsertLoan />
+                            <InsertLoan companyName={company} />
                         </Box>
                         <Paper sx={{ width: "20%", marginTop: -10 }}>
                             <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">

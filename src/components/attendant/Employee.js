@@ -45,12 +45,12 @@ import { saveAs } from "file-saver";
 import ExcelJS from "exceljs";
 import AddLeave from './AddLeave';
 
-export default function EmployeeDetail({ date }) {
+export default function EmployeeDetail({ companyName, date }) {
     const { firebaseDB, domainKey } = useFirebase();
     const { t } = useTranslation();
     const navigate = useNavigate();
     const domain = localStorage.getItem("domain");
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const domain = searchParams.get("domain");
     // const companyName = searchParams.get("company");
@@ -350,8 +350,8 @@ export default function EmployeeDetail({ date }) {
                                 <Typography variant='h6' fontWeight="bold" gutterBottom>{t("employeeDetail.employees")}</Typography>
                             </Grid>
                             <Grid item size={12} textAlign="right" sx={{ marginTop: -5 }}>
-                                <AddLeave />
-                                <AddEmployee />
+                                <AddLeave companyName={companyName} />
+                                <AddEmployee companyName={companyName} />
                             </Grid>
                             <Grid item size={12}>
                                 <Divider />
@@ -383,7 +383,7 @@ export default function EmployeeDetail({ date }) {
                                         <TableBody>
                                             {
                                                 employees.map((item, index) => (
-                                                    <UpdateEmployee key={item.employeeId} item={item} index={index} leave={leave} date={date} />
+                                                    <UpdateEmployee companyName={companyName} key={item.employeeId} item={item} index={index} leave={leave} date={date} />
                                                 ))
                                             }
                                         </TableBody>

@@ -45,9 +45,9 @@ import WorkShiftDetail from "./document/WorkShift";
 import dayjs from "dayjs";
 
 const DocumentDetal = (props) => {
-    const { department, section, position, employee, month, onReturn } = props;
+    const { companyName, department, section, position, employee, month, onReturn } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
@@ -428,11 +428,11 @@ const DocumentDetal = (props) => {
                         <Divider sx={{ marginTop: -1 }} />
                     </Grid> */}
                     {
-                        doc === 1 ? <OTDetail dateArray={dateArrayMap} month={month} />
-                            : doc === 2 ? <LeaveDetail dateArray={dateArrayMap} month={month} />
-                                : doc === 3 ? <AddTimeDetail dateArray={dateArrayMap} month={month} />
-                                    : doc === 4 ? <DayOffDetail dateArray={dateArray} month={month} />
-                                        : doc === 5 ? <WorkShiftDetail dateArray={dateArrayMap} month={month} />
+                        doc === 1 ? <OTDetail companyName={companyName} dateArray={dateArrayMap} month={month} />
+                            : doc === 2 ? <LeaveDetail companyName={companyName} dateArray={dateArrayMap} month={month} />
+                                : doc === 3 ? <AddTimeDetail companyName={companyName} dateArray={dateArrayMap} month={month} />
+                                    : doc === 4 ? <DayOffDetail companyName={companyName} dateArray={dateArray} month={month} />
+                                        : doc === 5 ? <WorkShiftDetail companyName={companyName} dateArray={dateArrayMap} month={month} />
                                             : ""
                     }
                 </Grid>

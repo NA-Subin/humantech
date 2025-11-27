@@ -50,9 +50,9 @@ import ExcelJS from "exceljs";
 dayjs.locale("th");
 
 const AccountDetail = (props) => {
-    const { department, section, position, employee, month, close, salaryhistory } = props;
+    const { companyName, department, section, position, employee, month, close, salaryhistory } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
@@ -461,11 +461,11 @@ const AccountDetail = (props) => {
             Number(item.status) === 2
         ).length ?? 0;
 
-        const leave = documentleave.filter((doc) => doc.empid === emp.ID);
+        const leave = documentleave.filter((doc) => doc.empid === emp.ID && doc.status === "อนุมัติ");
 
         let otHours = 0; // ตัวแปรเก็บผลรวมชั่วโมง OT
 
-        const ot = documentot.filter(doc => doc.empid === emp.ID);
+        const ot = documentot.filter(doc => doc.empid === emp.ID && doc.status === "อนุมัติ");
 
         ot.forEach(doc => {
             let start = dayjs(doc.timestart, "HH:mm");
@@ -523,10 +523,11 @@ const AccountDetail = (props) => {
             salary: Number(salary),
             employid: emp.ID,
             employname: `${emp.employname} (${emp.nickname})`,
-            workday: employeetype !== 0 ? workingDays : 0,
+            workday: 0,
             attendantCount: attendantCount,
             holidayCount: holidayResult.holidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
             holiday: holidayResult.holidayDates, // ✅ เพิ่มจำนวนวันหยุด
+            companyholidays: holidaysInMonth.length,
             // leaveCount: leave.length,
             otHours: otHours,
             missingWork: 0,
@@ -570,10 +571,12 @@ const AccountDetail = (props) => {
             .filter(key => key.startsWith("leave")) // เอาเฉพาะ key ที่เป็น leave
             .reduce((sum, key) => sum + (row[key] || 0), 0);
 
+        row.workday = daysInMonth - (holidayResult.holidayDates.length + holidaysInMonth.length);
+
         // คำนวณ missingWork
         row.missingWork =
-            (employeetype !== 0 ? workingDays : 0) -
-            (attendantCount + holidayResult.holidayDates.length + Number(totalLeaveDays));
+            (daysInMonth - (holidayResult.holidayDates.length + holidaysInMonth.length)) -
+            (attendantCount + Number(totalLeaveDays));
 
         row.total = (Number(salary) + row.totalIncome) - row.totalDeduction;
         row.sso = Number(salary >= 15000 ? 15000 : salary) * 0.05;

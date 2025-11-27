@@ -40,12 +40,14 @@ import SelectEmployeeGroup from "../../../theme/SearchEmployee";
 import dayjs from "dayjs";
 
 const SalaryDetail = (props) => {
-    const { department, section, position, employee, month, companyholiday } = props;
+    const { companyName, department, section, position, employee, month, companyholiday } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     //const { companyName } = useParams();
+    const [salary, setSalary] = useState([]);
+    const [taxes, setTaxes] = useState([]);
     const [editLeave, setEditLeave] = useState(false);
     const [companies, setCompanies] = useState([]);
     const [selectedCompany, setSelectedCompany] = useState(null);
@@ -97,19 +99,55 @@ const SalaryDetail = (props) => {
     const holidaysInMonth = holiday.filter(h =>
         parseInt(h.YYYY) === year && parseInt(h.MM) === m + 1
     );
+    // const holidayCount = holidaysInMonth.length;
 
-    console.log("holidaysInMonth : ", holidaysInMonth);
-    const holidayCount = holidaysInMonth.length;
+    // const workingDays = daysInMonth - holidayCount;
 
-    const workingDays = daysInMonth - holidayCount;
-
-    console.log('จำนวนวันทำงานจริง:', workingDays);
+    // console.log('จำนวนวันทำงานจริง:', workingDays);
 
     // แยก companyId จาก companyName (เช่น "0:HPS-0000")
     const companyId = companyName?.split(":")[0];
 
     const incomeActive = income.filter(row => row.status === 1);
     const deductionActive = deduction.filter(row => row.status === 1);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const salaryRef = ref(firebaseDB, `workgroup/company/${companyId}/salary/${dayjs(month).format("YYYY/M")}/salarylist`);
+
+        const unsubscribe = onValue(salaryRef, (snapshot) => {
+            const salaryData = snapshot.val();
+
+            if (!salaryData) {
+                setSalary([]);
+            } else {
+                const documentArray = Object.values(salaryData);
+                setSalary(documentArray); // default: แสดงทั้งหมด
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId, month]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const taxRef = ref(firebaseDB, `workgroup/company/${companyId}/tax`);
+
+        const unsubscribe = onValue(taxRef, (snapshot) => {
+            const taxData = snapshot.val();
+
+            // ถ้าไม่มีข้อมูล ให้ใช้ค่า default
+            if (!taxData) {
+                setTaxes([]);
+            } else {
+                setTaxes(taxData);
+            }
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
 
     const [filteredEmployees, setFilteredEmployees] = useState([]);
 
@@ -272,26 +310,43 @@ const SalaryDetail = (props) => {
         return 0;
     };
 
-    // 3️⃣ สร้าง Rows จาก filteredEmployees
-    const Rows = filteredEmployees.filter(emp => {
-        if (selectedType === "all") return true;
+    const calculateProgressiveTax = (taxableIncome, taxes) => {
+        let taxTotal = 0;
 
-        const typeId = emp.employmenttype?.split("-")[0];
-        return Number(typeId || 0) === selectedType;
-    }).map(emp => {
+        for (const bracket of taxes) {
+            const start = Number(bracket.summaryStart);
+            const end = Number(bracket.summaryEnd);
+            const rate = Number(bracket.tax) / 100;
+
+            // กรณีวงเงินสุดท้าย (ไม่มี summaryEnd เช่น summaryEnd = 0)
+            const isLastBracket = end === 0;
+
+            if (taxableIncome > start) {
+                const upperLimit = isLastBracket ? taxableIncome : Math.min(taxableIncome, end);
+                const taxableForBracket = upperLimit - start;
+
+                if (taxableForBracket > 0) {
+                    taxTotal += taxableForBracket * rate;
+                }
+            }
+        }
+
+        return taxTotal;
+    };
+
+    // 3️⃣ สร้าง Rows จาก filteredEmployees
+    const Rows = salary.length > 0 ? salary : filteredEmployees.map(emp => {
         const docIncome = documentincome.find(doc => doc.employid === emp.ID);
         const docDeduction = documentdeduction.find(doc => doc.employid === emp.ID);
-        const attendantObj = emp.attendant?.[year]?.[m + 1];
+        const attendantCount = emp.attendant?.[year]?.[m + 1]?.filter(item =>
+            Number(item.status) === 2
+        ).length ?? 0;
 
-        const attendantCount = attendantObj
-            ? Object.values(attendantObj).filter(item => Number(item.status) === 2).length
-            : 0;
-
-        const leave = documentleave.filter((doc) => doc.empid === emp.ID);
+        const leave = documentleave.filter((doc) => doc.empid === emp.ID && doc.status === "อนุมัติ");
 
         let otHours = 0; // ตัวแปรเก็บผลรวมชั่วโมง OT
 
-        const ot = documentot.filter(doc => doc.empid === emp.ID);
+        const ot = documentot.filter(doc => doc.empid === emp.ID && doc.status === "อนุมัติ");
 
         ot.forEach(doc => {
             let start = dayjs(doc.timestart, "HH:mm");
@@ -323,20 +378,23 @@ const SalaryDetail = (props) => {
             m
         );
 
-        // แปลง company holidays เป็น Set ของ string "DD/MM/YYYY"
-        const companyHolidaySet = new Set(holidaysInMonth.map(h => h.date));
-
-        // กรอง holidayResult ให้ตัดวันซ้ำกับ company holidays
-        const filteredHolidayDates = holidayResult.holidayDates.filter(h => !companyHolidaySet.has(h.date));
-
-        console.log("holidayResult.holidayDates : ", holidayResult.holidayDates);
-        console.log("filteredHolidayDates : ", filteredHolidayDates);
-
         const employeetype = emp.employmenttype ? emp.employmenttype.split("-")[1] : 0
 
         const salary = getSalaryByMonth(emp.salaryhistory, m, year);
 
+        const texdeduction = (emp.taxdeduction || []).reduce(
+            (sum, item) => sum + Number(item?.amount ?? 0),
+            0
+        );
+
+        const totalsso = (emp.ssohistory || []).reduce(
+            (sum, item) => sum + Number(item?.price ?? 0),
+            0
+        );
+
         const row = {
+            ID: emp.ID,
+            date: emp.date,
             employeecode: emp.employeecode,
             employeetype: emp.employmenttype,
             department: emp.department,
@@ -346,10 +404,10 @@ const SalaryDetail = (props) => {
             salary: Number(salary),
             employid: emp.ID,
             employname: `${emp.employname} (${emp.nickname})`,
-            workday: employeetype !== 0 ? workingDays : 0,
+            workday: 0,
             attendantCount: attendantCount,
-            holidayCount: filteredHolidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
-            holiday: filteredHolidayDates, // ✅ เพิ่มจำนวนวันหยุด
+            holidayCount: holidayResult.holidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
+            holiday: holidayResult.holidayDates, // ✅ เพิ่มจำนวนวันหยุด
             companyholidays: holidaysInMonth.length,
             // leaveCount: leave.length,
             otHours: otHours,
@@ -358,6 +416,10 @@ const SalaryDetail = (props) => {
             totalDeduction: 0,
             total: 0,
             sso: 0,
+            totalSalary: 0,
+            totalsso: totalsso,
+            totaltaxdeduction: texdeduction,
+            tax: 0
         };
 
         // income flat
@@ -390,17 +452,23 @@ const SalaryDetail = (props) => {
             .filter(key => key.startsWith("leave")) // เอาเฉพาะ key ที่เป็น leave
             .reduce((sum, key) => sum + (row[key] || 0), 0);
 
+        row.workday = daysInMonth - (holidayResult.holidayDates.length + holidaysInMonth.length);
+
         // คำนวณ missingWork
         row.missingWork =
-            (employeetype !== 0 ? daysInMonth : 0) -
-            (attendantCount + filteredHolidayDates.length + Number(totalLeaveDays) + holidaysInMonth.length);
-
-        row.workday =
-            (employeetype !== 0 ? daysInMonth : 0) -
-            (filteredHolidayDates.length + holidaysInMonth.length);
+            (daysInMonth - (holidayResult.holidayDates.length + holidaysInMonth.length)) -
+            (attendantCount + Number(totalLeaveDays));
 
         row.total = (Number(salary) + row.totalIncome) - row.totalDeduction;
         row.sso = Number(salary >= 15000 ? 15000 : salary) * 0.05;
+
+        // คำนวณภาษีก่อนเข้าเงื่อนไข
+        const taxable =
+            (Number(salary) * 12) -
+            texdeduction;
+
+        row.tax = Number(calculateProgressiveTax(taxable, taxes).toFixed(2));
+        row.taxPerMonth = Number((row.tax / 12).toFixed(2));
 
         return row;
     });

@@ -42,9 +42,9 @@ import { formatThaiShort } from "../../../../theme/DateTH";
 dayjs.locale("en"); // ใส่ตรงนี้ก่อนใช้ dayjs.format("dddd")
 
 const DayOffDetail = (props) => {
-    const { department, section, position, employee, dateArray } = props;
+    const { companyName, department, section, position, employee, dateArray } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     //const { companyName } = useParams();

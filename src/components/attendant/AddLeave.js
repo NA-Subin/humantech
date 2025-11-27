@@ -34,12 +34,12 @@ import { useRef } from 'react';
 import { ShowError, ShowSuccess } from '../../sweetalert/sweetalert';
 import { useTranslation } from 'react-i18next';
 
-export default function AddLeave() {
+export default function AddLeave({ companyName }) {
     const { firebaseDB, domainKey } = useFirebase();
     const { t } = useTranslation();
     const navigate = useNavigate();
     const domain = localStorage.getItem("domain");
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const domain = searchParams.get("domain");
     // const companyName = searchParams.get("company");

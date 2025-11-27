@@ -35,13 +35,11 @@ import { logout } from "../../server/logoutAuth";
 import { ShowConfirm } from "../../sweetalert/sweetalert";
 import FullBlogEditor from "../attendant/TestBlogs";
 
-const Company = () => {
+function Company({ tabState, setTabState, tabId }) {
+    const { domain } = tabState;
     const { firebaseDB, domainKey } = useFirebase();
-    //const { domain } = useParams();
-    // const [searchParams] = useSearchParams();
-    // const domain = searchParams.get("domain");
     const domainData = JSON.parse(localStorage.getItem("domainData"));
-    const domain = domainData?.domainKey;
+    // const domain = domainData?.domainKey; // ❌ ลบหรือ comment บรรทัดนี้
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -189,17 +187,34 @@ const Company = () => {
                                                         onClick={() => {
                                                             const company = `${row.companyid}:${row.companyserial}`;
 
-                                                            // บันทึก company + group
-                                                            localStorage.setItem("company", company);
+                                                            setTabState(prev => ({
+                                                                ...prev,
+                                                                company: company,
+                                                                group: workgroup === "attendant" ? "attendant" : "dashboard",
+                                                                page: null
+                                                            }));
 
-                                                            if (workgroup === "attendant") {
-                                                                localStorage.setItem("group", "attendant");   // ✅ ใช้แค่ group
-                                                                navigate(`/${domain}/${row.companyserial}/attendant`);
-                                                            } else {
-                                                                localStorage.setItem("group", "dashboard");   // ✅ dashboard ก็แค่ group
-                                                                navigate(`/${domain}/${row.companyserial}/dashboard`);
-                                                            }
+                                                            navigate(
+                                                                workgroup === "attendant"
+                                                                    ? `/${domain}/${row.companyserial}/attendant`
+                                                                    : `/${domain}/${row.companyserial}/dashboard`
+                                                            );
                                                         }}
+
+                                                    // onClick={() => {
+                                                    //     const company = `${row.companyid}:${row.companyserial}`;
+
+                                                    //     // บันทึก company + group
+                                                    //     localStorage.setItem("company", company);
+
+                                                    //     if (workgroup === "attendant") {
+                                                    //         localStorage.setItem("group", "attendant");   // ✅ ใช้แค่ group
+                                                    //         navigate(`/${domain}/${row.companyserial}/attendant`);
+                                                    //     } else {
+                                                    //         localStorage.setItem("group", "dashboard");   // ✅ dashboard ก็แค่ group
+                                                    //         navigate(`/${domain}/${row.companyserial}/dashboard`);
+                                                    //     }
+                                                    // }}
 
                                                     // onClick={
                                                     //     () => {

@@ -73,9 +73,10 @@ import none from "../../../img/none.png";
 // });
 
 
-const AddEmployee = () => {
+const AddEmployee = (props) => {
+    const { companyName } = props;
     const { firebaseDB, domainKey } = useFirebase();
-    const companyName = localStorage.getItem("company");
+    // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
     // const companyName = searchParams.get("company");
     const [open, setOpen] = React.useState(false);
