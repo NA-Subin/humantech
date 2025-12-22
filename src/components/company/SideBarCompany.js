@@ -252,7 +252,7 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 export default function SideBarCompany({ tabState, setTabState, tabId }) {
-    const { domain, company } = tabState;
+    const { domain, company, group, page } = tabState;
     const navigate = useNavigate();
     const { firebaseDB, domainKey } = useFirebase();
     //const { domain, companyName } = useParams();
@@ -610,7 +610,23 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                             <MenuItem onClick={handleClickOpenPassword}><PasswordRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนรหัสผ่าน</MenuItem><Divider /> */}
                             <MenuItem onClick={handleClickOpenPhone}><PhoneIphoneRoundedIcon sx={{ marginRight: 2 }} /> เปลี่ยนเบอร์โทรศัพท์</MenuItem><Divider />
                             <MenuItem onClick={handleClickOpenCoordinates}><BusinessIcon sx={{ marginRight: 2 }} /> เพิ่มพิกัดของบริษัท</MenuItem><Divider />
-                            <MenuItem ><SettingsIcon sx={{ marginRight: 2 }} /> ตั้งค่าบริษัท</MenuItem><Divider />
+                            <MenuItem
+                                onClick={() => {
+                                    setTabState(prev => ({
+                                        ...prev,
+                                        group: "setting",
+                                        page: null
+                                    }));
+
+                                    navigate(`/${domain}/${company}/setting`);
+                                }}
+                            >
+                                <SettingsIcon sx={{ marginRight: 2 }} />
+                                ตั้งค่าบริษัท
+                            </MenuItem>
+
+                            <Divider />
+
                             <MenuItem
                                 // onClick={() => navigate(`/?domain=${domain}&page=dashboard`)}
                                 onClick={() => {
@@ -1017,7 +1033,8 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                 <Divider />
                 <List sx={{ mb: 2, mt: 1, py: 0 }}>
                     {["หน้าแรก"].map((text) => {
-                        const isSelected = selectedMenu === text;
+                        const isSelected = (group === "dashboard"); // ✅ highlight based on page
+                        // const isSelected = selectedMenu === text;
                         const button = (
                             <ListItemButton
                                 component={Link}
@@ -1173,20 +1190,21 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                                 'ตำแหน่งงาน',
                                 'ประเภทการจ้าง'
                             ].map((text, index) => {
-                                const isSelected = selectedMenu === text;
+                                let pages;
+                                switch (index) {
+                                    case 0: pages = "level"; break;
+                                    case 1: pages = "department"; break;
+                                    case 2: pages = "section"; break;
+                                    case 3: pages = "position"; break;
+                                    default: pages = "employee-type"; break;
+                                }
+
+                                const isSelected = (pages === page && group === "operation"); // ✅ highlight based on page
+                                // const isSelected = selectedMenu === text;
                                 const button = (
                                     <ListItemButton
                                         component={Link}
                                         onClick={() => {
-                                            let page;
-                                            switch (index) {
-                                                case 0: page = "level"; break;
-                                                case 1: page = "department"; break;
-                                                case 2: page = "section"; break;
-                                                case 3: page = "position"; break;
-                                                default: page = "employee-type"; break;
-                                            }
-
                                             // set selected menu
                                             setSelectedMenu(text);
 
@@ -1194,11 +1212,11 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                                             setTabState(prev => ({
                                                 ...prev,
                                                 group: "operation",
-                                                page: page
+                                                page: pages
                                             }));
 
                                             // navigate ไปหน้าที่ต้องการ
-                                            navigate(`/${domain}/${company}/operation/${page}`);
+                                            navigate(`/${domain}/${company}/operation/${pages}`);
                                         }}
                                         // component={Link}
                                         // onClick={() => {
@@ -1389,26 +1407,27 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                             )}*/}
                             {!openData && <Divider />}
                             {open && <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1, marginBottom: -0.5 }}>
-                                โครงสร้างเงินเดือน
+                                เงินเดือนและภาษี
                             </Typography>}
 
                             {['ประกันสังคม', 'ภาษี',
                                 'ค่าลดหย่อนภาษี',
                                 'รายได้เพิ่มเติม', 'รายหักเพิ่มเติม'].map((text, index) => {
-                                    const isSelected = selectedMenu === text;
+                                    let pages;
+                                    switch (index) {
+                                        case 0: pages = "social-security"; break;
+                                        case 1: pages = "tax"; break;
+                                        case 2: pages = "taxdeduction"; break;
+                                        case 3: pages = "income"; break;
+                                        default: pages = "deductions"; break;
+                                    }
+
+                                    const isSelected = (pages === page && group === "salary"); // ✅ highlight based on page
+                                    // const isSelected = selectedMenu === text;
                                     const button = (
                                         <ListItemButton
                                             component={Link}
                                             onClick={() => {
-                                                let page;
-                                                switch (index) {
-                                                    case 0: page = "social-security"; break;
-                                                    case 1: page = "tax"; break;
-                                                    case 2: page = "taxdeduction"; break;
-                                                    case 3: page = "income"; break;
-                                                    default: page = "deductions"; break;
-                                                }
-
                                                 // set selected menu
                                                 setSelectedMenu(text);
 
@@ -1416,11 +1435,11 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                                                 setTabState(prev => ({
                                                     ...prev,
                                                     group: "salary",
-                                                    page: page
+                                                    page: pages
                                                 }));
 
                                                 // navigate ไปหน้าที่ต้องการ
-                                                navigate(`/${domain}/${company}/salary/${page}`);
+                                                navigate(`/${domain}/${company}/salary/${pages}`);
                                             }}
                                             // component={Link}
                                             // to={
@@ -1590,23 +1609,24 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                                 })} */}
                             {!openData && <Divider />}
                             {open && <Typography marginLeft={2} variant="subtitle2" gutterBottom sx={{ fontSize: "14px", fontWeight: "bold", marginTop: 1, marginBottom: -0.5 }}>
-                                โครงสร้างเวลา
+                                เวลาทำงาน
                             </Typography>}
 
                             {['ประเภทการลา', 'โอที', 'กะการทำงาน', 'วันหยุดบริษัท'].map((text, index) => {
-                                const isSelected = selectedMenu === text;
+                                let pages;
+                                switch (index) {
+                                    case 0: pages = "leave"; break;
+                                    case 1: pages = "ot"; break;
+                                    case 2: pages = "workshift"; break;
+                                    default: pages = "dayoff"; break;
+                                }
+
+                                const isSelected = (pages === page && group === "time"); // ✅ highlight based on page
+                                // const isSelected = selectedMenu === text;
                                 const button = (
                                     <ListItemButton
                                         component={Link}
                                         onClick={() => {
-                                            let page;
-                                            switch (index) {
-                                                case 0: page = "leave"; break;
-                                                case 1: page = "ot"; break;
-                                                case 2: page = "workshift"; break;
-                                                default: page = "dayoff"; break;
-                                            }
-
                                             // set selected menu
                                             setSelectedMenu(text);
 
@@ -1614,11 +1634,11 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                                             setTabState(prev => ({
                                                 ...prev,
                                                 group: "time",
-                                                page: page
+                                                page: pages
                                             }));
 
                                             // navigate ไปหน้าที่ต้องการ
-                                            navigate(`/${domain}/${company}/time/${page}`);
+                                            navigate(`/${domain}/${company}/time/${pages}`);
                                         }}
                                         // component={Link}
                                         // to={
@@ -1848,17 +1868,17 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                                 'พนักงาน',
                                 'คำนวณเงินเดือน'
                             ].map((text, index) => {
-                                const isSelected = selectedMenu === text;
+                                let pages;
+                                switch (index) {
+                                    case 0: pages = "employee"; break;
+                                    default: pages = "calculate"; break;
+                                }
+                                const isSelected = (pages === page && group === "employee"); // ✅ highlight based on page
+                                // const isSelected = selectedMenu === text;
                                 const button = (
                                     <ListItemButton
                                         component={Link}
                                         onClick={() => {
-                                            let page;
-                                            switch (index) {
-                                                case 0: page = "employee"; break;
-                                                default: page = "calculate"; break;
-                                            }
-
                                             // set selected menu
                                             setSelectedMenu(text);
 
@@ -1866,11 +1886,11 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                                             setTabState(prev => ({
                                                 ...prev,
                                                 group: "employee",
-                                                page: page
+                                                page: pages
                                             }));
 
                                             // navigate ไปหน้าที่ต้องการ
-                                            navigate(`/${domain}/${company}/employee/${page}`);
+                                            navigate(`/${domain}/${company}/employee/${pages}`);
                                         }}
                                         // component={Link}
                                         // onClick={() => setSelectedMenu(text)}
@@ -2036,19 +2056,19 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                                 // 'ขอทำงานนอกสถานที่'
                                 "ขอกู้เงิน"
                             ].map((text, index) => {
-                                const isSelected = selectedMenu === text;
+                                let pages;
+                                switch (index) {
+                                    case 0: pages = "leave"; break;
+                                    case 1: pages = "ot"; break;
+                                    case 2: pages = "time"; break;
+                                    default: pages = "loan"; break;
+                                }
+                                const isSelected = (pages === page && group === "report"); // ✅ highlight based on page
+                                // const isSelected = selectedMenu === text;
                                 const button = (
                                     <ListItemButton
                                         component={Link}
                                         onClick={() => {
-                                            let page;
-                                            switch (index) {
-                                                case 0: page = "leave"; break;
-                                                case 1: page = "ot"; break;
-                                                case 2: page = "time"; break;
-                                                default: page = "loan"; break;
-                                            }
-
                                             // set selected menu
                                             setSelectedMenu(text);
 
@@ -2056,11 +2076,11 @@ export default function SideBarCompany({ tabState, setTabState, tabId }) {
                                             setTabState(prev => ({
                                                 ...prev,
                                                 group: "report",
-                                                page: page
+                                                page: pages
                                             }));
 
                                             // navigate ไปหน้าที่ต้องการ
-                                            navigate(`/${domain}/${company}/report/${page}`);
+                                            navigate(`/${domain}/${company}/report/${pages}`);
                                         }}
 
                                         // component={Link}

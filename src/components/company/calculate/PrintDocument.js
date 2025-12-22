@@ -6,50 +6,111 @@ import dayjs from "dayjs";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import theme from "../../../theme/theme";
+import { useFirebase } from "../../../server/ProjectFirebaseContext";
+import { onValue, ref } from "firebase/database";
 
-const PrintDocument = () => {
+function PrintDocument({ tabState, setTabState, tabId }) {
+    const { domain, company, group, page } = tabState;
+    const { firebaseDB, domainKey } = useFirebase();
+
+    // --- Hooks ต้องอยู่ด้านบนสุด ---
+    const invoiceData = JSON.parse(sessionStorage.getItem("invoiceData"));
+
+    const companyId = company?.split(":")[0];
+    const [income, setIncome] = useState([{ ID: 0, name: "" }]);
+    const [deduction, setDeduction] = useState([]);
+
+    // ==== ไม่มีเงื่อนไข return ก่อน hooks ====
 
     useEffect(() => {
-        const data = JSON.parse(sessionStorage.getItem("invoiceData"));
-
-        // หน่วงให้ DOM render ก่อน
-        // const timer = setTimeout(() => {
-        //     const element = document.querySelector("#invoiceContent");
-
-        //     const opt = {
-        //         margin: 0, // ไม่ต้องเว้น margin นอก page ถ้าใน element มี padding แล้ว
-        //         filename: `T-${data.Code}.pdf`,
-        //         image: { type: 'jpeg', quality: 0.98 },
-        //         html2canvas: {
-        //             scale: 2,           // เพิ่มความคมชัด
-        //             useCORS: true       // รองรับภาพจาก URL ต่างโดเมน (ถ้ามี)
-        //         },
-        //         jsPDF: {
-        //             unit: 'cm',         // ใช้หน่วยเดียวกับ CSS
-        //             format: 'a4',
-        //             orientation: 'portrait'
-        //         }
-        //     };
-
-        //     html2pdf().set(opt).from(element).save();
-        // }, 500);
-
-
-        // return () => clearTimeout(timer);
+        // ใช้เพื่อรอ render DOM ก่อน
     }, []);
 
-    const invoiceData = JSON.parse(sessionStorage.getItem("invoiceData"));
-    if (!invoiceData) return <div>กำลังโหลด...</div>;
+    function formatDateFromFields({ DD, MM, YYYY }) {
+        const dd = String(DD).padStart(2, "0");
+        const mm = String(MM).padStart(2, "0");
+        const yyyy = String(YYYY);
+        return `${dd}/${mm}/${yyyy}`;
+    }
 
-    console.log("employee : ", invoiceData?.Employee);
-    console.log("company : ", invoiceData?.Company);
+    const dateObjF = { DD: invoiceData?.Salary.DDF, MM: invoiceData?.Salary.MMF, YYYY: invoiceData?.Salary.YYYYF };
+    const dateObjT = { DD: invoiceData?.Salary.DDT, MM: invoiceData?.Salary.MMT, YYYY: invoiceData?.Salary.YYYYT };
+    const formattedDateF = formatDateFromFields(dateObjF);
+    const formattedDateT = formatDateFromFields(dateObjT);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const incomeRef = ref(firebaseDB, `workgroup/company/${companyId}/income`);
+
+        const unsubscribe = onValue(incomeRef, (snapshot) => {
+            const incomeData = snapshot.val();
+            setIncome(incomeData || [{ ID: 0, name: '' }]);
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    useEffect(() => {
+        if (!firebaseDB || !companyId) return;
+
+        const deductionRef = ref(firebaseDB, `workgroup/company/${companyId}/deductions`);
+
+        const unsubscribe = onValue(deductionRef, (snapshot) => {
+            const deductionData = snapshot.val();
+            setDeduction(deductionData || [{ ID: 0, name: '' }]);
+        });
+
+        return () => unsubscribe();
+    }, [firebaseDB, companyId]);
+
+    // --- ตอนนี้ค่อย return ตามเงื่อนไข ได้! ---
+    if (!invoiceData) {
+        return <div>กำลังโหลด...</div>;
+    }
+
+    if (!companyId) {
+        return <div>ไม่มี Company ID</div>;
+    }
+
+    // จำนวนช่องที่ต้องการก่อน "รวมรายรับ"
+    const FIXED_INCOME_COLS = 3;
+
+    const incomeActive = income.filter(row => row.status === 1);
+    const deductionActive = deduction.filter(row => row.status === 1);
+
+    const visibleIncome = incomeActive.filter(inc =>
+        invoiceData?.Salary.salarylist.some(row => (row[`income${inc.ID}`] ?? 0) !== 0)
+    );
+
+    // ทำให้เป็นจำนวนช่องคงที่เสมอ
+    const paddedIncome = [
+        ...visibleIncome.slice(0, FIXED_INCOME_COLS),
+        ...Array(Math.max(0, FIXED_INCOME_COLS - visibleIncome.length))
+            .fill({ ID: null, name: "" })
+    ];
+
+    const visibleDeduction = deductionActive.filter(ded =>
+        invoiceData?.Salary.salarylist.some(row => (row[`deduction${ded.ID}`] ?? 0) !== 0)
+    );
+
+    // ทำให้เป็นจำนวนช่องคงที่เสมอ
+    const paddedDeduction = [
+        ...visibleDeduction.slice(0, FIXED_INCOME_COLS),
+        ...Array(Math.max(0, FIXED_INCOME_COLS - visibleIncome.length))
+            .fill({ ID: null, name: "" })
+    ];
+
+    console.log("Visible Income : ", visibleIncome);
+    console.log("Visible Deduction : ", visibleDeduction);
+    console.log("Invoice Data : ", invoiceData);
 
     return (
         <Box display="flex" justifyContent="center" alignItems="center" marginTop={12}>
             <Box>
                 <Box id="invoiceContent">
                     {
-                        invoiceData?.Employee.map((row, index) => (
+                        invoiceData?.Salary.salarylist.map((row, index) => (
                             <Box
                                 sx={{
                                     width: "21cm",          // กว้าง
@@ -98,8 +159,8 @@ const PrintDocument = () => {
                                             </Grid>
                                         </Grid>
                                         <Grid item size={3.5} p={1} sx={{ borderLeft: "1px solid lightgray" }}>
-                                            <Typography variant="subtitle2" gutterBottom sx={{ marginRight: 2 }}>วันที่จ่าย {dayjs(new Date).format("DD/MM/YYYY")}</Typography>
-                                            <Typography variant="subtitle2" gutterBottom>ประจำเดือน {dayjs(new Date).format("MMMM/YYYY")}</Typography>
+                                            <Typography variant="subtitle2" gutterBottom sx={{ marginRight: 2 }}>วันที่จ่าย {formattedDateT}</Typography>
+                                            <Typography variant="subtitle2" gutterBottom>ประจำเดือน {dayjs(invoiceData.Month, "MM").format("MMMM/YYYY")}</Typography>
                                         </Grid>
                                     </Grid>
                                 </Paper>
@@ -114,30 +175,41 @@ const PrintDocument = () => {
                                                 }}
                                             >
                                                 <TableRow sx={{ backgroundColor: "#e4e4e4ff" }}>
-                                                    <TableCell sx={{ width: 80, textAlign: "center" }} rowSpan={3}>เงินได้</TableCell>
+                                                    <TableCell sx={{ width: 80, textAlign: "center" }} rowSpan={3}>
+                                                        เงินได้
+                                                    </TableCell>
+
+                                                    {/* 1 ช่อง: เงินเดือน */}
                                                     <TableCell sx={{ textAlign: "center" }}>เงินเดือน</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
-                                                    <TableCell sx={{ width: 80, textAlign: "center" }}>รวมรายรับ</TableCell>
+
+                                                    {/* 7 ช่องว่าง */}
+                                                    {paddedIncome.map((inc, idx) => (
+                                                        <TableCell key={idx} sx={{ textAlign: "center" }}>
+                                                            {inc.ID !== null && row[`income${inc.ID}`]
+                                                                ? inc.name
+                                                                : ""
+                                                            }
+                                                        </TableCell>
+                                                    ))}
+
+                                                    <TableCell sx={{ width: 80, textAlign: "center" }}>
+                                                        รวมรายรับ
+                                                    </TableCell>
+                                                </TableRow>
+
+                                                <TableRow>
+                                                    <TableCell sx={{ textAlign: "center" }}>{new Intl.NumberFormat("en-US").format(row.salary)}</TableCell>
+                                                    {paddedIncome.map((inc, idx) => (
+                                                        <TableCell key={idx} sx={{ textAlign: "center" }}>
+                                                            {inc.ID !== null && row[`income${inc.ID}`]
+                                                                ? new Intl.NumberFormat("en-US").format(row[`income${inc.ID}`])
+                                                                : "-"
+                                                            }
+                                                        </TableCell>
+                                                    ))}
+                                                    <TableCell sx={{ width: 80, textAlign: "center", backgroundColor: "#e4e4e4ff" }} rowSpan={2}>{new Intl.NumberFormat("en-US").format(row.salary + row.totalIncome)}</TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ width: 80, textAlign: "center", backgroundColor: "#e4e4e4ff" }} rowSpan={2}>-</TableCell>
-                                                </TableRow>
-                                                <TableRow>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
                                                     <TableCell sx={{ textAlign: "center" }}>-</TableCell>
                                                     <TableCell sx={{ textAlign: "center" }}>-</TableCell>
                                                     <TableCell sx={{ textAlign: "center" }}>-</TableCell>
@@ -146,47 +218,44 @@ const PrintDocument = () => {
 
                                                 <TableRow sx={{ backgroundColor: "#e4e4e4ff" }}>
                                                     <TableCell sx={{ width: 80, textAlign: "center" }} rowSpan={3}>เงินหัก</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}></TableCell>
+                                                    {paddedDeduction.map((inc, idx) => (
+                                                        <TableCell key={idx} sx={{ textAlign: "center" }}>
+                                                            {inc.ID !== null && row[`deduction${inc.ID}`]
+                                                                ? inc.name
+                                                                : ""
+                                                            }
+                                                        </TableCell>
+                                                    ))}
                                                     <TableCell sx={{ width: 80, textAlign: "center" }}>รวมรายจ่าย</TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ width: 80, textAlign: "center", backgroundColor: "#e4e4e4ff" }} rowSpan={2}>-</TableCell>
+                                                    {paddedDeduction.map((inc, idx) => (
+                                                        <TableCell key={idx} sx={{ textAlign: "center" }}>
+                                                            {inc.ID !== null && row[`deduction${inc.ID}`]
+                                                                ? new Intl.NumberFormat("en-US").format(row[`deduction${inc.ID}`])
+                                                                : "-"
+                                                            }
+                                                        </TableCell>
+                                                    ))}
+                                                    <TableCell sx={{ width: 80, textAlign: "center", backgroundColor: "#e4e4e4ff" }} rowSpan={2}>{new Intl.NumberFormat("en-US").format(row.totalDeduction)}</TableCell>
                                                 </TableRow>
                                                 <TableRow>
                                                     <TableCell sx={{ textAlign: "center" }}>-</TableCell>
                                                     <TableCell sx={{ textAlign: "center" }}>-</TableCell>
                                                     <TableCell sx={{ textAlign: "center" }}>-</TableCell>
                                                     <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
                                                 </TableRow>
-                                                <TableRow sx={{ textAlign: "center", backgroundColor: "#e4e4e4ff" }}>
-                                                    <TableCell sx={{ textAlign: "center" }} colSpan={3}>รายได้สะสม</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }} colSpan={2}>ภาษีสะสม</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }} colSpan={2}>ประกันสังคมสะสม</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>เงินได้สุทธิ</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
+                                                <TableRow sx={{ textAlign: "center" }}>
+                                                    <TableCell sx={{ textAlign: "center", backgroundColor: "#e4e4e4ff" }} colSpan={2}>รายได้สะสม</TableCell>
+                                                    <TableCell sx={{ textAlign: "center", backgroundColor: "#e4e4e4ff" }} colSpan={1}>ภาษีสะสม</TableCell>
+                                                    <TableCell sx={{ textAlign: "center", backgroundColor: "#e4e4e4ff" }} colSpan={1}>ประกันสังคมสะสม</TableCell>
+                                                    <TableCell sx={{ textAlign: "center", backgroundColor: "#e4e4e4ff" }} rowSpan={2}>เงินได้สุทธิ</TableCell>
+                                                    <TableCell sx={{ textAlign: "center" }} rowSpan={2}>{new Intl.NumberFormat("en-US").format(row.total)}</TableCell>
                                                 </TableRow>
                                                 <TableRow>
-                                                    <TableCell sx={{ textAlign: "center" }} colSpan={3}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }} colSpan={2}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }} colSpan={2}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
-                                                    <TableCell sx={{ textAlign: "center" }}>-</TableCell>
+                                                    <TableCell sx={{ textAlign: "center" }} colSpan={2}>{new Intl.NumberFormat("en-US").format(row.total)}</TableCell>
+                                                    <TableCell sx={{ textAlign: "center" }} colSpan={1}>{new Intl.NumberFormat("en-US").format(row.taxPerMonth)}</TableCell>
+                                                    <TableCell sx={{ textAlign: "center" }} colSpan={1}>{new Intl.NumberFormat("en-US").format(row.totalsso + row.sso)}</TableCell>
                                                 </TableRow>
                                             </TableBody>
                                         </Table>

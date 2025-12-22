@@ -51,7 +51,7 @@ import "dayjs/locale/th";
 import Salary from "./Salary";
 
 function CalculateSalary({ tabState, setTabState, tabId }) {
-    const { domain, company } = tabState;
+    const { domain, company, group, page } = tabState;
     const { firebaseDB, domainKey } = useFirebase();
     // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
@@ -131,7 +131,7 @@ function CalculateSalary({ tabState, setTabState, tabId }) {
             case 'สรุปผลการคำนวณ':
                 return <SalaryDetail companyName={company} data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} companyholiday={holiday} />;
             case 'ปิดงวดบัญชี':
-                return <AccountDetail companyName={company} data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} close={closeAccount} salaryhistory={salaryhistory} />;
+                return <AccountDetail domain={domain} companyName={company} group={group} page={page} setTabState={setTabState} data={key} department={department} section={section} position={position} employee={employee} month={selectedDate} close={closeAccount} salaryhistory={salaryhistory} />;
             default:
                 return null;
         }
@@ -300,40 +300,55 @@ function CalculateSalary({ tabState, setTabState, tabId }) {
                         <Typography variant="h6" fontWeight="bold" gutterBottom>{menu.split("-")[1]}{open !== "" && ` / ${open}`}</Typography>
                     </Grid>
                     <Grid item size={12} sx={{ display: "flex", alignItems: "center", justifyContent: "right" }}>
-                        <Paper sx={{ width: "20%", marginTop: -15 }}>
-                            <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
-                                <DatePicker
-                                    openTo="month"
-                                    views={["year", "month"]}
-                                    value={selectedDate}
-                                    format="MMMM"
-                                    onChange={handleDateChangeDate}
-                                    slotProps={{
-                                        textField: {
-                                            size: "small",
-                                            fullWidth: true,
-                                            inputProps: {
-                                                value: selectedDate ? selectedDate.format("MMMM") : "",
-                                                readOnly: true,
-                                            },
-                                            InputProps: {
-                                                startAdornment: (
-                                                    <InputAdornment position="start" sx={{ marginRight: 2 }}>
-                                                        <b>เลือกเดือน :</b>
-                                                    </InputAdornment>
-                                                ),
-                                                sx: {
-                                                    fontSize: "16px",
-                                                    height: "40px",
-                                                    padding: "10px",
-                                                    fontWeight: "bold",
+                        <Box sx={{ marginTop: -15, display: "flex", alignItems: "center", justifyContent: "center", width: "20%" }}>
+                            <Paper sx={{ width: "90%" }}>
+                                <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="th">
+                                    <DatePicker
+                                        openTo="month"
+                                        views={["year", "month"]}
+                                        value={selectedDate}
+                                        format="MMMM"
+                                        onChange={handleDateChangeDate}
+                                        slotProps={{
+                                            textField: {
+                                                size: "small",
+                                                fullWidth: true,
+                                                inputProps: {
+                                                    value: selectedDate ? selectedDate.format("MMMM") : "",
+                                                    readOnly: true,
+                                                },
+                                                InputProps: {
+                                                    startAdornment: (
+                                                        <InputAdornment position="start" sx={{ marginRight: 2 }}>
+                                                            <b>เลือกเดือน :</b>
+                                                        </InputAdornment>
+                                                    ),
+                                                    sx: {
+                                                        fontSize: "16px",
+                                                        height: "40px",
+                                                        padding: "10px",
+                                                        fontWeight: "bold",
+                                                    },
                                                 },
                                             },
-                                        },
-                                    }}
-                                />
-                            </LocalizationProvider>
-                        </Paper>
+                                        }}
+                                    />
+                                </LocalizationProvider>
+                            </Paper>
+                            <Typography sx={{
+                                fontSize: "18px",
+                                whiteSpace: "nowrap",
+                                marginLeft: 1,
+                                fontWeight: "bold",
+                                marginTop: 1,
+                                padding: 1,
+                                color: "gray",
+                                backgroundColor: theme.palette.primary.light,
+                            }}
+                                gutterBottom>
+                                / พ.ศ.{(Number(dayjs(selectedDate).format("YYYY")) + 543)}
+                            </Typography>
+                        </Box>
                     </Grid>
                     {/* <Grid item size={12}>
                         <Divider />

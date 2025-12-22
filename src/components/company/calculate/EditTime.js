@@ -113,6 +113,36 @@ const EditTimeDetail = (props) => {
         Saturday: "เสาร์",
     };
 
+    // ฟังก์ชัน normalize ชื่อวันหยุดไทยให้เป็นคำพื้นฐาน
+    const normalizeThaiDay = (txt = "") => {
+        if (typeof txt !== "string") return txt;
+
+        const t = txt.trim();
+
+        if (t.includes("อาทิตย์")) return "อาทิตย์";
+        if (t.includes("จัน")) return "จันทร์";
+        if (t.includes("อัง")) return "อังคาร";
+        if (t.includes("พุธ")) return "พุธ";
+        if (t.includes("พฤ")) return "พฤหัสบดี";
+        if (t.includes("ศ")) return "ศุกร์";
+        if (t.includes("เสา")) return "เสาร์";
+
+        return t;
+    };
+
+    // normalize Array วันหยุดในกะ
+    const normalizeHolidayArray = (holidays) => {
+        if (!Array.isArray(holidays)) return [];
+
+        return holidays.map(h => {
+            const name = typeof h === "string" ? h : h.name;
+            return { name: normalizeThaiDay(name) };
+        });
+    };
+
+    console.log("month :", month.month());
+    console.log("month year :", dayjs().year(month.year()).month(month.month() + 1).endOf("month"));
+
     const generateFilteredDatesFromHistories = (
         employeeID,
         attendant,
@@ -139,56 +169,84 @@ const EditTimeDetail = (props) => {
             dateHistory: []
         };
 
-        const parseYear = (y) => y === "now" ? dayjs().year() : parseInt(y) > 2500 ? parseInt(y) - 543 : parseInt(y);
-        const parseMonth = (m) => m === "now" ? dayjs().month() : parseInt(m) - 1;
-        const parseDay = (d) => d === "now" ? dayjs().date() : parseInt(d);
+        // ===== Helpers =====
+        const parseYear = (y) =>
+            y === "now" ? filterYear : parseInt(y) > 2500 ? parseInt(y) - 543 : parseInt(y);
 
-        const holidayDatesSet = new Set(holidaysInMonth.map(h => h.date)); // เช่น "28/07/2025"
+        const parseMonth = (m) =>
+            m === "now" ? filterMonth : parseInt(m) - 1;
+
+        const parseDay = (d, year, month) => {
+            if (d === "now") {
+                // คืนค่าเป็นวันสุดท้ายของเดือน filterMonth
+                return dayjs(`${year}-${month + 1}-01`).endOf("month").date();
+            }
+            return parseInt(d);
+        };
+
+        // Set วันหยุดบริษัท
+        const holidayDatesSet = new Set(holidaysInMonth.map(h => h.date));
+
         const allDates = [];
 
-        workshifthistories.forEach((history) => {
-            const holidays = history.holiday?.map(h => h.name) || [];
+        // ช่วงเดือนที่เลือก
+        const monthStart = dayjs().year(filterYear).month(filterMonth).startOf("month");
+        const monthEnd = dayjs().year(filterYear).month(filterMonth).endOf("month");
 
-            const startYear = parseYear(history.YYYYstart);
-            const startMonth = parseMonth(history.MMstart);
-            const startDay = parseDay(history.DDstart);
+        // ===== loop workshift history =====
+        workshifthistories.forEach(history => {
+            const holidays = normalizeHolidayArray(history.holiday);
+            const holidayNames = holidays.map(h => h.name);
 
-            const endYear = parseYear(history.YYYYend);
-            const endMonth = parseMonth(history.MMend);
-            const endDay = parseDay(history.DDend);
+            console.log("Processing history entry:", history);
+            console.log("holidayNames for workshift history:", holidayNames);
+            console.log("holiday :", holidays);
 
-            let current = dayjs().year(startYear).month(startMonth).date(startDay);
-            const end = dayjs().year(endYear).month(endMonth).date(endDay);
+            // สร้าง Start & End จาก history
+            const startDate = dayjs()
+                .year(parseYear(history.YYYYstart))
+                .month(parseMonth(history.MMstart))
+                .date(parseDay(history.DDstart, parseYear(history.YYYYstart), parseMonth(history.MMstart)));
 
-            while (current.isSameOrBefore(end, 'day')) {
+            const endDate = dayjs()
+                .year(parseYear(history.YYYYend))
+                .month(parseMonth(history.MMend))
+                .date(parseDay(history.DDend, filterYear, filterMonth)); // ใช้ filterMonth และสิ้นเดือน
+
+            // จำกัดช่วงให้อยู่ในเดือนที่เลือก
+            let current = startDate.isBefore(monthStart) ? monthStart : startDate;
+            const end = endDate.isAfter(monthEnd) ? monthEnd : endDate;
+
+            // ===== วนตามวันในช่วงที่ history ครอบคลุม =====
+            while (current.isSameOrBefore(end, "day")) {
                 const currentDateStr = current.format("DD/MM/YYYY");
-                const dayName = dayNameMap[current.format("dddd")]; // ex: "Sunday" → "อาทิตย์"
 
-                const isShiftHoliday = holidays.includes(dayName);           // วันหยุดตามกะงาน
-                const isGlobalHoliday = holidayDatesSet.has(currentDateStr); // วันหยุดบริษัท
+                // ⭐ บรรทัดสำคัญ
+                const dayNameThai = dayNameMap[current.locale("en").format("dddd")];
 
-                // สร้าง message
-                let messages = [];
-                if (isShiftHoliday) messages.push("กะงาน");
+                const isShiftHoliday = holidayNames.includes(dayNameThai);
+                const isGlobalHoliday = holidayDatesSet.has(currentDateStr);
+
+                const messages = [];
+                if (isShiftHoliday) messages.push("กะการทำงาน");
                 if (isGlobalHoliday) messages.push("บริษัท");
 
-                const message = messages.length > 0 ? `วันหยุด(${messages.join(", ")})` : "ขาดงาน";
+                allDates.push({
+                    date: currentDateStr,
+                    workshift: history.workshift ?? null,
+                    start: history.start ?? null,
+                    stop: history.stop ?? null,
+                    message: messages.length > 0 ? `วันหยุด(${messages.join(", ")})` : "ขาดงาน"
+                });
 
-                if (current.year() === filterYear && current.month() === filterMonth) {
-                    allDates.push({
-                        date: currentDateStr,
-                        workshift: history.workshift || null,
-                        start: history.start || null,
-                        stop: history.stop || null,
-                        message
-                    });
-                }
-
-                current = current.add(1, 'day');
+                current = current.add(1, "day");
             }
         });
 
-        allDates.sort((a, b) => dayjs(a.date, "DD/MM/YYYY").unix() - dayjs(b.date, "DD/MM/YYYY").unix());
+        // เรียงลำดับวันที่
+        allDates.sort((a, b) =>
+            dayjs(a.date, "DD/MM/YYYY").unix() - dayjs(b.date, "DD/MM/YYYY").unix()
+        );
 
         return {
             employeeID,
@@ -240,6 +298,8 @@ const EditTimeDetail = (props) => {
         const holidaysInMonth = holiday.filter(h =>
             parseInt(h.YYYY) === year && parseInt(h.MM) === m + 1
         );
+
+        console.log("Filtered Employees:", filteredEmployees);
 
         const mapped = filteredEmployees.map(e =>
             generateFilteredDatesFromHistories(

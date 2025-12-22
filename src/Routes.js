@@ -40,6 +40,7 @@ import { onValue, ref } from "firebase/database";
 import { ProjectFirebaseProvider } from "./server/ProjectFirebaseContext";
 import ReportLoan from "./components/company/report/Loan";
 import PrintDocument from "./components/company/calculate/PrintDocument";
+import Setting from "./components/company/Setting";
 
 // --- Protected Route Wrapper สำหรับ User ---
 const ProtectedRouteWrapper = ({ children }) => {
@@ -172,8 +173,6 @@ function CompanyRoutes({ group, page, tabState, setTabState }) {
             }
         case "attendant":
             return <DashboardAttendant tabState={tabState} setTabState={setTabState} />;
-        case "print":
-            return <PrintDocument tabState={tabState} setTabState={setTabState} />;
         default:
             return <CompanyDeshboard tabState={tabState} setTabState={setTabState} />;
     }
@@ -194,49 +193,56 @@ function MainEntry() {
         });
     }, []);
 
-    // ===============================
-    // --- สร้าง tabId แยกแต่ละแท็บ ---
-    // ===============================
-    if (!sessionStorage.getItem("tabId")) {
-        sessionStorage.setItem("tabId", crypto.randomUUID());
+    // อ่าน tabId จาก query string หรือ sessionStorage
+    const searchParams = new URLSearchParams(window.location.search);
+    const urlTabId = searchParams.get("tabId");
+    let tabId = urlTabId || sessionStorage.getItem("tabId");
+    if (!tabId) {
+        tabId = crypto.randomUUID();
+        sessionStorage.setItem("tabId", tabId);
     }
-    const tabId = sessionStorage.getItem("tabId");
 
-    // ===============================
-    // --- โหลด state ของแท็บนี้จาก tabsState object ---
-    // ===============================
+    // โหลด tabState ของแท็บนี้
     const cookie = loadEncryptedCookie();
     const allTabsState = JSON.parse(localStorage.getItem("tabsState") || "{}");
     const initialTabState = allTabsState[tabId] || {};
 
+    // const [tabState, setTabState] = useState({
+    //     domain: initialTabState.domain || cookie?.domainKey || pathDomain,
+    //     company: initialTabState.company || pathCompany,
+    //     group: initialTabState.group || pathGroup || "dashboard",
+    //     page: initialTabState.page || pathPage || "dashboard"
+    // });
     const [tabState, setTabState] = useState({
         domain: initialTabState.domain || cookie?.domainKey || pathDomain,
         company: initialTabState.company || pathCompany,
         group: initialTabState.group || pathGroup || "dashboard",
-        page: initialTabState.page || pathPage || "dashboard"
+        page:
+            initialTabState.page ??
+            (["dashboard", "attendant", "print", "setting"].includes(pathGroup)
+                ? null
+                : pathPage ?? null)
     });
 
-    const { domain, company: companyId, group, page } = tabState;
-    const effectivePage = group === "dashboard" || group === "attendant" ? null : page;
 
-    // ===============================
-    // --- บันทึก state ของแท็บนี้ลง tabsState ---
-    // ===============================
+    const { domain, company: companyId, group, page } = tabState;
+    const effectivePage = group === "dashboard" || group === "attendant" || group === "setting" ? null : page;
+
+    // บันทึก tabState ของแท็บนี้ลง localStorage
     useEffect(() => {
         const allTabsState = JSON.parse(localStorage.getItem("tabsState") || "{}");
         allTabsState[tabId] = tabState;
         localStorage.setItem("tabsState", JSON.stringify(allTabsState));
     }, [tabState, tabId]);
 
-    // ===============================
     // Redirect logic
-    // ===============================
     useEffect(() => {
         if (!domain) return;
 
         let redirectPath;
         if (!companyId) redirectPath = `/${domain}/dashboard`;
-        else if (group === "dashboard" || group === "attendant") redirectPath = `/${domain}/${companyId}/${group}`;
+        else if (group === "dashboard" || group === "attendant" || group === "print" || group === "setting")
+            redirectPath = `/${domain}/${companyId}/${group}`;
         else redirectPath = `/${domain}/${companyId}/${group}/${page}`;
 
         const currentPath = window.location.pathname;
@@ -245,9 +251,7 @@ function MainEntry() {
         }
     }, [domain, companyId, group, page, navigate]);
 
-    // ===============================
     // Title
-    // ===============================
     useEffect(() => {
         if (!companyId && !group && !page) {
             document.title = domain || "My System";
@@ -261,7 +265,8 @@ function MainEntry() {
             EMPLOYEE: "โครงสร้างพนักงาน",
             REPORT: "เอกสารและการอนุมัติ",
             DASHBOARD: "Dashboard",
-            ATTENDANT: "บันทึกเวลา"
+            ATTENDANT: "บันทึกเวลา",
+            PRINT: "พิมพ์เอกสาร"
         };
 
         const pageMap = {
@@ -294,30 +299,36 @@ function MainEntry() {
         document.title = [companyName, groupTitle, pageTitle].filter(Boolean).join(" - ");
     }, [domain, companyId, group, page]);
 
-    // ===============================
     // ถ้า domain ไม่มี → login
-    // ===============================
     if (!domain) return <Navigate to="/login" replace />;
 
-    // ===============================
     // หา groupType สำหรับ sidebar
-    // ===============================
     const groupType = domainData.find(item => item.domainKey === domain)?.grouptype;
 
-    // ===============================
     // RENDER CASES
-    // ===============================
     if (!companyId) return <Company tabState={tabState} setTabState={setTabState} tabId={tabId} />;
-    if (group === "dashboard" || group === "attendant") {
+
+    if (group === "dashboard" || group === "attendant" || group === "print" || group === "setting") {
         return (
             <Box sx={{ display: "flex", backgroundColor: theme.palette.primary.light }}>
-                {groupType !== "attendant" && <SideBarCompany tabState={tabState} setTabState={setTabState} />}
+                {groupType !== "attendant" && (
+                    <SideBarCompany tabState={tabState} setTabState={setTabState} />
+                )}
                 <Box sx={{ flexGrow: 1 }}>
-                    {group === "dashboard" ? <CompanyDeshboard tabState={tabState} setTabState={setTabState} /> : <DashboardAttendant tabState={tabState} setTabState={setTabState} />}
+                    {group === "dashboard" && effectivePage === null ? (
+                        <CompanyDeshboard tabState={tabState} setTabState={setTabState} />
+                    ) : group === "setting" && effectivePage === null ? (
+                        <Setting tabState={tabState} setTabState={setTabState} />
+                    ) : group === "print" && effectivePage === null ? (
+                        <PrintDocument tabState={tabState} setTabState={setTabState} />
+                    ) : (
+                        <DashboardAttendant tabState={tabState} setTabState={setTabState} />
+                    )}
                 </Box>
             </Box>
         );
     }
+
     return (
         <Box sx={{ display: "flex", backgroundColor: theme.palette.primary.light }}>
             {groupType !== "attendant" && <SideBarCompany tabState={tabState} setTabState={setTabState} />}
@@ -344,6 +355,15 @@ export default function AppRouter() {
                     <AdminProtectedRouteWrapper>
                         <AdminApproveDomainForm />
                     </AdminProtectedRouteWrapper>
+                }
+            />
+
+            <Route
+                path="/:domain/:company/print"
+                element={
+                    <ProtectedRouteWrapper>
+                        <MainEntry />
+                    </ProtectedRouteWrapper>
                 }
             />
 

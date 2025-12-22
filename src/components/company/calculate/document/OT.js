@@ -196,7 +196,7 @@ const OTDetail = (props) => {
         <React.Fragment>
             <Grid item size={12}>
                 <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", width: "100%" }}>
-                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1050px" }}>
+                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                         <TableHead
                             sx={{
                                 position: "sticky",
@@ -207,7 +207,7 @@ const OTDetail = (props) => {
                         >
                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                 <TablecellHeader sx={{ width: 60 }}>ลำดับ</TablecellHeader>
-                                <TablecellHeader sx={{ width: 500 }}>วันที่และเวลา</TablecellHeader>
+                                <TablecellHeader >วันที่และเวลา</TablecellHeader>
                                 <TablecellHeader sx={{ width: 140 }}>จำนวน</TablecellHeader>
                                 <TablecellHeader sx={{ width: 130 }}>ประเภท</TablecellHeader>
                                 <TablecellHeader sx={{ width: 230 }}>สถานะ</TablecellHeader>

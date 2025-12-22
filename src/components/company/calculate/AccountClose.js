@@ -50,7 +50,7 @@ import ExcelJS from "exceljs";
 dayjs.locale("th");
 
 const AccountDetail = (props) => {
-    const { companyName, department, section, position, employee, month, close, salaryhistory } = props;
+    const { domain, companyName, group, page, setTabState, department, section, position, employee, month, close, salaryhistory } = props;
     const { firebaseDB, domainKey } = useFirebase();
     // const companyName = localStorage.getItem("company");
     // const [searchParams] = useSearchParams();
@@ -65,6 +65,8 @@ const AccountDetail = (props) => {
         { label: "ประเภทการลา", key: "name", type: "text" },
         { label: "จำนวนวัน", key: "max", type: "text" }
     ];
+
+    const [allEmployeeDateMap, setAllEmployeeDateMap] = useState([]);
 
     const [selectedDateStart, setSelectDateStart] = useState(salaryhistory ? {
         day: salaryhistory.DDF,
@@ -256,12 +258,53 @@ const AccountDetail = (props) => {
     useEffect(() => {
         let filtered = employees.length ? [...employees] : [];
 
-        // กรองตามเดือน
+        // ----------------------------
+        // 1) กรองตามเดือน
+        // ----------------------------
         if (month) {
-            const monthNum = Number(dayjs(month).format("MM")); // เช่น 10
+            const monthNum = Number(dayjs(month).format("MM"));
             filtered = filtered.filter(e => Number(dayjs(e.date, "DD/MM/YYYY").format("MM")) <= monthNum);
         }
 
+        // ----------------------------
+        // ⭐ เก็บข้อมูลพนักงานทุกคน (ไม่ถูกกรอง department/section/position/employee)
+        // ⭐ ใช้เฉพาะเดือน + selectedType เท่านั้น
+        // ----------------------------
+        let allForClosing = [...filtered];
+
+        if (selectedType !== "all") {
+            allForClosing = allForClosing.filter(emp => {
+                const typeId = emp.employmenttype?.split("-")[0];
+                return Number(typeId || 0) === selectedType;
+            });
+        }
+
+        // ทำแมปแบบไม่ถูกกรอง (สำหรับปิดงวด)
+        const unfilteredMapped = allForClosing.map(e =>
+            generateFilteredDatesFromHistories(
+                e.ID,
+                e.attendant?.[year]?.[m + 2],
+                e.employeecode,
+                e.nickname,
+                e.employname,
+                e.department,
+                e.section,
+                e.position,
+                e.workshifthistory,
+                year,
+                m,
+                holidaysInMonth
+            )
+        );
+
+        // ให้คุณเก็บ state ไว้ใช้งานตอนปิดงวดบัญชี
+        setAllEmployeeDateMap(unfilteredMapped);
+        // ----------------------------
+
+
+        // ----------------------------
+        // 2) เริ่มกรองตามหน้า UI
+        // ----------------------------
         setEmployeeDetail(filtered);
 
         // กรองตาม department
@@ -287,13 +330,12 @@ const AccountDetail = (props) => {
 
         if (selectedType !== "all") {
             filtered = filtered.filter(emp => {
-                if (selectedType === "all") return true;
-
                 const typeId = emp.employmenttype?.split("-")[0];
                 return Number(typeId || 0) === selectedType;
             });
         }
 
+        // แมปเฉพาะพนักงานที่ถูกกรองตาม UI (สำหรับแสดงผล)
         const mapped = filtered.map(e =>
             generateFilteredDatesFromHistories(
                 e.ID,
@@ -311,9 +353,7 @@ const AccountDetail = (props) => {
             )
         );
 
-        console.log("Mapped Employee Dates (filtered):", mapped);
         setDateArrayMap(mapped);
-
         setFilteredEmployees(filtered);
     }, [selectedType, employees, month, department, section, position, employee]);
 
@@ -365,16 +405,20 @@ const AccountDetail = (props) => {
             let current = dayjs().year(startYear).month(startMonth).date(startDay);
             const end = dayjs().year(endYear).month(endMonth).date(endDay);
 
+            console.log("current : ", current.format("dddd"));
+            console.log("dayNameMap : ", dayNameMap);
+            console.log("dayNameMap : ", dayNameMap[current.format("dddd")]);
+
             while (current.isSameOrBefore(end, "day")) {
                 const currentDateStr = current.format("DD/MM/YYYY");
-                const dayName = dayNameMap[current.format("dddd")];
+                const dayNameEng = current.locale('en').format('dddd'); // ใช้ key ภาษาอังกฤษ
+                const dayNameTH = dayNameMap[dayNameEng];               // แปลงเป็นไทย
 
-                // ✅ ใช้ holiday ของช่วงนั้นเท่านั้น
-                if (holidays.includes(dayName)) {
+                if (holidays.includes(dayNameTH)) {
                     if (current.year() === filterYear && current.month() === filterMonth) {
                         allHolidayDates.push({
                             date: currentDateStr,
-                            dayName,
+                            dayName: dayNameTH,
                             workshift: history.workshift || null,
                             periodID: history.ID,
                         });
@@ -388,6 +432,8 @@ const AccountDetail = (props) => {
         allHolidayDates.sort((a, b) =>
             dayjs(a.date, "DD/MM/YYYY").unix() - dayjs(b.date, "DD/MM/YYYY").unix()
         );
+
+        console.log("allHolidayDates : ", allHolidayDates);
 
         return {
             employeeID,
@@ -524,7 +570,7 @@ const AccountDetail = (props) => {
             employid: emp.ID,
             employname: `${emp.employname} (${emp.nickname})`,
             workday: 0,
-            attendantCount: attendantCount,
+            attendantCount: 0,
             holidayCount: holidayResult.holidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
             holiday: holidayResult.holidayDates, // ✅ เพิ่มจำนวนวันหยุด
             companyholidays: holidaysInMonth.length,
@@ -571,12 +617,14 @@ const AccountDetail = (props) => {
             .filter(key => key.startsWith("leave")) // เอาเฉพาะ key ที่เป็น leave
             .reduce((sum, key) => sum + (row[key] || 0), 0);
 
+        row.attendantCount = attendantCount - totalLeaveDays
+
         row.workday = daysInMonth - (holidayResult.holidayDates.length + holidaysInMonth.length);
 
         // คำนวณ missingWork
         row.missingWork =
             (daysInMonth - (holidayResult.holidayDates.length + holidaysInMonth.length)) -
-            (attendantCount + Number(totalLeaveDays));
+            (attendantCount);
 
         row.total = (Number(salary) + row.totalIncome) - row.totalDeduction;
         row.sso = Number(salary >= 15000 ? 15000 : salary) * 0.05;
@@ -595,7 +643,7 @@ const AccountDetail = (props) => {
     console.log("RowS : ", Rows);
 
     const typeCount = (id) =>
-        employeeDetail.filter((t) => Number(t.employmenttype?.split("-")[0] ?? 0) === id).length;
+        filteredEmployees.filter((t) => Number(t.employmenttype?.split("-")[0] ?? 0) === id).length;
 
     // 4️⃣ กรอง columns ที่มีค่าไม่เป็น 0 อย่างน้อย 1 แถว
     const visibleIncome = incomeActive.filter(inc =>
@@ -1211,8 +1259,8 @@ const AccountDetail = (props) => {
         // -------------------------------------------------------------
         // 1) สร้าง merged แบบใหม่ (refactor)
         // -------------------------------------------------------------
-        const merged = Array.isArray(dateArrayMap)
-            ? dateArrayMap.map((item) => ({
+        const merged = Array.isArray(allEmployeeDateMap)
+            ? allEmployeeDateMap.map((item) => ({
                 ...item,
                 dateHistory: buildDateHistory(item)
             }))
@@ -1244,6 +1292,17 @@ const AccountDetail = (props) => {
         const start = toDateObj(selectedDateStart);
         const end = toDateObj(selectedDateEnd);
 
+        const cleanedRows = Rows.map(r => {
+            if (Array.isArray(r.holiday)) {
+                r.holiday = r.holiday.map(h => {
+                    const clone = { ...h };
+                    if (clone.periodID === undefined) delete clone.periodID;
+                    return clone;
+                });
+            }
+            return r;
+        });
+
         const newPeriod = {
             DDF: start?.date() ?? null,
             MMF: start?.month() + 1 ?? null,
@@ -1253,9 +1312,14 @@ const AccountDetail = (props) => {
             MMT: end?.month() + 1 ?? null,
             YYYYT: end?.year() ?? null,
 
-            salarylist: Rows,
+            salarylist: cleanedRows,
             Closed: "ปิดงวดบัญชี",
         };
+
+        console.log("Rows to save : ", Rows);
+        console.log("cleanedRows to save : ", cleanedRows);
+        console.log("newPeriod to save : ", newPeriod);
+        console.log("merged to save : ", merged);
 
         try {
             // -------------------------------------------------------------
@@ -1272,10 +1336,10 @@ const AccountDetail = (props) => {
 
                 return set(recordRef, {
                     ID: newID,
-                    DD: dayjs().format("DD"),
-                    MM: dayjs().format("MM"),
-                    YYYY: dayjs().format("YYYY"),
-                    date: dayjs().format("DD/MM/YYYY"),
+                    DD: month.format("DD"),
+                    MM: month.format("MM"),
+                    YYYY: month.format("YYYY"),
+                    date: month.format("DD/MM/YYYY"),
                     price: Number(row.sso ?? 0),
                 });
             });
@@ -1290,20 +1354,25 @@ const AccountDetail = (props) => {
             // -------------------------------------------------------------
             // 6) อัปเดต attendant ของแต่ละ employee
             // -------------------------------------------------------------
-            const updates = {};
-
+            // สร้าง nextMonth
             const nextMonth = dayjs(month).add(1, "month");
             const yearStr = nextMonth.format("YYYY");
             const monthStr = nextMonth.format("M");
 
-            merged.forEach(({ employeeID, dateHistory, year, month }) => {
-                if (!year || !month) return; // ป้องกัน error
+            // สร้าง array ของ promise
+            const saveAttendant = merged.map(({ employeeID, dateHistory }) => {
+                if (!employeeID || !dateHistory) return null; // skip ถ้าไม่มีข้อมูล
 
                 const path = `workgroup/company/${companyId}/employee/${employeeID}/attendant/${yearStr}/${monthStr}`;
-                updates[path] = dateHistory;
+                const recordRef = ref(firebaseDB, path);
+
+                return set(recordRef, dateHistory);
             });
 
-            await update(ref(firebaseDB), updates);
+            console.log("saveAttendant promises : ", saveAttendant);
+
+            // กรอง null ก่อน await
+            await Promise.all(saveAttendant.filter(Boolean));
 
             // -------------------------------------------------------------
             // 7) Success
@@ -1360,43 +1429,37 @@ const AccountDetail = (props) => {
             Address: selectedCompany?.companyaddress,
             Companyname: selectedCompany?.companyname,
             Companyserial: selectedCompany?.companyserial,
-            Company: selectedCompany
+            Company: selectedCompany,
+            Salary: selectedCompany?.salary[year][m + 1] || {},
+            Month: month.format("MM"),
+            Year: month.format("YYYY"),
         };
 
         sessionStorage.setItem("invoiceData", JSON.stringify(invoiceData));
 
-        // เปิดแท็บใหม่
+        // สร้าง tabId ใหม่สำหรับแท็บ print
+        const newTabId = crypto.randomUUID();
+        const printTabState = {
+            domain,
+            company: companyName,
+            group: "print",
+            page: null
+        };
+
+        // บันทึก tabState สำหรับแท็บใหม่ลง localStorage
+        const allTabsState = JSON.parse(localStorage.getItem("tabsState") || "{}");
+        allTabsState[newTabId] = printTabState;
+        localStorage.setItem("tabsState", JSON.stringify(allTabsState));
+
+        // เปิดแท็บใหม่พร้อมส่ง tabId เป็น query
         const printWindow = window.open(
-            "/?domain=happygroup&company=1:TEST-T001&employee=print",
+            `/${domain}/${companyName}/print?tabId=${newTabId}`,
             "_blank"
         );
 
         if (!printWindow) {
             alert("กรุณาปิด pop-up blocker แล้วลองใหม่");
         }
-
-        // บันทึกข้อมูลลง sessionStorage
-        // sessionStorage.setItem("invoiceData", JSON.stringify(invoiceData));
-
-        // // เปิดหน้าต่างใหม่ไปที่ /print-invoice
-        // const screenWidth = window.screen.width;
-        // const screenHeight = window.screen.height;
-        // const windowWidth = 820;
-        // const windowHeight = 559;
-
-        // const left = (screenWidth - windowWidth) / 2;
-        // const top = (screenHeight - windowHeight) / 2;
-
-        // const printWindow = window.open(
-        //     "/?domain=happygroup&company=1:TEST-T001&employee=print",
-        //     "_blank",
-        //     `width=${windowWidth},height=${windowHeight},left=${left},top=${top}`
-        // );
-
-
-        // if (!printWindow) {
-        //     alert("กรุณาปิด pop-up blocker แล้วลองใหม่");
-        // }
     };
 
     return (
@@ -1536,7 +1599,7 @@ const AccountDetail = (props) => {
                 </Grid>
                 <Grid item size={12}>
                     <TableContainer component={Paper} textAlign="center">
-                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1060px" }}>
+                        <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                             <TableHead>
                                 <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                     <TablecellHeader>

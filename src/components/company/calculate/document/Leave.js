@@ -127,7 +127,7 @@ const LeaveDetail = (props) => {
                 const dateObj = dayjs(newdate, "DD/MM/YYYY");
                 const year = dateObj.year();
                 const m = dateObj.month(); // 0-based
-                const dayIndex = dateObj.date() - 1; // 0-based สำหรับ Firebase
+                const dayIndex = dateObj.date(); // 0-based สำหรับ Firebase
                 try {
                     // documentleave
                     const leaveRef = ref(
@@ -186,7 +186,6 @@ const LeaveDetail = (props) => {
                         status: 2,
                         unixin: dayjs(`${newdate} 00:00:00`, "DD/MM/YYYY HH:mm:ss").valueOf(),
                         unixout: dayjs(`${newdate} 23:59:59`, "DD/MM/YYYY HH:mm:ss").valueOf(),
-                        message: leave
                     });
 
                     console.log("✅ อนุมัติและบันทึกข้อมูลเรียบร้อย");
@@ -226,7 +225,7 @@ const LeaveDetail = (props) => {
         <React.Fragment>
             <Grid item size={12}>
                 <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", width: "100%" }}>
-                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1050px" }}>
+                    <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                         <TableHead
                             sx={{
                                 position: "sticky",
@@ -237,7 +236,7 @@ const LeaveDetail = (props) => {
                         >
                             <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                 <TablecellHeader sx={{ width: 60 }}>ลำดับ</TablecellHeader>
-                                <TablecellHeader sx={{ width: 500 }}>วันที่และเวลา</TablecellHeader>
+                                <TablecellHeader >วันที่และเวลา</TablecellHeader>
                                 <TablecellHeader sx={{ width: 130 }}>จำนวน</TablecellHeader>
                                 <TablecellHeader sx={{ width: 140 }}>ประเภท</TablecellHeader>
                                 <TablecellHeader sx={{ width: 230 }}>สถานะ</TablecellHeader>

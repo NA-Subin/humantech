@@ -405,7 +405,7 @@ const SalaryDetail = (props) => {
             employid: emp.ID,
             employname: `${emp.employname} (${emp.nickname})`,
             workday: 0,
-            attendantCount: attendantCount,
+            attendantCount: 0,
             holidayCount: holidayResult.holidayDates.length, // ✅ เพิ่มจำนวนวันหยุด
             holiday: holidayResult.holidayDates, // ✅ เพิ่มจำนวนวันหยุด
             companyholidays: holidaysInMonth.length,
@@ -452,12 +452,14 @@ const SalaryDetail = (props) => {
             .filter(key => key.startsWith("leave")) // เอาเฉพาะ key ที่เป็น leave
             .reduce((sum, key) => sum + (row[key] || 0), 0);
 
+        row.attendantCount = attendantCount - totalLeaveDays
+
         row.workday = daysInMonth - (holidayResult.holidayDates.length + holidaysInMonth.length);
 
         // คำนวณ missingWork
         row.missingWork =
             (daysInMonth - (holidayResult.holidayDates.length + holidaysInMonth.length)) -
-            (attendantCount + Number(totalLeaveDays));
+            (attendantCount);
 
         row.total = (Number(salary) + row.totalIncome) - row.totalDeduction;
         row.sso = Number(salary >= 15000 ? 15000 : salary) * 0.05;
@@ -477,6 +479,9 @@ const SalaryDetail = (props) => {
     const visibleIncome = incomeActive.filter(inc =>
         Rows.some(row => (row[`income${inc.ID}`] ?? 0) !== 0)
     );
+
+    console.log("incomeActive : ", incomeActive);
+    console.log("visibleIncome : ", visibleIncome);
 
     const visibleDeduction = deductionActive.filter(ded =>
         Rows.some(row => (row[`deduction${ded.ID}`] ?? 0) !== 0)
@@ -919,7 +924,7 @@ const SalaryDetail = (props) => {
                     </Grid>
                     <Grid item size={12}>
                         <TableContainer component={Paper} sx={{ height: "70vh" }}>
-                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" } }}>
+                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
                                 <TableHead
                                     sx={{
                                         position: "sticky",

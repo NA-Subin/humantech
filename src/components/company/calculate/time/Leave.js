@@ -252,9 +252,16 @@ const LeaveDetail = (props) => {
                             /> */}
                         </Paper>
                         :
-                        <TableContainer component={Paper} textAlign="center">
-                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "1050px" }}>
-                                <TableHead>
+                        <TableContainer component={Paper} textAlign="center" sx={{ height: "70vh", width: "100%" }}>
+                            <Table size="small" sx={{ tableLayout: "fixed", "& .MuiTableCell-root": { padding: "4px" }, width: "100%" }}>
+                                <TableHead
+                                    sx={{
+                                        position: "sticky",
+                                        top: 0,
+                                        zIndex: 2,
+                                        backgroundColor: theme.palette.primary.dark,
+                                    }}
+                                >
                                     <TableRow sx={{ backgroundColor: theme.palette.primary.dark }}>
                                         <TablecellHeader sx={{ width: 80 }}>ลำดับ</TablecellHeader>
                                         <TablecellHeader>ชื่อ</TablecellHeader>
